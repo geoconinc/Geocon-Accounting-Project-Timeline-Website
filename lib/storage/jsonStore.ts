@@ -1,0 +1,291 @@
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
+import lockfile from "proper-lockfile";
+import type {
+  ActivityEvent,
+  FileRef,
+  NotificationPref,
+  Project,
+  Session,
+  Subitem,
+  User
+} from "@/lib/types";
+import type { Storage } from "./index";
+import { initialsFromName } from "@/lib/utils";
+
+const DATA_DIR = path.join(process.cwd(), "data");
+
+interface DbShape {
+  users: User[];
+  sessions: Session[];
+  projects: Project[];
+  subitems: Subitem[];
+  files: FileRef[];
+  prefs: NotificationPref[];
+  activity: ActivityEvent[];
+}
+
+const FILE = path.join(DATA_DIR, "db.json");
+
+const empty: DbShape = {
+  users: [],
+  sessions: [],
+  projects: [],
+  subitems: [],
+  files: [],
+  prefs: [],
+  activity: []
+};
+
+async function ensureFile() {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  try {
+    await fs.access(FILE);
+  } catch {
+    await fs.writeFile(FILE, JSON.stringify(empty, null, 2), "utf8");
+  }
+}
+
+async function readDb(): Promise<DbShape> {
+  await ensureFile();
+  const raw = await fs.readFile(FILE, "utf8");
+  try {
+    const parsed = JSON.parse(raw) as Partial<DbShape>;
+    return { ...empty, ...parsed };
+  } catch {
+    return { ...empty };
+  }
+}
+
+async function writeDb(db: DbShape) {
+  await ensureFile();
+  const release = await lockfile.lock(FILE, { retries: { retries: 5, minTimeout: 30, maxTimeout: 200 } });
+  try {
+    const tmp = FILE + ".tmp";
+    await fs.writeFile(tmp, JSON.stringify(db, null, 2), "utf8");
+    await fs.rename(tmp, FILE);
+  } finally {
+    await release();
+  }
+}
+
+async function mutate<T>(fn: (db: DbShape) => Promise<T> | T): Promise<T> {
+  const db = await readDb();
+  const result = await fn(db);
+  await writeDb(db);
+  return result;
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+export const jsonStore: Storage = {
+  async listUsers() {
+    return (await readDb()).users;
+  },
+  async getUserById(id) {
+    return (await readDb()).users.find((u) => u.id === id) ?? null;
+  },
+  async getUserByEmail(email) {
+    const lower = email.toLowerCase();
+    return (await readDb()).users.find((u) => u.email.toLowerCase() === lower) ?? null;
+  },
+  async upsertUser(input) {
+    return mutate((db) => {
+      const existing = db.users.find((u) => u.email.toLowerCase() === input.email.toLowerCase());
+      if (existing) {
+        Object.assign(existing, {
+          name: input.name ?? existing.name,
+          initials: input.initials ?? initialsFromName(input.name ?? existing.name),
+          phone: input.phone ?? existing.phone,
+          photoUrl: input.photoUrl ?? existing.photoUrl
+        });
+        return existing;
+      }
+      const user: User = {
+        id: input.id ?? randomUUID(),
+        email: input.email,
+        name: input.name,
+        initials: input.initials ?? initialsFromName(input.name),
+        phone: input.phone,
+        photoUrl: input.photoUrl,
+        createdAt: nowIso()
+      };
+      db.users.push(user);
+      return user;
+    });
+  },
+  async updateUser(id, patch) {
+    return mutate((db) => {
+      const u = db.users.find((x) => x.id === id);
+      if (!u) return null;
+      Object.assign(u, patch);
+      if (patch.name) u.initials = initialsFromName(patch.name);
+      return u;
+    });
+  },
+
+  async createSession(userId, ttlDays = 30) {
+    return mutate((db) => {
+      const session: Session = {
+        token: randomUUID() + randomUUID().replace(/-/g, ""),
+        userId,
+        expiresAt: new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000).toISOString()
+      };
+      db.sessions.push(session);
+      return session;
+    });
+  },
+  async getSession(token) {
+    const db = await readDb();
+    const s = db.sessions.find((x) => x.token === token);
+    if (!s) return null;
+    if (new Date(s.expiresAt).getTime() < Date.now()) return null;
+    return s;
+  },
+  async deleteSession(token) {
+    await mutate((db) => {
+      db.sessions = db.sessions.filter((s) => s.token !== token);
+    });
+  },
+
+  async listProjects() {
+    const db = await readDb();
+    return [...db.projects].sort((a, b) => a.position - b.position);
+  },
+  async getProject(id) {
+    return (await readDb()).projects.find((p) => p.id === id) ?? null;
+  },
+  async createProject(input) {
+    return mutate((db) => {
+      const groupCount = db.projects.filter((p) => p.group === input.group).length;
+      const project: Project = {
+        ...input,
+        id: input.id ?? randomUUID(),
+        position: groupCount,
+        lastUpdatedAt: nowIso()
+      };
+      db.projects.push(project);
+      return project;
+    });
+  },
+  async updateProject(id, patch, actorId) {
+    return mutate((db) => {
+      const p = db.projects.find((x) => x.id === id);
+      if (!p) return null;
+      if (patch.status && patch.status !== p.status) {
+        if (patch.status === "Completed") patch.group = "Completed";
+        else if (patch.status === "Future") patch.group = "Future";
+        else if (p.group === "Completed" || p.group === "Future") patch.group = "Current";
+      }
+      Object.assign(p, patch);
+      p.lastUpdatedAt = nowIso();
+      p.lastUpdatedBy = actorId;
+      return p;
+    });
+  },
+  async deleteProject(id) {
+    await mutate((db) => {
+      db.projects = db.projects.filter((p) => p.id !== id);
+      db.subitems = db.subitems.filter((s) => s.projectId !== id);
+      db.files = db.files.filter((f) => !(f.parentType === "project" && f.parentId === id));
+    });
+  },
+
+  async listSubitems(projectId) {
+    const db = await readDb();
+    return db.subitems
+      .filter((s) => s.projectId === projectId)
+      .sort((a, b) => {
+        const aNa = a.status === "NA" ? 1 : 0;
+        const bNa = b.status === "NA" ? 1 : 0;
+        if (aNa !== bNa) return aNa - bNa;
+        return a.position - b.position;
+      });
+  },
+  async createSubitem(input) {
+    return mutate((db) => {
+      const count = db.subitems.filter((s) => s.projectId === input.projectId).length;
+      const sub: Subitem = {
+        ...input,
+        id: input.id ?? randomUUID(),
+        position: count
+      };
+      db.subitems.push(sub);
+      return sub;
+    });
+  },
+  async updateSubitem(id, patch) {
+    return mutate((db) => {
+      const s = db.subitems.find((x) => x.id === id);
+      if (!s) return null;
+      Object.assign(s, patch);
+      if (patch.status === "Completed" && !s.dateCompleted) {
+        s.dateCompleted = new Date().toISOString().slice(0, 10);
+      }
+      return s;
+    });
+  },
+  async deleteSubitem(id) {
+    await mutate((db) => {
+      db.subitems = db.subitems.filter((s) => s.id !== id);
+      db.files = db.files.filter((f) => !(f.parentType === "subitem" && f.parentId === id));
+    });
+  },
+  async reorderSubitems(projectId, orderedIds) {
+    await mutate((db) => {
+      orderedIds.forEach((id, idx) => {
+        const s = db.subitems.find((x) => x.id === id && x.projectId === projectId);
+        if (s) s.position = idx;
+      });
+    });
+  },
+
+  async listFiles(parentType, parentId) {
+    const db = await readDb();
+    return db.files.filter((f) => f.parentType === parentType && f.parentId === parentId);
+  },
+  async addFile(input) {
+    return mutate((db) => {
+      const file: FileRef = {
+        ...input,
+        id: input.id ?? randomUUID(),
+        uploadedAt: nowIso()
+      };
+      db.files.push(file);
+      return file;
+    });
+  },
+  async deleteFile(id) {
+    await mutate((db) => {
+      db.files = db.files.filter((f) => f.id !== id);
+    });
+  },
+
+  async getNotificationPref(userId, projectId) {
+    const db = await readDb();
+    return db.prefs.find((p) => p.userId === userId && p.projectId === projectId) ?? null;
+  },
+  async setNotificationPref(pref) {
+    await mutate((db) => {
+      const i = db.prefs.findIndex((p) => p.userId === pref.userId && p.projectId === pref.projectId);
+      if (i >= 0) db.prefs[i] = pref;
+      else db.prefs.push(pref);
+    });
+  },
+
+  async appendActivity(event) {
+    return mutate((db) => {
+      const a: ActivityEvent = {
+        ...event,
+        id: randomUUID(),
+        createdAt: nowIso()
+      };
+      db.activity.push(a);
+      if (db.activity.length > 5000) db.activity = db.activity.slice(-5000);
+      return a;
+    });
+  }
+};

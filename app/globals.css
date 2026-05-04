@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #0A5D6B;
+  --brand-accent: #14A3B8;
+  --brand-light: #0D7A8C;
+  --brand-dark: #073D47;
+}
+
+html, body, #__next {
+  height: 100%;
+}
+
+body {
+  background: #f6f7fb;
+  color: #1f2937;
+  font-size: 13px;
+}
+
+.scrollbar-thin::-webkit-scrollbar { height: 10px; width: 10px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+
+.sticky-shadow {
+  box-shadow: 4px 0 6px -4px rgba(0,0,0,0.12);
+}
+
+.cell {
+  @apply h-9 px-2 flex items-center border-b border-r border-slate-200 bg-white text-[13px];
+}
+
+.header-cell {
+  @apply h-9 px-2 flex items-center border-b border-r border-slate-200 bg-slate-50 text-slate-500 font-medium text-[12px] uppercase tracking-wide;
+}
+
+.btn {
+  @apply inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors;
+}
+
+.btn-primary {
+  @apply btn bg-brand text-white hover:bg-brand-light;
+}
+
+.btn-ghost {
+  @apply btn text-slate-700 hover:bg-slate-100;
+}
+
+.status-pill {
+  @apply inline-flex items-center justify-center w-full h-full text-white text-xs font-semibold uppercase tracking-wide;
+}
