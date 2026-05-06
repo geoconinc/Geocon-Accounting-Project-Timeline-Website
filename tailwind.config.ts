@@ -17,7 +17,8 @@ const config: Config = {
           missing: "#ef4444",
           future: "#1e3a8a",
           notstarted: "#9ca3af",
-          na: "#3b82f6"
+          na: "#3b82f6",
+          new: "#06b6d4"
         }
       },
       fontFamily: {

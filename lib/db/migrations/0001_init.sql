@@ -4,7 +4,7 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 DO $$ BEGIN
-  CREATE TYPE project_status AS ENUM ('Completed','InProgress','Missing','Future');
+  CREATE TYPE project_status AS ENUM ('New','Completed','InProgress','Missing','Future');
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 DO $$ BEGIN
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS projects (
   code text NOT NULL,
   name text NOT NULL,
   owner_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  status project_status NOT NULL DEFAULT 'InProgress',
+  status project_status NOT NULL DEFAULT 'New',
   "group" project_group NOT NULL DEFAULT 'Current',
   start_date date,
   timeline_start date,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS projects (
   dir_number text,
   "union" boolean NOT NULL DEFAULT false,
   reporting_systems text,
-  cpr_contact_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  cpr_contact text,
   notes text,
   last_updated_at timestamptz NOT NULL DEFAULT now(),
   last_updated_by uuid REFERENCES users(id) ON DELETE SET NULL,

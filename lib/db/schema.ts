@@ -17,6 +17,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const projectStatusEnum = pgEnum("project_status", [
+  "New",
   "Completed",
   "InProgress",
   "Missing",
@@ -55,7 +56,7 @@ export const projects = pgTable("projects", {
   code: text("code").notNull(),
   name: text("name").notNull(),
   ownerId: uuid("owner_id").references(() => users.id, { onDelete: "set null" }),
-  status: projectStatusEnum("status").notNull().default("InProgress"),
+  status: projectStatusEnum("status").notNull().default("New"),
   group: projectGroupEnum("group").notNull().default("Current"),
   startDate: date("start_date"),
   timelineStart: date("timeline_start"),
@@ -63,7 +64,7 @@ export const projects = pgTable("projects", {
   dirNumber: text("dir_number"),
   union: boolean("union").notNull().default(false),
   reportingSystems: text("reporting_systems"),
-  cprContactId: uuid("cpr_contact_id").references(() => users.id, { onDelete: "set null" }),
+  cprContact: text("cpr_contact"),
   notes: text("notes"),
   lastUpdatedAt: timestamp("last_updated_at", { withTimezone: true }).notNull().defaultNow(),
   lastUpdatedBy: uuid("last_updated_by").references(() => users.id, { onDelete: "set null" }),

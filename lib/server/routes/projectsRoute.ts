@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     code: body.code ?? "NEW",
     name: body.name ?? "New project",
     ownerId: body.ownerId ?? user.id,
-    status: body.status ?? "InProgress",
+    status: body.status ?? "New",
     group: body.group ?? "Current",
     startDate: body.startDate ?? null,
     timelineStart: body.timelineStart ?? null,
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     dirNumber: body.dirNumber ?? null,
     union: body.union ?? false,
     reportingSystems: body.reportingSystems ?? null,
-    cprContactId: body.cprContactId ?? null,
+    cprContact: body.cprContact ?? null,
     notes: body.notes ?? null,
     lastUpdatedBy: user.id
   });

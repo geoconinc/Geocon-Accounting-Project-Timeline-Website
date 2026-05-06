@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Filter, ArrowUpDown, EyeOff, X } from "lucide-react";
+import { Search, Filter, ArrowUpDown, EyeOff, X, User as UserIcon } from "lucide-react";
 import type { ProjectStatus, User } from "@/lib/types";
 import { projectColors, projectLabel } from "./StatusCell";
 import { Avatar } from "./Avatar";
@@ -14,6 +14,7 @@ export interface BoardFilters {
   ownerIds: string[];
   statuses: ProjectStatus[];
   hideCompleted: boolean;
+  mineOnly: boolean;
   sort: SortKey;
 }
 
@@ -22,6 +23,7 @@ export const DEFAULT_FILTERS: BoardFilters = {
   ownerIds: [],
   statuses: [],
   hideCompleted: false,
+  mineOnly: true,
   sort: "position"
 };
 
@@ -97,7 +99,7 @@ export function Toolbar({
               Status
             </div>
             <div className="flex flex-col gap-1 mb-3">
-              {(["InProgress", "Completed", "Missing", "Future"] as ProjectStatus[]).map((s) => (
+              {(["New", "InProgress", "Completed", "Missing", "Future"] as ProjectStatus[]).map((s) => (
                 <label key={s} className="flex items-center gap-2 text-xs cursor-pointer">
                   <input
                     type="checkbox"
@@ -137,6 +139,16 @@ export function Toolbar({
           </div>
         )}
       </div>
+
+      <button
+        onClick={() => update("mineOnly", !filters.mineOnly)}
+        className={`btn-ghost text-sm border ${
+          filters.mineOnly ? "border-brand text-brand" : "border-slate-200 text-slate-600"
+        }`}
+        title="Show only items assigned to you"
+      >
+        <UserIcon size={14} /> {filters.mineOnly ? "Only mine" : "Show all"}
+      </button>
 
       <button
         onClick={() => update("hideCompleted", !filters.hideCompleted)}
@@ -190,11 +202,19 @@ export function Toolbar({
 
 export function applyFilters<P extends { id: string; code: string; name: string; ownerId: string | null; status: ProjectStatus; group: string; lastUpdatedAt: string; timelineStart: string | null; position: number }>(
   projects: P[],
-  subitemsByProject: Record<string, { name: string }[]>,
-  filters: BoardFilters
+  subitemsByProject: Record<string, { name: string; ownerId: string | null }[]>,
+  filters: BoardFilters,
+  meId: string | null
 ): P[] {
   let result = [...projects];
 
+  if (filters.mineOnly && meId) {
+    result = result.filter((p) => {
+      if (p.ownerId === meId) return true;
+      const subs = subitemsByProject[p.id] ?? [];
+      return subs.some((s) => s.ownerId === meId);
+    });
+  }
   if (filters.hideCompleted) {
     result = result.filter((p) => p.group !== "Completed");
   }

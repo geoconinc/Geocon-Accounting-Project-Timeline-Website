@@ -3,7 +3,7 @@
 import { useEffect, useReducer, useRef } from "react";
 import type { FileRef, Project, Subitem, User } from "@/lib/types";
 import { DEMO_MODE } from "@/lib/demo/config";
-import { loadDb } from "@/lib/demo/localStore";
+import { getCurrentDemoUserId, loadDb } from "@/lib/demo/localStore";
 
 export interface BoardData {
   projects: Project[];
@@ -70,7 +70,7 @@ function reducer(state: BoardData, a: Action): BoardData {
 
 function reloadFromDemoStorage(): BoardData {
   const db = loadDb();
-  const me = db.users[0]?.id ?? "demo-user";
+  const me = getCurrentDemoUserId() ?? db.users[0]?.id ?? "demo-user";
   return {
     projects: db.projects,
     subitems: db.subitems,

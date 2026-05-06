@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Paperclip, FileIcon } from "lucide-react";
+import { Plus, FileIcon } from "lucide-react";
 import type { FileRef } from "@/lib/types";
 import { api, uploadFileDemo } from "@/lib/client/boardApi";
 import { DEMO_MODE } from "@/lib/demo/config";
@@ -51,6 +51,7 @@ export function FilesCell({
       setErr(e instanceof Error ? e.message : "upload failed");
     } finally {
       setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
     }
   }
 
@@ -65,14 +66,6 @@ export function FilesCell({
 
   return (
     <div className="w-full h-full flex items-center gap-1 px-1 overflow-hidden">
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        className="text-slate-400 hover:text-brand"
-        title={busy ? "Uploading..." : "Upload file"}
-      >
-        <Paperclip size={14} />
-      </button>
       <input
         ref={inputRef}
         type="file"
@@ -80,18 +73,27 @@ export function FilesCell({
         className="hidden"
         onChange={(e) => upload(e.target.files)}
       />
-      <div className="flex gap-1 overflow-x-auto scrollbar-thin">
+      <div className="flex gap-1 overflow-x-auto scrollbar-thin flex-1 min-w-0">
         {files.map((f) => (
           <button
             key={f.id}
             onClick={() => openFile(f.id)}
-            className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-brand bg-slate-50 hover:bg-slate-100 rounded px-1.5 py-0.5 max-w-[120px]"
+            className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-brand bg-slate-50 hover:bg-slate-100 rounded px-1.5 py-0.5 max-w-[120px] shrink-0"
             title={f.filename}
           >
             <FileIcon size={11} />
             <span className="truncate">{f.filename}</span>
           </button>
         ))}
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={busy}
+          className="flex items-center gap-0.5 text-[11px] text-slate-500 hover:text-brand border border-dashed border-slate-300 hover:border-brand rounded px-1.5 py-0.5 shrink-0"
+          title={busy ? "Uploading..." : "Add files"}
+        >
+          <Plus size={11} /> {busy ? "..." : files.length === 0 ? "Add" : "Add more"}
+        </button>
       </div>
       {err && <span className="text-[10px] text-red-500 ml-1 truncate">{err}</span>}
     </div>

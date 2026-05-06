@@ -10,14 +10,15 @@ export default function Board({ initialData }: { initialData: BoardData }) {
   const [filters, setFilters] = useState<BoardFilters>(DEFAULT_FILTERS);
 
   const subsByProject = useMemo(() => {
-    const map: Record<string, { name: string }[]> = {};
-    for (const s of state.subitems) (map[s.projectId] ||= []).push({ name: s.name });
+    const map: Record<string, { name: string; ownerId: string | null }[]> = {};
+    for (const s of state.subitems)
+      (map[s.projectId] ||= []).push({ name: s.name, ownerId: s.ownerId });
     return map;
   }, [state.subitems]);
 
   const filtered = useMemo(
-    () => applyFilters(state.projects, subsByProject, filters),
-    [state.projects, subsByProject, filters]
+    () => applyFilters(state.projects, subsByProject, filters, state.me),
+    [state.projects, subsByProject, filters, state.me]
   );
 
   const current = filtered.filter((p) => p.group === "Current");

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/nav/Sidebar";
 import TopBar from "@/components/TopBar";
 import { getDemoSession } from "@/lib/demo/auth";
+import { demoStore } from "@/lib/demo/localStore";
 import type { User } from "@/lib/types";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -17,13 +18,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    setUser({
-      id: "demo-user",
+    const upserted = demoStore.upsertUser({
       email: session.email,
       name: session.name,
-      initials: session.initials,
-      createdAt: session.signedInAt
+      initials: session.initials
     });
+    setUser(upserted);
   }, [router]);
 
   if (!user) {

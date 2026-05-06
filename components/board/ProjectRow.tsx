@@ -94,6 +94,16 @@ export function ProjectRow({
   const projectFiles = files.filter((f) => f.parentType === "project" && f.parentId === project.id);
 
   function patch(p: Partial<Project>) {
+    if ("ownerId" in p && p.ownerId && p.ownerId !== project.ownerId) {
+      const u = users.find((x) => x.id === p.ownerId);
+      if (u) {
+        api.notifyAssignment({
+          assigneeEmail: u.email,
+          assigneeName: u.name,
+          target: `project ${project.code} ${project.name}`
+        });
+      }
+    }
     api.patchProject(project.id, p);
   }
 
@@ -233,11 +243,11 @@ export function ProjectRow({
             placeholder="—"
           />
         </div>
-        <div className="cell !p-0">
-          <OwnerCell
-            ownerId={project.cprContactId}
-            users={users}
-            onChange={(id) => patch({ cprContactId: id })}
+        <div className="cell">
+          <TextCell
+            value={project.cprContact}
+            onChange={(v) => patch({ cprContact: v })}
+            placeholder="CPR contact"
           />
         </div>
         <div className="cell !justify-center">

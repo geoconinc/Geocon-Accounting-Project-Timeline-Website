@@ -6,7 +6,7 @@ import type { ProjectGroup, ProjectStatus } from "@/lib/types";
 import { api } from "@/lib/client/boardApi";
 
 const statusByGroup: Record<ProjectGroup, ProjectStatus> = {
-  Current: "InProgress",
+  Current: "New",
   Future: "Future",
   Completed: "Completed"
 };

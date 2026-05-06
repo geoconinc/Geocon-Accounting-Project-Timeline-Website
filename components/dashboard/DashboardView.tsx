@@ -9,7 +9,7 @@ import { formatRelativeTime } from "@/lib/utils";
 import { format, differenceInCalendarDays, parseISO } from "date-fns";
 import { AlertTriangle, CheckCircle2, Clock, FolderOpen } from "lucide-react";
 
-const projectStatuses: ProjectStatus[] = ["InProgress", "Completed", "Missing", "Future"];
+const projectStatuses: ProjectStatus[] = ["New", "InProgress", "Completed", "Missing", "Future"];
 const subStatuses: SubitemStatus[] = ["Completed", "InProgress", "Missing", "NotStarted", "NA"];
 
 export function DashboardView() {

@@ -4,12 +4,14 @@ import { usePopover } from "./Popover";
 import type { ProjectStatus, SubitemStatus } from "@/lib/types";
 
 const projectColors: Record<ProjectStatus, string> = {
+  New: "bg-status-new",
   Completed: "bg-status-completed",
   InProgress: "bg-status-progress",
   Missing: "bg-status-missing",
   Future: "bg-status-future"
 };
 const projectLabel: Record<ProjectStatus, string> = {
+  New: "New",
   Completed: "Completed",
   InProgress: "In Progress",
   Missing: "Missing",
@@ -39,7 +41,7 @@ export function ProjectStatusCell({
   onChange: (s: ProjectStatus) => void;
 }) {
   const { open, setOpen, ref } = usePopover();
-  const opts: ProjectStatus[] = ["InProgress", "Completed", "Missing", "Future"];
+  const opts: ProjectStatus[] = ["New", "InProgress", "Completed", "Missing", "Future"];
   return (
     <div className="relative w-full h-full" ref={ref}>
       <button

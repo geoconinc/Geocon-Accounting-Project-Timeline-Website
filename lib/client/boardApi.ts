@@ -2,7 +2,11 @@
 
 import type { Project, Subitem } from "@/lib/types";
 import { DEMO_MODE, DEMO_USER } from "@/lib/demo/config";
-import { demoStore } from "@/lib/demo/localStore";
+import { demoStore, getCurrentDemoUserId } from "@/lib/demo/localStore";
+
+function actorId(): string {
+  return getCurrentDemoUserId() ?? DEMO_USER.id;
+}
 
 async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -22,12 +26,12 @@ function notify() {
 export const api = DEMO_MODE
   ? {
       patchProject: async (id: string, patch: Partial<Project>) => {
-        const project = demoStore.patchProject(id, patch, DEMO_USER.id);
+        const project = demoStore.patchProject(id, patch, actorId());
         notify();
         return { project: project! };
       },
       createProject: async (body: Partial<Project>) => {
-        const project = demoStore.createProject(body, DEMO_USER.id);
+        const project = demoStore.createProject(body, actorId());
         notify();
         return { project };
       },
@@ -68,7 +72,12 @@ export const api = DEMO_MODE
       setMute: async (projectId: string, mute: boolean) => {
         demoStore.setMute(projectId, mute);
         return { ok: true as const };
-      }
+      },
+      notifyAssignment: (body: { assigneeEmail: string; assigneeName: string; target: string }) =>
+        jsonFetch<{ ok: true }>(`/api/log-assignment`, {
+          method: "POST",
+          body: JSON.stringify(body)
+        }).catch(() => ({ ok: true as const }))
     }
   : {
       patchProject: (id: string, patch: Partial<Project>) =>
@@ -121,6 +130,11 @@ export const api = DEMO_MODE
         jsonFetch<{ ok: true }>(`/api/notification-prefs`, {
           method: "POST",
           body: JSON.stringify({ projectId, mute })
+        }),
+      notifyAssignment: (body: { assigneeEmail: string; assigneeName: string; target: string }) =>
+        jsonFetch<{ ok: true }>(`/api/log-assignment`, {
+          method: "POST",
+          body: JSON.stringify(body)
         })
     };
 
@@ -129,7 +143,7 @@ export async function uploadFileDemo(
   parentId: string,
   file: File
 ) {
-  const ref = await demoStore.addFile({ parentType, parentId, file, uploadedBy: DEMO_USER.id });
+  const ref = await demoStore.addFile({ parentType, parentId, file, uploadedBy: actorId() });
   notify();
   return ref;
 }

@@ -4,7 +4,19 @@ import type { FileRef, Project, Subitem, User } from "@/lib/types";
 import { initialsFromName } from "@/lib/utils";
 import { DEMO_USER } from "./config";
 
-const KEY = "geocon-demo-db-v1";
+const KEY = "geocon-demo-db-v2";
+
+export const DEFAULT_SUBITEM_NAMES = [
+  "DAS 140 & 142 Setup Form",
+  "DAS 140",
+  "DAS 142",
+  "Fringe Benefit Statement",
+  "Training Fund",
+  "Other Setup Forms",
+  "Certified Payroll Reporting"
+] as const;
+
+export const CPR_SUBITEM_NAME = "Certified Payroll Reporting";
 
 export interface DocumentRef {
   id: string;
@@ -70,7 +82,7 @@ function seedDb(): DemoDb {
     dirNumber: null,
     union: true,
     reportingSystems: null,
-    cprContactId: null,
+    cprContact: null,
     notes: null,
     lastUpdatedAt: now,
     lastUpdatedBy: ml.id,
@@ -89,7 +101,7 @@ function seedDb(): DemoDb {
     dirNumber: null,
     union: false,
     reportingSystems: null,
-    cprContactId: null,
+    cprContact: null,
     notes: null,
     lastUpdatedAt: now,
     lastUpdatedBy: ml.id,
@@ -108,7 +120,7 @@ function seedDb(): DemoDb {
     dirNumber: null,
     union: false,
     reportingSystems: null,
-    cprContactId: null,
+    cprContact: null,
     notes: null,
     lastUpdatedAt: now,
     lastUpdatedBy: ml.id,
@@ -191,7 +203,7 @@ export const demoStore = {
       code: input.code ?? "NEW",
       name: input.name ?? "New project",
       ownerId: input.ownerId ?? actorId,
-      status: input.status ?? "InProgress",
+      status: input.status ?? "New",
       group,
       startDate: input.startDate ?? null,
       timelineStart: input.timelineStart ?? null,
@@ -199,13 +211,26 @@ export const demoStore = {
       dirNumber: input.dirNumber ?? null,
       union: input.union ?? false,
       reportingSystems: input.reportingSystems ?? null,
-      cprContactId: input.cprContactId ?? null,
+      cprContact: input.cprContact ?? null,
       notes: input.notes ?? null,
       lastUpdatedAt: new Date().toISOString(),
       lastUpdatedBy: actorId,
       position: db.projects.filter((p) => p.group === group).length
     };
     db.projects.push(project);
+    DEFAULT_SUBITEM_NAMES.forEach((name, idx) => {
+      db.subitems.push({
+        id: uid("sub"),
+        projectId: project.id,
+        name,
+        ownerId: null,
+        status: "NotStarted",
+        dueDate: null,
+        dateCompleted: null,
+        notes: null,
+        position: idx
+      });
+    });
     saveDb(db);
     return project;
   },
@@ -261,6 +286,7 @@ export const demoStore = {
     if (patch.status === "Completed" && !s.dateCompleted) {
       s.dateCompleted = new Date().toISOString().slice(0, 10);
     }
+    recomputeProjectStatus(db, s.projectId);
     saveDb(db);
     return s;
   },
@@ -428,6 +454,39 @@ export const demoStore = {
     return u;
   }
 };
+
+function recomputeProjectStatus(db: DemoDb, projectId: string) {
+  const project = db.projects.find((p) => p.id === projectId);
+  if (!project) return;
+  const subs = db.subitems.filter((s) => s.projectId === projectId);
+  if (subs.length === 0) return;
+
+  const allDone = subs.every((s) => s.status === "Completed" || s.status === "NA");
+  const someCompleted = subs.some((s) => s.status === "Completed");
+  const cpr = subs.find((s) => s.name.trim().toLowerCase() === CPR_SUBITEM_NAME.toLowerCase());
+  const cprOk = !cpr || cpr.status === "Completed";
+
+  if (allDone && someCompleted && cprOk && project.status !== "Completed") {
+    project.status = "Completed";
+    project.group = "Completed";
+    project.lastUpdatedAt = new Date().toISOString();
+  }
+}
+
+export function getCurrentDemoUserId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem("geocon-demo-auth-v1");
+    if (!raw) return null;
+    const session = JSON.parse(raw) as { email?: string };
+    if (!session.email) return null;
+    const db = loadDb();
+    const me = db.users.find((u) => u.email.toLowerCase() === session.email!.toLowerCase());
+    return me?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

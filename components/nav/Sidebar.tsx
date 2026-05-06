@@ -8,7 +8,6 @@ import {
   PieChart,
   CalendarRange,
   Folder,
-  Users,
   Settings as SettingsIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,20 +17,18 @@ const items = [
   { href: "/dashboard", label: "Dashboard", icon: PieChart },
   { href: "/timeline", label: "Timeline", icon: CalendarRange },
   { href: "/documents", label: "Documents", icon: Folder },
-  { href: "/team", label: "Team", icon: Users },
   { href: "/settings", label: "Settings", icon: SettingsIcon }
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   return (
-    <aside className="w-56 bg-brand-dark text-white flex flex-col shrink-0">
-      <div className="h-14 flex items-center gap-2 px-4 border-b border-white/10">
-        <Image src="/logo.png" alt="Geocon" width={32} height={32} className="bg-white rounded p-0.5" />
-        <div className="flex flex-col leading-tight">
-          <span className="text-sm font-semibold">Geocon</span>
-          <span className="text-[10px] text-white/60">Project Timeline</span>
-        </div>
+    <aside className="w-56 bg-gradient-to-b from-brand-dark to-[#062f37] text-white flex flex-col shrink-0">
+      <div className="h-20 flex flex-col items-center justify-center gap-1.5 px-4 border-b border-white/10">
+        <Image src="/logo.png" alt="Geocon" width={140} height={36} className="h-8 w-auto" />
+        <span className="text-[10px] uppercase tracking-[0.18em] text-white/50">
+          Project Management
+        </span>
       </div>
       <nav className="flex-1 p-2 flex flex-col gap-0.5">
         {items.map((item) => {
@@ -52,8 +49,8 @@ export default function Sidebar() {
           );
         })}
       </nav>
-      <div className="p-3 text-[10px] text-white/40 border-t border-white/10">
-        v0.1 · Demo Mode
+      <div className="p-3 text-[10px] text-white/40 border-t border-white/10 text-center">
+        Geocon · v0.1
       </div>
     </aside>
   );

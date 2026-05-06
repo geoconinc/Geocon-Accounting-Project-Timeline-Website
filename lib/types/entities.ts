@@ -40,7 +40,7 @@ export interface Project {
   dirNumber: string | null;
   union: boolean;
   reportingSystems: string | null;
-  cprContactId: string | null;
+  cprContact: string | null;
   notes: string | null;
   lastUpdatedAt: string;
   lastUpdatedBy: string | null;
