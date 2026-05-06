@@ -240,15 +240,16 @@ function RealLogin() {
       <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md">
         <div className="flex flex-col items-center text-center">
           <Image src="/logo.png" alt="Geocon" width={120} height={120} className="mb-4" />
-          <h1 className="text-2xl font-bold text-brand-dark">Project Timeline</h1>
+          <h1 className="text-2xl font-bold text-brand-dark">Project Management</h1>
           <p className="text-slate-500 mt-2 text-sm">
             Sign in with your Geocon Microsoft account.
           </p>
           <button
             onClick={signIn}
             disabled={busy}
-            className="mt-6 btn-primary w-full justify-center disabled:opacity-60"
+            className="mt-6 w-full inline-flex items-center justify-center gap-2.5 bg-[#2F2F2F] hover:bg-black text-white text-sm font-semibold px-4 py-2.5 rounded shadow-sm disabled:opacity-60"
           >
+            <MicrosoftLogo />
             {busy ? "Signing in..." : "Sign in with Microsoft"}
           </button>
           {err && (
