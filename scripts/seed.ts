@@ -22,6 +22,7 @@ async function main() {
     union: true,
     reportingSystems: null,
     cprContact: null,
+    sharepointUrl: null,
     notes: null,
     lastUpdatedBy: ml.id
   });
@@ -59,6 +60,7 @@ async function main() {
     union: false,
     reportingSystems: null,
     cprContact: null,
+    sharepointUrl: null,
     notes: null,
     lastUpdatedBy: ml.id
   });
@@ -76,6 +78,7 @@ async function main() {
     union: false,
     reportingSystems: null,
     cprContact: null,
+    sharepointUrl: null,
     notes: null,
     lastUpdatedBy: ml.id
   });

@@ -4,19 +4,10 @@ import type { FileRef, Project, Subitem, User } from "@/lib/types";
 import { initialsFromName } from "@/lib/utils";
 import { DEMO_USER } from "./config";
 
-const KEY = "geocon-demo-db-v2";
+const KEY = "geocon-demo-db-v3";
 
-export const DEFAULT_SUBITEM_NAMES = [
-  "DAS 140 & 142 Setup Form",
-  "DAS 140",
-  "DAS 142",
-  "Fringe Benefit Statement",
-  "Training Fund",
-  "Other Setup Forms",
-  "Certified Payroll Reporting"
-] as const;
-
-export const CPR_SUBITEM_NAME = "Certified Payroll Reporting";
+export { DEFAULT_SUBITEM_NAMES, CPR_SUBITEM_NAME } from "@/lib/projectDefaults";
+import { CPR_SUBITEM_NAME, DEFAULT_SUBITEM_NAMES } from "@/lib/projectDefaults";
 
 export interface DocumentRef {
   id: string;
@@ -83,6 +74,7 @@ function seedDb(): DemoDb {
     union: true,
     reportingSystems: null,
     cprContact: null,
+    sharepointUrl: null,
     notes: null,
     lastUpdatedAt: now,
     lastUpdatedBy: ml.id,
@@ -102,6 +94,7 @@ function seedDb(): DemoDb {
     union: false,
     reportingSystems: null,
     cprContact: null,
+    sharepointUrl: null,
     notes: null,
     lastUpdatedAt: now,
     lastUpdatedBy: ml.id,
@@ -121,6 +114,7 @@ function seedDb(): DemoDb {
     union: false,
     reportingSystems: null,
     cprContact: null,
+    sharepointUrl: null,
     notes: null,
     lastUpdatedAt: now,
     lastUpdatedBy: ml.id,
@@ -212,6 +206,7 @@ export const demoStore = {
       union: input.union ?? false,
       reportingSystems: input.reportingSystems ?? null,
       cprContact: input.cprContact ?? null,
+      sharepointUrl: input.sharepointUrl ?? null,
       notes: input.notes ?? null,
       lastUpdatedAt: new Date().toISOString(),
       lastUpdatedBy: actorId,

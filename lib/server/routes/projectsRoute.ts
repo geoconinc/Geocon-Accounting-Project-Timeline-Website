@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 import { authenticateRequest } from "@/lib/server/routeAuth";
 import { bus } from "@/lib/events/bus";
+import { DEFAULT_SUBITEM_NAMES } from "@/lib/projectDefaults";
 
 export async function GET() {
   const user = await authenticateRequest();
@@ -40,9 +41,22 @@ export async function POST(req: Request) {
     union: body.union ?? false,
     reportingSystems: body.reportingSystems ?? null,
     cprContact: body.cprContact ?? null,
+    sharepointUrl: body.sharepointUrl ?? null,
     notes: body.notes ?? null,
     lastUpdatedBy: user.id
   });
+
+  for (const name of DEFAULT_SUBITEM_NAMES) {
+    await storage.createSubitem({
+      projectId: project.id,
+      name,
+      ownerId: null,
+      status: "NotStarted",
+      dueDate: null,
+      dateCompleted: null,
+      notes: null
+    });
+  }
 
   bus.publish({ type: "project.upsert", payload: { id: project.id } });
   return NextResponse.json({ project });

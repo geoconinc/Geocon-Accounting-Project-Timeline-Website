@@ -41,6 +41,7 @@ export interface Project {
   union: boolean;
   reportingSystems: string | null;
   cprContact: string | null;
+  sharepointUrl: string | null;
   notes: string | null;
   lastUpdatedAt: string;
   lastUpdatedBy: string | null;

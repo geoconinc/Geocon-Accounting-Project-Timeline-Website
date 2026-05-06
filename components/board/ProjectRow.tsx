@@ -17,7 +17,7 @@ import { OwnerCell } from "./OwnerCell";
 import { DateCell, TimelineCell } from "./DateCell";
 import { CheckboxCell, TextCell } from "./TextCell";
 import { LastUpdatedCell } from "./LastUpdatedCell";
-import { FilesCell } from "./FilesCell";
+import { SharePointCell } from "./SharePointCell";
 import { NotificationButton } from "./NotificationButton";
 import { SubitemsStatusCell } from "./SubitemsStatusCell";
 import { SubitemRow, SubitemHeader } from "./SubitemRow";
@@ -61,7 +61,7 @@ export function ProjectHeader({ collapsed }: { collapsed: boolean }) {
       <div className="header-cell">Subitems Status</div>
       <div className="header-cell">Start Date</div>
       <div className="header-cell">Timeline</div>
-      <div className="header-cell">Files</div>
+      <div className="header-cell">SharePoint</div>
       <div className="header-cell">Last updated</div>
       <div className="header-cell">Notes</div>
       <div className="header-cell">DIR #</div>
@@ -91,8 +91,6 @@ export function ProjectRow({
   useEffect(() => setCode(project.code), [project.code]);
   useEffect(() => setName(project.name), [project.name]);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
-  const projectFiles = files.filter((f) => f.parentType === "project" && f.parentId === project.id);
-
   function patch(p: Partial<Project>) {
     if ("ownerId" in p && p.ownerId && p.ownerId !== project.ownerId) {
       const u = users.find((x) => x.id === p.ownerId);
@@ -213,7 +211,10 @@ export function ProjectRow({
           />
         </div>
         <div className="cell !p-0">
-          <FilesCell parentType="project" parentId={project.id} files={projectFiles} />
+          <SharePointCell
+            url={project.sharepointUrl}
+            onChange={(next) => patch({ sharepointUrl: next })}
+          />
         </div>
         <div className="cell">
           <LastUpdatedCell at={project.lastUpdatedAt} by={project.lastUpdatedBy} users={users} />
@@ -275,7 +276,6 @@ export function ProjectRow({
                     key={s.id}
                     subitem={s}
                     users={users}
-                    files={files.filter((f) => f.parentType === "subitem" && f.parentId === s.id)}
                     projectId={project.id}
                   />
                 ))}

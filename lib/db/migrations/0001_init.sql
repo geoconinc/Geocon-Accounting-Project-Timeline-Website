@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS projects (
   "union" boolean NOT NULL DEFAULT false,
   reporting_systems text,
   cpr_contact text,
+  sharepoint_url text,
   notes text,
   last_updated_at timestamptz NOT NULL DEFAULT now(),
   last_updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
