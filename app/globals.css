@@ -14,25 +14,26 @@ html, body, #__next {
 }
 
 body {
-  background: #f6f7fb;
-  color: #1f2937;
+  background: #f4f6fa;
+  color: #0f172a;
   font-size: 13px;
 }
 
-.scrollbar-thin::-webkit-scrollbar { height: 10px; width: 10px; }
+.scrollbar-thin::-webkit-scrollbar { height: 8px; width: 8px; }
 .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
 
 .sticky-shadow {
-  box-shadow: 4px 0 6px -4px rgba(0,0,0,0.12);
+  box-shadow: 6px 0 10px -6px rgba(15, 23, 42, 0.1);
 }
 
 .cell {
-  @apply h-9 px-2 flex items-center border-b border-r border-slate-200 bg-white text-[13px];
+  @apply h-10 px-2 flex items-center border-b border-r border-slate-100 bg-white text-[13px];
 }
 
 .header-cell {
-  @apply h-9 px-2 flex items-center border-b border-r border-slate-200 bg-slate-50 text-slate-500 font-medium text-[12px] uppercase tracking-wide;
+  @apply h-10 px-3 flex items-center border-b border-r border-slate-200 bg-slate-50/80 text-slate-500 font-semibold text-[10.5px] uppercase tracking-[0.06em];
 }
 
 .btn {

@@ -28,7 +28,7 @@ export default function Board({ initialData }: { initialData: BoardData }) {
   return (
     <div className="flex flex-col h-full">
       <Toolbar filters={filters} onChange={setFilters} users={state.users} />
-      <div className="flex-1 overflow-auto p-4 bg-slate-100">
+      <div className="flex-1 overflow-auto p-5 bg-[#f4f6fa]">
         <div className="max-w-full">
           <Group
             name="Current"

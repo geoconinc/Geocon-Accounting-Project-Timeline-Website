@@ -16,10 +16,10 @@ export function Avatar({
     return (
       <div
         style={{ width: size, height: size }}
-        className="rounded-full bg-slate-200 text-slate-400 grid place-items-center text-[11px] font-medium"
-        title={title}
+        className="rounded-full border border-dashed border-slate-300 text-slate-300 grid place-items-center text-[14px] font-light hover:border-brand hover:text-brand transition-colors"
+        title={title ?? "Assign owner"}
       >
-        ?
+        +
       </div>
     );
   }

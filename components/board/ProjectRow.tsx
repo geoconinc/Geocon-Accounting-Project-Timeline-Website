@@ -25,9 +25,11 @@ import { api } from "@/lib/client/boardApi";
 
 // Three sticky columns (Project group / Owner / Status) then scrollable area.
 // Project group is itself a sub-grid: code | name | notify
+// First three columns are fixed-width because they're sticky-left;
+// their offsets must match the running total of the previous widths.
 export const PROJECT_COLS =
-  "minmax(360px,1.2fr) 80px 130px minmax(180px,1fr) 110px 130px 130px 140px 140px minmax(140px,1fr) 110px 70px minmax(140px,1fr) 80px";
-const STICKY_LEFT_OFFSETS = [0, 360, 440]; // project / owner / status
+  "360px 80px 130px 180px 110px 130px 130px 140px 140px minmax(140px,1fr) 110px 70px minmax(140px,1fr) 80px";
+const STICKY_LEFT_OFFSETS = [0, 360, 440]; // 0 / 360 / 360+80=440
 
 export function ProjectHeader({ collapsed }: { collapsed: boolean }) {
   if (collapsed) return null;
@@ -138,7 +140,7 @@ export function ProjectRow({
 
   return (
     <div className="border-b border-slate-200">
-      <div className="grid hover:bg-slate-50 group" style={{ gridTemplateColumns: PROJECT_COLS }}>
+      <div className="grid hover:bg-slate-50/70 group transition-colors" style={{ gridTemplateColumns: PROJECT_COLS }}>
         {/* Project group cell (sticky) */}
         <div
           className="cell sticky left-0 z-10 bg-white sticky-shadow !p-0"

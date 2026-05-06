@@ -31,19 +31,19 @@ export default function TopBar({ user }: { user: User }) {
   }
 
   return (
-    <div className="h-14 bg-white border-b border-slate-200 flex items-center px-4 gap-3 shrink-0">
-      <span className="text-sm font-semibold text-brand-dark">Geocon Project Management</span>
+    <div className="h-14 bg-gradient-to-b from-brand-dark to-[#062f37] border-b border-black/20 flex items-center px-4 gap-3 shrink-0">
+      <span className="text-sm font-semibold text-white">Geocon Project Management</span>
       <div className="flex-1" />
       <div className="flex items-center gap-2">
         <div
-          className="w-8 h-8 rounded-full bg-brand text-white grid place-items-center text-xs font-semibold"
+          className="w-8 h-8 rounded-full bg-white/15 ring-1 ring-white/20 text-white grid place-items-center text-xs font-semibold"
           title={`${user.name} (${user.email})`}
         >
           {user.initials}
         </div>
         <div className="hidden sm:flex flex-col leading-tight">
-          <span className="text-xs font-medium text-slate-700">{user.name}</span>
-          <span className="text-[10px] text-slate-400">{user.email}</span>
+          <span className="text-xs font-medium text-white">{user.name}</span>
+          <span className="text-[10px] text-white/60">{user.email}</span>
         </div>
       </div>
       <button
