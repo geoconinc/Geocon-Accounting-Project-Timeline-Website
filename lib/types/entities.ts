@@ -42,6 +42,7 @@ export interface Project {
   reportingSystems: string | null;
   cprContact: string | null;
   sharepointUrl: string | null;
+  office: string | null;
   notes: string | null;
   lastUpdatedAt: string;
   lastUpdatedBy: string | null;

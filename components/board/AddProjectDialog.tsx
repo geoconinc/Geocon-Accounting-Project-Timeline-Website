@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import type { ProjectGroup, ProjectStatus } from "@/lib/types";
 import { api } from "@/lib/client/boardApi";
+import { OFFICES, type Office } from "@/lib/offices";
 
 const statusByGroup: Record<ProjectGroup, ProjectStatus> = {
   Current: "New",
@@ -22,6 +23,7 @@ export function AddProjectDialog({
 }) {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [office, setOffice] = useState<Office | "">("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -29,6 +31,7 @@ export function AddProjectDialog({
     if (open) {
       setCode("");
       setName("");
+      setOffice("");
       setErr(null);
     }
   }, [open]);
@@ -47,13 +50,18 @@ export function AddProjectDialog({
       setErr("Project name is required");
       return;
     }
+    if (!office) {
+      setErr("Office is required — it determines who is auto-assigned to subitems");
+      return;
+    }
     setBusy(true);
     try {
       await api.createProject({
         code: code.trim() || "NEW",
         name: name.trim(),
         group,
-        status: statusByGroup[group]
+        status: statusByGroup[group],
+        office
       });
       onClose();
     } catch (e) {
@@ -100,6 +108,24 @@ export function AddProjectDialog({
               onKeyDown={(e) => e.key === "Enter" && submit()}
               className="border border-slate-300 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand"
             />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-slate-600">Office</span>
+            <select
+              value={office}
+              onChange={(e) => setOffice(e.target.value as Office | "")}
+              className="border border-slate-300 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand bg-white"
+            >
+              <option value="">Select office…</option>
+              {OFFICES.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+            <span className="text-[10px] text-slate-400">
+              Subitems are auto-assigned based on the office.
+            </span>
           </label>
           {err && <p className="text-xs text-red-600">{err}</p>}
           <div className="flex justify-end gap-2 mt-2">

@@ -8,6 +8,7 @@ const KEY = "geocon-demo-db-v3";
 
 export { DEFAULT_SUBITEM_NAMES, CPR_SUBITEM_NAME } from "@/lib/projectDefaults";
 import { CPR_SUBITEM_NAME, DEFAULT_SUBITEM_NAMES } from "@/lib/projectDefaults";
+import { OFFICE_ASSIGNEES, isOffice, resolveAssigneeId } from "@/lib/offices";
 
 export interface DocumentRef {
   id: string;
@@ -75,6 +76,7 @@ function seedDb(): DemoDb {
     reportingSystems: null,
     cprContact: null,
     sharepointUrl: null,
+    office: null,
     notes: null,
     lastUpdatedAt: now,
     lastUpdatedBy: ml.id,
@@ -95,6 +97,7 @@ function seedDb(): DemoDb {
     reportingSystems: null,
     cprContact: null,
     sharepointUrl: null,
+    office: null,
     notes: null,
     lastUpdatedAt: now,
     lastUpdatedBy: ml.id,
@@ -115,6 +118,7 @@ function seedDb(): DemoDb {
     reportingSystems: null,
     cprContact: null,
     sharepointUrl: null,
+    office: null,
     notes: null,
     lastUpdatedAt: now,
     lastUpdatedBy: ml.id,
@@ -207,18 +211,22 @@ export const demoStore = {
       reportingSystems: input.reportingSystems ?? null,
       cprContact: input.cprContact ?? null,
       sharepointUrl: input.sharepointUrl ?? null,
+      office: input.office ?? null,
       notes: input.notes ?? null,
       lastUpdatedAt: new Date().toISOString(),
       lastUpdatedBy: actorId,
       position: db.projects.filter((p) => p.group === group).length
     };
     db.projects.push(project);
+    const officeMap = isOffice(project.office) ? OFFICE_ASSIGNEES[project.office] : null;
     DEFAULT_SUBITEM_NAMES.forEach((name, idx) => {
+      const assigneeName = officeMap?.[name];
+      const ownerId = assigneeName ? resolveAssigneeId(db.users, assigneeName) : null;
       db.subitems.push({
         id: uid("sub"),
         projectId: project.id,
         name,
-        ownerId: null,
+        ownerId,
         status: "NotStarted",
         dueDate: null,
         dateCompleted: null,

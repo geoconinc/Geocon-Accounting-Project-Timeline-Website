@@ -18,18 +18,15 @@ import { DateCell, TimelineCell } from "./DateCell";
 import { CheckboxCell, TextCell } from "./TextCell";
 import { LastUpdatedCell } from "./LastUpdatedCell";
 import { SharePointCell } from "./SharePointCell";
+import { OFFICES } from "@/lib/offices";
 import { NotificationButton } from "./NotificationButton";
 import { SubitemsStatusCell } from "./SubitemsStatusCell";
 import { SubitemRow, SubitemHeader } from "./SubitemRow";
 import { api } from "@/lib/client/boardApi";
 
-// Three sticky columns (Project group / Owner / Status) then scrollable area.
 // Project group is itself a sub-grid: code | name | notify
-// First three columns are fixed-width because they're sticky-left;
-// their offsets must match the running total of the previous widths.
 export const PROJECT_COLS =
-  "360px 80px 130px 180px 110px 130px 130px 140px 140px minmax(140px,1fr) 110px 70px minmax(140px,1fr) 80px";
-const STICKY_LEFT_OFFSETS = [0, 360, 440]; // 0 / 360 / 360+80=440
+  "360px 80px 130px 130px 180px 110px 130px 130px 140px 140px minmax(140px,1fr) 110px 70px minmax(140px,1fr) 80px";
 
 export function ProjectHeader({ collapsed }: { collapsed: boolean }) {
   if (collapsed) return null;
@@ -38,28 +35,16 @@ export function ProjectHeader({ collapsed }: { collapsed: boolean }) {
       className="grid border-b border-slate-200 bg-slate-50 sticky top-0 z-20"
       style={{ gridTemplateColumns: PROJECT_COLS }}
     >
-      <div
-        className="header-cell sticky left-0 z-30 bg-slate-50 sticky-shadow"
-        style={{ left: STICKY_LEFT_OFFSETS[0] }}
-      >
+      <div className="header-cell">
         <span className="grid grid-cols-[40px_1fr_28px] gap-1 w-full items-center">
           <span className="text-[11px]">Code</span>
           <span className="text-[11px]">Project</span>
           <span />
         </span>
       </div>
-      <div
-        className="header-cell sticky z-30 bg-slate-50 sticky-shadow"
-        style={{ left: STICKY_LEFT_OFFSETS[1] }}
-      >
-        Owner
-      </div>
-      <div
-        className="header-cell sticky z-30 bg-slate-50 sticky-shadow"
-        style={{ left: STICKY_LEFT_OFFSETS[2] }}
-      >
-        Status
-      </div>
+      <div className="header-cell">Owner</div>
+      <div className="header-cell">Status</div>
+      <div className="header-cell">Office</div>
       <div className="header-cell">Subitems Status</div>
       <div className="header-cell">Start Date</div>
       <div className="header-cell">Timeline</div>
@@ -141,11 +126,7 @@ export function ProjectRow({
   return (
     <div className="border-b border-slate-200">
       <div className="grid hover:bg-slate-50/70 group transition-colors" style={{ gridTemplateColumns: PROJECT_COLS }}>
-        {/* Project group cell (sticky) */}
-        <div
-          className="cell sticky left-0 z-10 bg-white sticky-shadow !p-0"
-          style={{ left: STICKY_LEFT_OFFSETS[0] }}
-        >
+        <div className="cell !p-0">
           <div className="grid grid-cols-[40px_1fr_28px] w-full items-center px-2">
             <button
               onClick={() => setOpen((o) => !o)}
@@ -178,26 +159,32 @@ export function ProjectRow({
             <NotificationButton projectId={project.id} users={users} ownerId={project.ownerId} />
           </div>
         </div>
-        {/* Owner sticky */}
-        <div
-          className="cell sticky z-10 bg-white sticky-shadow !p-0"
-          style={{ left: STICKY_LEFT_OFFSETS[1] }}
-        >
+        <div className="cell !p-0">
           <OwnerCell
             ownerId={project.ownerId}
             users={users}
             onChange={(id) => patch({ ownerId: id })}
           />
         </div>
-        {/* Status sticky */}
-        <div
-          className="cell sticky z-10 bg-white sticky-shadow !p-0"
-          style={{ left: STICKY_LEFT_OFFSETS[2] }}
-        >
+        <div className="cell !p-0">
           <ProjectStatusCell
             value={project.status}
             onChange={(status: ProjectStatus) => patch({ status })}
           />
+        </div>
+        <div className="cell">
+          <select
+            value={project.office ?? ""}
+            onChange={(e) => patch({ office: e.target.value || null })}
+            className="bg-transparent text-[12px] outline-none w-full cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5"
+          >
+            <option value="">—</option>
+            {OFFICES.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="cell !p-0">
           <SubitemsStatusCell subitems={sortedSubs} />

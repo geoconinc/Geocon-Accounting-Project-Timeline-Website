@@ -3,6 +3,7 @@ import { storage } from "@/lib/storage";
 import { authenticateRequest } from "@/lib/server/routeAuth";
 import { bus } from "@/lib/events/bus";
 import { DEFAULT_SUBITEM_NAMES } from "@/lib/projectDefaults";
+import { OFFICE_ASSIGNEES, isOffice, resolveAssigneeId } from "@/lib/offices";
 
 export async function GET() {
   const user = await authenticateRequest();
@@ -42,15 +43,21 @@ export async function POST(req: Request) {
     reportingSystems: body.reportingSystems ?? null,
     cprContact: body.cprContact ?? null,
     sharepointUrl: body.sharepointUrl ?? null,
+    office: body.office ?? null,
     notes: body.notes ?? null,
     lastUpdatedBy: user.id
   });
 
+  const allUsers = await storage.listUsers();
+  const officeMap = isOffice(project.office) ? OFFICE_ASSIGNEES[project.office] : null;
+
   for (const name of DEFAULT_SUBITEM_NAMES) {
+    const assigneeName = officeMap?.[name];
+    const ownerId = assigneeName ? resolveAssigneeId(allUsers, assigneeName) : null;
     await storage.createSubitem({
       projectId: project.id,
       name,
-      ownerId: null,
+      ownerId,
       status: "NotStarted",
       dueDate: null,
       dateCompleted: null,
