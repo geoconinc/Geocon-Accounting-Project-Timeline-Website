@@ -1,13 +1,14 @@
 export const DEFAULT_SUBITEM_NAMES = [
-  "DAS 140 & 142 Setup Form",
-  "DAS 140",
-  "DAS 140 Confirmation",
-  "DAS 142",
-  "DAS 142 Confirmation",
+  "DAS Setup Sheet",
+  "DAS 140 & Confirmation",
+  "DAS 142 & Confirmation",
   "Fringe Benefit Statement",
   "Training Fund",
-  "Other Setup Forms",
-  "Certified Payroll Reporting"
+  "Other Certified Payroll Setup Forms",
+  "Certified Payroll Entry",
+  "Section 3 Forms",
+  "Employee Information Sheet",
+  "Payroll Deduction Authorization"
 ] as const;
 
-export const CPR_SUBITEM_NAME = "Certified Payroll Reporting";
+export const CPR_SUBITEM_NAME = "Certified Payroll Entry";

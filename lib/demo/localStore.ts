@@ -4,7 +4,7 @@ import type { FileRef, Project, Subitem, User } from "@/lib/types";
 import { initialsFromName } from "@/lib/utils";
 import { DEMO_USER } from "./config";
 
-const KEY = "geocon-demo-db-v3";
+const KEY = "geocon-demo-db-v4";
 
 export { DEFAULT_SUBITEM_NAMES, CPR_SUBITEM_NAME } from "@/lib/projectDefaults";
 import { CPR_SUBITEM_NAME, DEFAULT_SUBITEM_NAMES } from "@/lib/projectDefaults";
@@ -126,12 +126,16 @@ function seedDb(): DemoDb {
   };
 
   const subs: Subitem[] = [
-    { id: "sub-1", projectId: aroviste.id, name: "DAS 140 & 142 Setup Form", ownerId: ml.id, status: "Completed", dueDate: "2026-04-23", dateCompleted: "2026-04-23", notes: null, position: 0 },
-    { id: "sub-2", projectId: aroviste.id, name: "DAS 140", ownerId: null, status: "Missing", dueDate: null, dateCompleted: null, notes: null, position: 1 },
-    { id: "sub-3", projectId: aroviste.id, name: "DAS 142", ownerId: null, status: "Missing", dueDate: "2026-04-30", dateCompleted: null, notes: null, position: 2 },
+    { id: "sub-1", projectId: aroviste.id, name: "DAS Setup Sheet", ownerId: ml.id, status: "Completed", dueDate: "2026-04-23", dateCompleted: "2026-04-23", notes: null, position: 0 },
+    { id: "sub-2", projectId: aroviste.id, name: "DAS 140 & Confirmation", ownerId: null, status: "Missing", dueDate: null, dateCompleted: null, notes: null, position: 1 },
+    { id: "sub-3", projectId: aroviste.id, name: "DAS 142 & Confirmation", ownerId: null, status: "Missing", dueDate: "2026-04-30", dateCompleted: null, notes: null, position: 2 },
     { id: "sub-4", projectId: aroviste.id, name: "Fringe Benefit Statement", ownerId: null, status: "NotStarted", dueDate: null, dateCompleted: null, notes: null, position: 3 },
     { id: "sub-5", projectId: aroviste.id, name: "Training Fund", ownerId: null, status: "NotStarted", dueDate: null, dateCompleted: null, notes: null, position: 4 },
-    { id: "sub-6", projectId: aroviste.id, name: "Other Setup Forms", ownerId: null, status: "NA", dueDate: null, dateCompleted: null, notes: null, position: 5 }
+    { id: "sub-6", projectId: aroviste.id, name: "Other Certified Payroll Setup Forms", ownerId: null, status: "NA", dueDate: null, dateCompleted: null, notes: null, position: 5 },
+    { id: "sub-7", projectId: aroviste.id, name: "Certified Payroll Entry", ownerId: null, status: "NotStarted", dueDate: null, dateCompleted: null, notes: null, position: 6 },
+    { id: "sub-8", projectId: aroviste.id, name: "Section 3 Forms", ownerId: null, status: "NotStarted", dueDate: null, dateCompleted: null, notes: null, position: 7 },
+    { id: "sub-9", projectId: aroviste.id, name: "Employee Information Sheet", ownerId: null, status: "NotStarted", dueDate: null, dateCompleted: null, notes: null, position: 8 },
+    { id: "sub-10", projectId: aroviste.id, name: "Payroll Deduction Authorization", ownerId: null, status: "NotStarted", dueDate: null, dateCompleted: null, notes: null, position: 9 }
   ];
 
   return {
