@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -78,6 +78,17 @@ export function ProjectRow({
   useEffect(() => setCode(project.code), [project.code]);
   useEffect(() => setName(project.name), [project.name]);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const filesBySubitemId = useMemo(() => {
+    const map = new Map<string, FileRef[]>();
+    for (const file of files) {
+      if (file.parentType !== "subitem") continue;
+      const existing = map.get(file.parentId);
+      if (existing) existing.push(file);
+      else map.set(file.parentId, [file]);
+    }
+    return map;
+  }, [files]);
+
   function patch(p: Partial<Project>) {
     if ("ownerId" in p && p.ownerId && p.ownerId !== project.ownerId) {
       const u = users.find((x) => x.id === p.ownerId);
@@ -266,6 +277,7 @@ export function ProjectRow({
                     subitem={s}
                     users={users}
                     projectId={project.id}
+                    files={filesBySubitemId.get(s.id) ?? []}
                   />
                 ))}
               </SortableContext>

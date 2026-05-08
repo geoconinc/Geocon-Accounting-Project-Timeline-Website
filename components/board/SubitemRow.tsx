@@ -3,16 +3,17 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Trash2 } from "lucide-react";
-import type { Subitem, SubitemStatus, User } from "@/lib/types";
+import type { FileRef, Subitem, SubitemStatus, User } from "@/lib/types";
 import { OwnerCell } from "./OwnerCell";
 import { SubitemStatusCell } from "./StatusCell";
 import { DateCell } from "./DateCell";
 import { TextCell } from "./TextCell";
 import { NotificationButton } from "./NotificationButton";
+import { FilesCell } from "./FilesCell";
 import { api } from "@/lib/client/boardApi";
 
 export const SUBITEM_COLS =
-  "32px 32px minmax(280px,1fr) 80px 130px 110px 110px minmax(220px,1fr)";
+  "32px 32px minmax(280px,1fr) 80px 130px 110px 110px minmax(220px,1fr) minmax(180px,1fr)";
 
 export function SubitemHeader() {
   return (
@@ -28,6 +29,7 @@ export function SubitemHeader() {
       <div className="header-cell">Due Date</div>
       <div className="header-cell">Date Completed</div>
       <div className="header-cell">Notes</div>
+      <div className="header-cell">Attachments</div>
     </div>
   );
 }
@@ -35,11 +37,13 @@ export function SubitemHeader() {
 export function SubitemRow({
   subitem,
   users,
-  projectId
+  projectId,
+  files
 }: {
   subitem: Subitem;
   users: User[];
   projectId: string;
+  files: FileRef[];
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: subitem.id
@@ -111,6 +115,9 @@ export function SubitemRow({
       </div>
       <div className="cell">
         <TextCell value={subitem.notes} onChange={(v) => patch({ notes: v })} placeholder="Notes" />
+      </div>
+      <div className="cell !p-0">
+        <FilesCell parentType="subitem" parentId={subitem.id} files={files} />
       </div>
     </div>
   );
