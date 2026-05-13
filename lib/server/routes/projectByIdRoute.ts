@@ -3,6 +3,7 @@ import { storage } from "@/lib/storage";
 import { authenticateRequest } from "@/lib/server/routeAuth";
 import { bus } from "@/lib/events/bus";
 import { notifyUser } from "@/lib/notify/dispatch";
+import { canManageProject, forbidden } from "@/lib/server/access";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const user = await authenticateRequest();
@@ -10,6 +11,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const before = await storage.getProject(params.id);
   if (!before) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (!canManageProject(user, before)) return forbidden();
 
   const patch = (await req.json()) as Record<string, unknown>;
   const updated = await storage.updateProject(params.id, patch, user.id);
@@ -48,6 +50,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
   const user = await authenticateRequest();
   if (user instanceof Response) return user;
+  const project = await storage.getProject(params.id);
+  if (!project) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (!canManageProject(user, project)) return forbidden();
+
   await storage.deleteProject(params.id);
   bus.publish({ type: "project.delete", payload: { id: params.id } });
   return NextResponse.json({ ok: true });

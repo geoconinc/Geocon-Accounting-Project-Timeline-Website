@@ -72,12 +72,7 @@ export const api = DEMO_MODE
       setMute: async (projectId: string, mute: boolean) => {
         demoStore.setMute(projectId, mute);
         return { ok: true as const };
-      },
-      notifyAssignment: (body: { assigneeEmail: string; assigneeName: string; target: string }) =>
-        jsonFetch<{ ok: true }>(`/api/log-assignment`, {
-          method: "POST",
-          body: JSON.stringify(body)
-        }).catch(() => ({ ok: true as const }))
+      }
     }
   : {
       patchProject: (id: string, patch: Partial<Project>) =>
@@ -130,11 +125,6 @@ export const api = DEMO_MODE
         jsonFetch<{ ok: true }>(`/api/notification-prefs`, {
           method: "POST",
           body: JSON.stringify({ projectId, mute })
-        }),
-      notifyAssignment: (body: { assigneeEmail: string; assigneeName: string; target: string }) =>
-        jsonFetch<{ ok: true }>(`/api/log-assignment`, {
-          method: "POST",
-          body: JSON.stringify(body)
         })
     };
 

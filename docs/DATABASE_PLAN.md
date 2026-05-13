@@ -322,27 +322,22 @@ not remove from SharePoint — contact IT" toast.
 - Implement `lib/storage/postgresStore.ts` (currently a stub) using Drizzle.
 - `npm run db:generate` for any further schema diffs.
 
-### Phase 2 — wire SharePoint for `/files`
-- Register Graph scopes on the existing Entra app (`Files.ReadWrite.All` or
-  `Sites.Selected`).
-- Add `lib/graph/sharepoint.ts` with:
-  - `ensureProjectFolder(project) → { driveId, folderId, webUrl }`
-  - `createUploadSession({ folderId, filename }) → { uploadUrl }`
-  - `recordItem({ driveId, itemId }) → { webUrl, etag, name, size }`
-  - `deleteItem({ driveId, itemId })`
-- Replace Azure Blob calls in `lib/blob/sas.ts` callers with SharePoint
-  equivalents. Keep the `FilesCell` UI contract identical so the frontend
-  doesn't change.
+### Phase 2 — keep Azure Blob for attachments
+- Store project and subitem attachment bytes in Azure Blob Storage.
+- Store only file metadata in Postgres.
+- Keep `FilesCell` using SAS upload/read URLs through `lib/blob/sas.ts`.
 
 ### Phase 3 — wire SharePoint for `/documents` (template hub)
-- Same idea, but folders live under `Templates/{category}/`.
+- Register Graph scopes on the existing Entra app (`Files.ReadWrite.All` or
+  `Sites.Selected`).
+- Folders should live under `Templates/{category}/`.
 - Templates page already groups by default subitem name — those names map 1:1
   to `Templates/` subfolders.
 
 ### Phase 4 — durable email + Graph sendMail
-- `email_outbox` table + Azure Function on a 1-minute timer.
-- Replace `console.log` mock in `/api/log-assignment` with an INSERT into
-  `email_outbox`.
+- Graph `sendMail` is implemented through `lib/notify/email.ts`.
+- For higher volume, add an `email_outbox` table and have an Azure Function
+  flush queued mail on a 1-minute timer.
 
 ### Phase 5 — RBAC tightening
 - Use `users.role` (`member`/`manager`/`admin`).

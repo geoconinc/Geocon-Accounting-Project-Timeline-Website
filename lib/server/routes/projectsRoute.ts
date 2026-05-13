@@ -4,24 +4,13 @@ import { authenticateRequest } from "@/lib/server/routeAuth";
 import { bus } from "@/lib/events/bus";
 import { DEFAULT_SUBITEM_NAMES } from "@/lib/projectDefaults";
 import { OFFICE_ASSIGNEES, isOffice, resolveAssigneeId } from "@/lib/offices";
+import { getBoardPayloadForUser } from "@/lib/server/access";
 
 export async function GET() {
   const user = await authenticateRequest();
   if (user instanceof Response) return user;
 
-  const [projects, users] = await Promise.all([storage.listProjects(), storage.listUsers()]);
-  const subitemArrays = await Promise.all(projects.map((p) => storage.listSubitems(p.id)));
-  const fileArrays = await Promise.all(projects.map((p) => storage.listFiles("project", p.id)));
-  const subitems = subitemArrays.flat();
-  const subitemFileArrays = await Promise.all(subitems.map((s) => storage.listFiles("subitem", s.id)));
-
-  return NextResponse.json({
-    projects,
-    subitems,
-    users,
-    files: [...fileArrays.flat(), ...subitemFileArrays.flat()],
-    me: user.id
-  });
+  return NextResponse.json(await getBoardPayloadForUser(user));
 }
 
 export async function POST(req: Request) {

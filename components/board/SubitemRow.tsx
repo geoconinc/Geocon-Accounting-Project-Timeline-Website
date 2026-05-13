@@ -55,16 +55,6 @@ export function SubitemRow({
   };
 
   function patch(p: Partial<Subitem>) {
-    if ("ownerId" in p && p.ownerId && p.ownerId !== subitem.ownerId) {
-      const u = users.find((x) => x.id === p.ownerId);
-      if (u) {
-        api.notifyAssignment({
-          assigneeEmail: u.email,
-          assigneeName: u.name,
-          target: `subitem "${subitem.name}"`
-        });
-      }
-    }
     api.patchSubitem(subitem.id, p);
   }
 

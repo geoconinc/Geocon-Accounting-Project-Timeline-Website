@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/server/routeAuth";
 import { buildBlobPath, createUploadSas, isBlobConfigured } from "@/lib/blob/sas";
+import { canAccessFileParent, forbidden } from "@/lib/server/access";
 
 export async function POST(req: Request) {
   const auth = await authenticateRequest();
@@ -21,6 +22,8 @@ export async function POST(req: Request) {
   if (!parentType || !parentId || !filename) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
+  if (!(await canAccessFileParent(auth, parentType, parentId))) return forbidden();
+
   const blobPath = buildBlobPath(parentType, parentId, filename);
   const { uploadUrl } = createUploadSas(blobPath);
   return NextResponse.json({ uploadUrl, blobPath });

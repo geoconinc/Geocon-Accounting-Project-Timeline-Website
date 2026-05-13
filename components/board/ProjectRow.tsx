@@ -90,16 +90,6 @@ export function ProjectRow({
   }, [files]);
 
   function patch(p: Partial<Project>) {
-    if ("ownerId" in p && p.ownerId && p.ownerId !== project.ownerId) {
-      const u = users.find((x) => x.id === p.ownerId);
-      if (u) {
-        api.notifyAssignment({
-          assigneeEmail: u.email,
-          assigneeName: u.name,
-          target: `project ${project.code} ${project.name}`
-        });
-      }
-    }
     api.patchProject(project.id, p);
   }
 

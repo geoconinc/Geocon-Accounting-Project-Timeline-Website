@@ -10,6 +10,28 @@ interface NotifyOpts {
   html?: string;
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function appUrl(): string | null {
+  return process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_MSAL_REDIRECT_URI ?? null;
+}
+
+function defaultHtml(message: string): string {
+  const url = appUrl();
+  const link = url
+    ? `<p><a href="${escapeHtml(url)}">Open Geocon Project Timeline</a></p>`
+    : "";
+
+  return `<p>${escapeHtml(message)}</p>${link}`;
+}
+
 export async function notifyUser(opts: NotifyOpts) {
   const target = await storage.getUserById(opts.userId);
   if (!target) return;
@@ -27,6 +49,12 @@ export async function notifyUser(opts: NotifyOpts) {
   await sendMail({
     to: [target.email],
     subject: opts.subject,
-    html: opts.html ?? `<p>${opts.message}</p>`
-  }).catch(() => undefined);
+    html: opts.html ?? defaultHtml(opts.message)
+  }).then((result) => {
+    if (!result.ok) {
+      console.warn(`Graph email not sent: ${result.reason ?? "unknown_error"}`);
+    }
+  }).catch((error) => {
+    console.warn("Graph email failed", error);
+  });
 }

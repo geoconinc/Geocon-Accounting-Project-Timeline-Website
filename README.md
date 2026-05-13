@@ -46,16 +46,20 @@ important groups are:
 - Microsoft login: `NEXT_PUBLIC_MSAL_CLIENT_ID`,
   `NEXT_PUBLIC_MSAL_TENANT_ID`, `NEXT_PUBLIC_MSAL_REDIRECT_URI`,
   `SESSION_SECRET`, and `ALLOWED_EMAIL_DOMAIN`.
+- Board access: `BOARD_ADMIN_EMAILS` for users who can see and manage all
+  projects and subitems.
 - Storage: `STORAGE_DRIVER`, `DATABASE_URL`, and the local JSON files under
   `data/`.
 - Azure Blob uploads: `AZURE_STORAGE_ACCOUNT`, `AZURE_STORAGE_KEY`, and
   `AZURE_STORAGE_CONTAINER`.
+- SharePoint templates: `SHAREPOINT_TEMPLATES_URL`.
 - Email notifications: `GRAPH_APP_TENANT_ID`, `GRAPH_APP_CLIENT_ID`,
-  `GRAPH_APP_CLIENT_SECRET`, and `NOTIFY_FROM_ADDRESS`.
+  `GRAPH_APP_CLIENT_SECRET`, `NOTIFY_FROM_ADDRESS`, and `APP_BASE_URL`.
 - Scheduled notifications: `CRON_SHARED_SECRET` for `/api/cron/due-dates`.
 
 Detailed setup notes live in `docs/MICROSOFT_AUTH.md` and
-`docs/DATA_AND_STORAGE.md`.
+`docs/DATA_AND_STORAGE.md`. Production service placement is covered in
+`docs/ONLINE_SETUP.md`.
 
 ## Repository Structure
 
@@ -105,6 +109,8 @@ Root config files
 - `docs/FRONTEND.md` explains pages, components, and demo mode.
 - `docs/DATA_AND_STORAGE.md` explains storage drivers, Drizzle, migrations, and local data.
 - `docs/MICROSOFT_AUTH.md` explains Microsoft login and Graph setup.
+- `docs/ONLINE_SETUP.md` explains where to put production database, attachment,
+  template, email, and access-control settings.
 - `docs/DATABASE_PLAN.md` captures the database migration plan.
 
 ## Storage Notes
