@@ -2,15 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import lockfile from "proper-lockfile";
-import type {
-  ActivityEvent,
-  FileRef,
-  NotificationPref,
-  Project,
-  Session,
-  Subitem,
-  User
-} from "@/lib/types";
+import type { ActivityEvent, FileRef, Project, Session, Subitem, User } from "@/lib/types";
 import type { Storage } from "./index";
 import { initialsFromName } from "@/lib/utils";
 
@@ -22,7 +14,6 @@ interface DbShape {
   projects: Project[];
   subitems: Subitem[];
   files: FileRef[];
-  prefs: NotificationPref[];
   activity: ActivityEvent[];
 }
 
@@ -34,7 +25,6 @@ const empty: DbShape = {
   projects: [],
   subitems: [],
   files: [],
-  prefs: [],
   activity: []
 };
 
@@ -268,18 +258,6 @@ export const jsonStore: Storage = {
   async deleteFile(id) {
     await mutate((db) => {
       db.files = db.files.filter((f) => f.id !== id);
-    });
-  },
-
-  async getNotificationPref(userId, projectId) {
-    const db = await readDb();
-    return db.prefs.find((p) => p.userId === userId && p.projectId === projectId) ?? null;
-  },
-  async setNotificationPref(pref) {
-    await mutate((db) => {
-      const i = db.prefs.findIndex((p) => p.userId === pref.userId && p.projectId === pref.projectId);
-      if (i >= 0) db.prefs[i] = pref;
-      else db.prefs.push(pref);
     });
   },
 

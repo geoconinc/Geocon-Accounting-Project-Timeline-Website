@@ -1,7 +1,7 @@
 // Drizzle ORM schema. This is the canonical Postgres schema for Geocon Project Timeline.
 // While STORAGE_DRIVER=json the JSON store mirrors this shape exactly.
-// To migrate: set STORAGE_DRIVER=postgres + DATABASE_URL, run `npm run db:generate`
-// (or apply lib/db/migrations/0001_init.sql), then implement postgresStore.ts.
+// Postgres: set STORAGE_DRIVER=postgres + DATABASE_URL, run `npm run db:migrate`
+// (applies lib/db/migrations/*.sql). Storage implementation: lib/storage/postgresStore.ts.
 
 import {
   pgTable,
@@ -12,8 +12,7 @@ import {
   integer,
   date,
   jsonb,
-  pgEnum,
-  primaryKey
+  pgEnum
 } from "drizzle-orm/pg-core";
 
 export const projectStatusEnum = pgEnum("project_status", [
@@ -99,20 +98,6 @@ export const files = pgTable("files", {
   uploadedBy: uuid("uploaded_by").references(() => users.id, { onDelete: "set null" }),
   uploadedAt: timestamp("uploaded_at", { withTimezone: true }).notNull().defaultNow()
 });
-
-export const notificationPrefs = pgTable(
-  "notification_prefs",
-  {
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    projectId: uuid("project_id").references(() => projects.id, { onDelete: "cascade" }),
-    mute: boolean("mute").notNull().default(false)
-  },
-  (t) => ({
-    pk: primaryKey({ columns: [t.userId, t.projectId] })
-  })
-);
 
 export const activity = pgTable("activity", {
   id: uuid("id").primaryKey().defaultRandom(),

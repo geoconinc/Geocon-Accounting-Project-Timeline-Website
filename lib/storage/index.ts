@@ -1,12 +1,4 @@
-import type {
-  ActivityEvent,
-  FileRef,
-  NotificationPref,
-  Project,
-  Session,
-  Subitem,
-  User
-} from "@/lib/types";
+import type { ActivityEvent, FileRef, Project, Session, Subitem, User } from "@/lib/types";
 import { jsonStore } from "./jsonStore";
 import { postgresStore } from "./postgresStore";
 
@@ -41,10 +33,6 @@ export interface Storage {
   listFiles(parentType: FileRef["parentType"], parentId: string): Promise<FileRef[]>;
   addFile(input: Omit<FileRef, "id" | "uploadedAt"> & { id?: string }): Promise<FileRef>;
   deleteFile(id: string): Promise<void>;
-
-  // prefs
-  getNotificationPref(userId: string, projectId: string | null): Promise<NotificationPref | null>;
-  setNotificationPref(pref: NotificationPref): Promise<void>;
 
   // activity
   appendActivity(event: Omit<ActivityEvent, "id" | "createdAt">): Promise<ActivityEvent>;

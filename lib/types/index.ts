@@ -1,10 +1,2 @@
 export type { ProjectGroup, ProjectStatus, SubitemStatus } from "./enums";
-export type {
-  ActivityEvent,
-  FileRef,
-  NotificationPref,
-  Project,
-  Session,
-  Subitem,
-  User
-} from "./entities";
+export type { ActivityEvent, FileRef, Project, Session, Subitem, User } from "./entities";

@@ -78,10 +78,6 @@ export const api = DEMO_MODE
         const url = demoStore.getFileUrl(id);
         if (!url) throw new Error("file not found");
         return { url };
-      },
-      setMute: async (projectId: string, mute: boolean) => {
-        demoStore.setMute(projectId, mute);
-        return { ok: true as const };
       }
     }
   : {
@@ -130,12 +126,7 @@ export const api = DEMO_MODE
           method: "POST",
           body: JSON.stringify(file)
         }),
-      fileUrl: (id: string) => jsonFetch<{ url: string }>(`/api/files/${id}/url`),
-      setMute: (projectId: string, mute: boolean) =>
-        jsonFetch<{ ok: true }>(`/api/notification-prefs`, {
-          method: "POST",
-          body: JSON.stringify({ projectId, mute })
-        })
+      fileUrl: (id: string) => jsonFetch<{ url: string }>(`/api/files/${id}/url`)
     };
 
 export async function uploadFileDemo(

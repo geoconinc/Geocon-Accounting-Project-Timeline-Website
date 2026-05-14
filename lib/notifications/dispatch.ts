@@ -36,11 +36,6 @@ export async function notifyUser(opts: NotifyOpts) {
   const target = await storage.getUserById(opts.userId);
   if (!target) return;
 
-  const pref = opts.projectId
-    ? await storage.getNotificationPref(opts.userId, opts.projectId)
-    : null;
-  if (pref?.mute) return;
-
   bus.publish({
     type: "notification.new",
     payload: { userId: opts.userId, message: opts.message, projectId: opts.projectId }

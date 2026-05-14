@@ -64,12 +64,6 @@ export interface Subitem {
   position: number;
 }
 
-export interface NotificationPref {
-  userId: string;
-  projectId: string | null;
-  mute: boolean;
-}
-
 export interface ActivityEvent {
   id: string;
   actorId: string | null;

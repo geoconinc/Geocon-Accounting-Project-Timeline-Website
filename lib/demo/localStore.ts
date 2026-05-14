@@ -21,7 +21,6 @@ export interface DocumentRef {
 }
 
 export interface AppSettings {
-  defaultMute: boolean;
   emailOnAssignment: boolean;
   emailOnStatusChange: boolean;
   emailOnDueDate: boolean;
@@ -43,7 +42,6 @@ export interface DemoDb {
   files: FileRef[];
   // For demo, file content stored as data URLs keyed by file id.
   fileBlobs: Record<string, string>;
-  mutedProjects: string[];
   documents: DocumentRef[];
   documentBlobs: Record<string, string>;
   settings: AppSettings;
@@ -150,11 +148,9 @@ function seedDb(): DemoDb {
     users: [me, ml],
     files: [],
     fileBlobs: {},
-    mutedProjects: [],
     documents: [],
     documentBlobs: {},
     settings: {
-      defaultMute: false,
       emailOnAssignment: true,
       emailOnStatusChange: true,
       emailOnDueDate: true
@@ -388,14 +384,6 @@ export const demoStore = {
 
   getFileUrl(id: string): string | null {
     return loadDb().fileBlobs[id] ?? null;
-  },
-
-  setMute(projectId: string, mute: boolean) {
-    const db = loadDb();
-    const has = db.mutedProjects.includes(projectId);
-    if (mute && !has) db.mutedProjects.push(projectId);
-    if (!mute && has) db.mutedProjects = db.mutedProjects.filter((p) => p !== projectId);
-    saveDb(db);
   },
 
   async addDocument(input: {

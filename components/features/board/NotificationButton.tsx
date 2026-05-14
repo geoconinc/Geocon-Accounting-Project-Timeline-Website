@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { MessageCirclePlus, X, Paperclip, Trash2 } from "lucide-react";
 import { usePopover } from "./Popover";
 import { api, uploadFileDemo } from "@/lib/client/boardApi";
 import type { User } from "@/lib/types";
 import { DEMO_MODE } from "@/lib/demo/config";
-import { loadDb } from "@/lib/demo/localStore";
 
 export function NotificationButton({
   projectId,
@@ -19,17 +18,10 @@ export function NotificationButton({
 }) {
   const { open, setOpen, ref } = usePopover();
   const [msg, setMsg] = useState("");
-  const [mute, setMute] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!open || !DEMO_MODE) return;
-    const db = loadDb();
-    setMute(db.mutedProjects.includes(projectId));
-  }, [open, projectId]);
 
   async function send() {
     if (!msg.trim()) return;
@@ -95,12 +87,6 @@ export function NotificationButton({
     } finally {
       setBusy(false);
     }
-  }
-
-  async function toggleMute(b: boolean) {
-    setMute(b);
-    await api.setMute(projectId, b);
-    if (DEMO_MODE) window.dispatchEvent(new CustomEvent("geocon-demo-change"));
   }
 
   return (
@@ -172,10 +158,6 @@ export function NotificationButton({
           <p className="text-[10px] text-slate-500 mt-2">
             Assignees will be notified by default.
           </p>
-          <label className="flex items-center gap-1 text-[11px] text-slate-600 mt-2">
-            <input type="checkbox" checked={mute} onChange={(e) => toggleMute(e.target.checked)} />
-            Mute notifications for this project
-          </label>
           <div className="flex justify-end mt-3 gap-2">
             <button onClick={() => setOpen(false)} className="btn-ghost text-xs">
               Cancel
