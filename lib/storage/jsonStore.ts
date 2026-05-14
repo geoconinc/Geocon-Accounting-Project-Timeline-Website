@@ -163,6 +163,8 @@ export const jsonStore: Storage = {
       const groupCount = db.projects.filter((p) => p.group === input.group).length;
       const project: Project = {
         ...input,
+        projectManagerId: input.projectManagerId ?? null,
+        projectDirectorId: input.projectDirectorId ?? null,
         id: input.id ?? randomUUID(),
         position: groupCount,
         lastUpdatedAt: nowIso()
@@ -188,9 +190,14 @@ export const jsonStore: Storage = {
   },
   async deleteProject(id) {
     await mutate((db) => {
+      const subIds = new Set(db.subitems.filter((s) => s.projectId === id).map((s) => s.id));
       db.projects = db.projects.filter((p) => p.id !== id);
       db.subitems = db.subitems.filter((s) => s.projectId !== id);
-      db.files = db.files.filter((f) => !(f.parentType === "project" && f.parentId === id));
+      db.files = db.files.filter((f) => {
+        if (f.parentType === "project" && f.parentId === id) return false;
+        if (f.parentType === "subitem" && subIds.has(f.parentId)) return false;
+        return true;
+      });
     });
   },
 

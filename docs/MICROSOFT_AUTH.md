@@ -101,7 +101,7 @@ back in the app with a session cookie.
 | MSAL client config | `lib/auth/msalConfig.ts` |
 | MSAL provider mount (skipped in demo) | `app/providers.tsx` |
 | Login page (real flow + demo flow) | `app/login/page.tsx` |
-| Token verification + session issuance | `lib/server/routes/microsoftLoginRoute.ts` |
+| Token verification + session issuance | `lib/server/features/auth-session/microsoftLoginRoute.ts` |
 | Session cookie + lookup | `lib/auth/session.ts`, `lib/auth/constants.ts` |
 | Auth middleware (redirects to /login) | `middleware.ts` |
 | Verify-session endpoint | `app/api/verify-session/route.ts` |

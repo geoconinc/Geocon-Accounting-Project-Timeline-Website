@@ -1,1 +1,1 @@
-export { POST } from "@/lib/server/routes/microsoftLoginRoute";
+export { POST } from "@/lib/server/features/auth-session/microsoftLoginRoute";

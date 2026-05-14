@@ -15,11 +15,11 @@ flowchart TB
   end
   subgraph next [Next.js server]
     RouteStubs[app/api/**/route.ts re-exports]
-    Handlers[lib/server/routes - route handlers]
+    Handlers[lib/server/features - route handlers]
     Auth[lib/auth - session MSAL constants]
     Storage[lib/storage - Storage interface]
     Bus[lib/events/bus - SSE pubsub]
-    Notify[lib/notify - email dispatch]
+    Notify[lib/notifications - email dispatch]
   end
   subgraph data [Persistence]
     Json[jsonStore file-backed]
@@ -37,7 +37,7 @@ flowchart TB
   Storage --> Pg
 ```
 
-- **`app/`** — Routing only for pages; **`app/api/*/route.ts`** files stay minimal so Next.js segment config (for example `dynamic`, `runtime`) remains next to the URL. They re-export handlers from **`lib/server/routes/`**.
+- **`app/`** — Routing only for pages; **`app/api/*/route.ts`** files stay minimal so Next.js segment config (for example `dynamic`, `runtime`) remains next to the URL. They re-export handlers from **`lib/server/features/`**.
 - **`lib/server/`** — Server-only helpers: **`routeAuth.ts`** (`authenticateRequest`) and **`routes/*`** — the real request/response logic for each API segment.
 - **`lib/client/`** — Browser-only modules (for example **`boardApi.ts`**) that call `/api/*` or the in-memory demo store.
 - **`lib/storage/`** — Single **`Storage`** interface; **`STORAGE_DRIVER`** selects JSON or Postgres adapter.
@@ -56,7 +56,7 @@ Server handlers call **`bus.publish(...)`** after mutations. Clients open an SSE
 
 ## Extension guidelines
 
-1. **New REST capability** — Add a module under **`lib/server/routes/`**, then add or extend **`app/api/.../route.ts`** to export the HTTP methods (and any route segment config). Keeps handlers testable and avoids bloating `app/api` with business logic.
+1. **New REST capability** — Add a module under **`lib/server/features/<area>/`**, then add or extend **`app/api/.../route.ts`** to export the HTTP methods (and any route segment config). Keeps handlers testable and avoids bloating `app/api` with business logic.
 2. **New persisted fields** — Update **`lib/types/`**, **`lib/db/schema.ts`**, migrations under **`lib/db/migrations/`**, and both **`jsonStore`** and (when ready) **`postgresStore`** implementations.
 3. **New UI that talks to the API** — Prefer **`lib/client/`** for fetch wrappers so components stay presentational.
-4. **Background jobs** — Follow **`/api/cron/due-dates`**: shared secret header, logic in **`lib/server/routes/`**, thin `app/api` export.
+4. **Background jobs** — Follow **`/api/cron/due-dates`**: shared secret header, logic in **`lib/server/features/cron/`**, thin `app/api` export.

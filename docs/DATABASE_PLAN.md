@@ -335,7 +335,7 @@ not remove from SharePoint — contact IT" toast.
   to `Templates/` subfolders.
 
 ### Phase 4 — durable email + Graph sendMail
-- Graph `sendMail` is implemented through `lib/notify/email.ts`.
+- Graph `sendMail` is implemented through `lib/notifications/email.ts`.
 - For higher volume, add an `email_outbox` table and have an Azure Function
   flush queued mail on a 1-minute timer.
 

@@ -24,6 +24,8 @@ async function main() {
     cprContact: null,
     sharepointUrl: null,
     office: null,
+    projectManagerId: ml.id,
+    projectDirectorId: null,
     notes: null,
     lastUpdatedBy: ml.id
   });
@@ -67,6 +69,8 @@ async function main() {
     cprContact: null,
     sharepointUrl: null,
     office: null,
+    projectManagerId: null,
+    projectDirectorId: null,
     notes: null,
     lastUpdatedBy: ml.id
   });
@@ -86,6 +90,8 @@ async function main() {
     cprContact: null,
     sharepointUrl: null,
     office: null,
+    projectManagerId: null,
+    projectDirectorId: null,
     notes: null,
     lastUpdatedBy: ml.id
   });

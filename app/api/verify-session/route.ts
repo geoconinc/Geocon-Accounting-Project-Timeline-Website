@@ -1,1 +1,1 @@
-export { GET } from "@/lib/server/routes/verifySessionRoute";
+export { GET } from "@/lib/server/features/auth-session/verifySessionRoute";

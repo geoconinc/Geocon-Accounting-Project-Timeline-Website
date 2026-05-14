@@ -1,1 +1,1 @@
-export { POST } from "@/lib/server/routes/cronDueDatesRoute";
+export { POST } from "@/lib/server/features/cron/cronDueDatesRoute";

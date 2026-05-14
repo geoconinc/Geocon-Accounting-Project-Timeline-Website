@@ -34,6 +34,15 @@ export function hasFullBoardAccess(user: User): boolean {
   return configuredEmails("BOARD_ADMIN_EMAILS").has(user.email.toLowerCase());
 }
 
+/** Owner, project manager, or project director (not board admin — use hasFullBoardAccess for that). */
+export function isProjectLead(user: User, project: Project): boolean {
+  return (
+    project.ownerId === user.id ||
+    project.projectManagerId === user.id ||
+    project.projectDirectorId === user.id
+  );
+}
+
 export function forbidden(message = "forbidden") {
   return NextResponse.json({ error: message }, { status: 403 });
 }
@@ -67,15 +76,15 @@ export async function getBoardPayloadForUser(user: User): Promise<BoardPayload> 
 
   for (const project of projects) {
     const projectSubitems = allSubitems.filter((subitem) => subitem.projectId === project.id);
-    const ownsProject = project.ownerId === user.id;
+    const leadsProject = isProjectLead(user, project);
     const assignedSubitems = projectSubitems.filter((subitem) => subitem.ownerId === user.id);
 
-    if (!ownsProject && assignedSubitems.length === 0) continue;
+    if (!leadsProject && assignedSubitems.length === 0) continue;
 
     visibleProjects.push(project);
     visibleProjectIds.add(project.id);
 
-    if (ownsProject) {
+    if (leadsProject) {
       visibleSubitems.push(...projectSubitems);
       visibleProjectFileIds.add(project.id);
     } else {
@@ -114,21 +123,21 @@ export async function findSubitem(subitemId: string): Promise<LocatedSubitem | n
 export function canViewProject(user: User, project: Project, subitems: Subitem[]): boolean {
   return (
     hasFullBoardAccess(user) ||
-    project.ownerId === user.id ||
+    isProjectLead(user, project) ||
     subitems.some((subitem) => subitem.ownerId === user.id)
   );
 }
 
 export function canManageProject(user: User, project: Project): boolean {
-  return hasFullBoardAccess(user) || project.ownerId === user.id;
+  return hasFullBoardAccess(user) || isProjectLead(user, project);
 }
 
 export function canViewSubitem(user: User, project: Project, subitem: Subitem): boolean {
-  return hasFullBoardAccess(user) || project.ownerId === user.id || subitem.ownerId === user.id;
+  return hasFullBoardAccess(user) || isProjectLead(user, project) || subitem.ownerId === user.id;
 }
 
 export function canManageSubitem(user: User, project: Project, subitem: Subitem): boolean {
-  return hasFullBoardAccess(user) || project.ownerId === user.id || subitem.ownerId === user.id;
+  return hasFullBoardAccess(user) || isProjectLead(user, project) || subitem.ownerId === user.id;
 }
 
 export async function canAccessFileParent(
@@ -140,7 +149,7 @@ export async function canAccessFileParent(
 
   if (parentType === "project") {
     const project = await storage.getProject(parentId);
-    return Boolean(project && project.ownerId === user.id);
+    return Boolean(project && isProjectLead(user, project));
   }
 
   const located = await findSubitem(parentId);

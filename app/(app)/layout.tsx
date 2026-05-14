@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+      <Sidebar user={user} />
       <div className="flex flex-col flex-1 min-w-0">
         <TopBar user={user} />
         <main className="flex-1 overflow-hidden bg-slate-100">{children}</main>

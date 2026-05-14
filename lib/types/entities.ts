@@ -43,6 +43,9 @@ export interface Project {
   cprContact: string | null;
   sharepointUrl: string | null;
   office: string | null;
+  /** Responsible for DAS 140 and related setup (notified on project creation). */
+  projectManagerId: string | null;
+  projectDirectorId: string | null;
   notes: string | null;
   lastUpdatedAt: string;
   lastUpdatedBy: string | null;

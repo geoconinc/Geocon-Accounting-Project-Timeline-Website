@@ -1,37 +1,77 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { loadDb, type DemoDb } from "@/lib/demo/localStore";
-import type { Project, ProjectStatus, Subitem, SubitemStatus } from "@/lib/types";
-import { projectColors, projectLabel, subColors, subLabel } from "@/components/board/StatusCell";
-import { Avatar } from "@/components/board/Avatar";
+import { loadDb } from "@/lib/demo/localStore";
+import { DEMO_MODE } from "@/lib/demo/config";
+import type { Project, ProjectStatus, Subitem, SubitemStatus, User } from "@/lib/types";
+import type { BoardData } from "@/components/features/board/state";
+import { projectColors, projectLabel, subColors, subLabel } from "@/components/features/board/StatusCell";
+import { Avatar } from "@/components/features/board/Avatar";
 import { formatRelativeTime } from "@/lib/utils";
-import { format, differenceInCalendarDays, parseISO } from "date-fns";
+import { differenceInCalendarDays, format, isValid, parse, parseISO } from "date-fns";
 import { AlertTriangle, CheckCircle2, Clock, FolderOpen } from "lucide-react";
 
 const projectStatuses: ProjectStatus[] = ["New", "InProgress", "Completed", "Missing", "Future"];
 const subStatuses: SubitemStatus[] = ["Completed", "InProgress", "Missing", "NotStarted", "NA"];
 
+function safeParseDateStr(v: string): Date {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    const d = parse(v, "yyyy-MM-dd", new Date());
+    return isValid(d) ? d : new Date(v);
+  }
+  return parseISO(v);
+}
+
 export function DashboardView() {
-  const [db, setDb] = useState<DemoDb | null>(null);
+  const [projects, setProjects] = useState<Project[]>(() =>
+    DEMO_MODE ? loadDb().projects : []
+  );
+  const [subitems, setSubitems] = useState<Subitem[]>(() =>
+    DEMO_MODE ? loadDb().subitems : []
+  );
+  const [users, setUsers] = useState<User[]>(() =>
+    DEMO_MODE ? loadDb().users : []
+  );
+  const [loading, setLoading] = useState(!DEMO_MODE);
 
   useEffect(() => {
-    setDb(loadDb());
-    const onChange = () => setDb(loadDb());
-    window.addEventListener("geocon-demo-change", onChange);
-    window.addEventListener("storage", onChange);
-    return () => {
-      window.removeEventListener("geocon-demo-change", onChange);
-      window.removeEventListener("storage", onChange);
+    if (DEMO_MODE) {
+      const refresh = () => {
+        const db = loadDb();
+        setProjects(db.projects);
+        setSubitems(db.subitems);
+        setUsers(db.users);
+      };
+      refresh();
+      window.addEventListener("geocon-demo-change", refresh);
+      window.addEventListener("storage", refresh);
+      return () => {
+        window.removeEventListener("geocon-demo-change", refresh);
+        window.removeEventListener("storage", refresh);
+      };
+    }
+
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/projects");
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as BoardData;
+        setProjects(data.projects);
+        setSubitems(data.subitems);
+        setUsers(data.users);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
+    void load();
+    return () => { cancelled = true; };
   }, []);
 
-  if (!db) {
+  if (loading) {
     return <div className="p-8 text-slate-500 text-sm">Loading dashboard...</div>;
   }
 
-  const projects = db.projects;
-  const subitems = db.subitems;
   const today = new Date();
 
   const projByStatus = projectStatuses.map((s) => ({
@@ -51,7 +91,7 @@ export function DashboardView() {
     .map((s) => ({
       sub: s,
       project: projects.find((p) => p.id === s.projectId)!,
-      days: differenceInCalendarDays(parseISO(s.dueDate!), today)
+      days: differenceInCalendarDays(safeParseDateStr(s.dueDate!), today)
     }))
     .filter((x) => x.project)
     .sort((a, b) => a.days - b.days)
@@ -153,15 +193,15 @@ export function DashboardView() {
                       days < 0
                         ? "text-red-600"
                         : days === 0
-                        ? "text-amber-600"
-                        : "text-slate-500"
+                          ? "text-amber-600"
+                          : "text-slate-500"
                     }`}
                   >
                     {days < 0
                       ? `${Math.abs(days)}d overdue`
                       : days === 0
-                      ? "Due today"
-                      : `In ${days}d`}
+                        ? "Due today"
+                        : `In ${days}d`}
                   </div>
                 </li>
               ))}
@@ -174,7 +214,7 @@ export function DashboardView() {
           ) : (
             <ul className="flex flex-col divide-y divide-slate-100">
               {recent.map((p) => (
-                <RecentRow key={p.id} project={p} users={db.users} />
+                <RecentRow key={p.id} project={p} users={users} />
               ))}
             </ul>
           )}
@@ -245,14 +285,11 @@ function BarRow({
   );
 }
 
-function RecentRow({ project, users }: { project: Project; users: { id: string; name: string; email: string; initials: string }[] }) {
-  const owner = users.find((u) => u.id === project.ownerId);
+function RecentRow({ project, users }: { project: Project; users: User[] }) {
+  const owner = users.find((u) => u.id === project.ownerId) ?? null;
   return (
     <li className="py-2 flex items-center gap-3">
-      <Avatar
-        user={owner ? { ...owner, createdAt: "" } : null}
-        size={26}
-      />
+      <Avatar user={owner} size={26} />
       <div className="flex-1 min-w-0">
         <div className="text-xs font-medium truncate">
           {project.code} · {project.name}
@@ -260,8 +297,8 @@ function RecentRow({ project, users }: { project: Project; users: { id: string; 
         <div className="text-[11px] text-slate-500">
           {projectLabel[project.status]}
           {project.timelineStart && project.timelineEnd
-            ? ` · ${format(parseISO(project.timelineStart), "MMM d")} – ${format(
-                parseISO(project.timelineEnd),
+            ? ` · ${format(safeParseDateStr(project.timelineStart), "MMM d")} – ${format(
+                safeParseDateStr(project.timelineEnd),
                 "MMM d"
               )}`
             : ""}

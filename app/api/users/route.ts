@@ -1,1 +1,1 @@
-export { GET, PATCH } from "@/lib/server/routes/usersRoute";
+export { GET, PATCH } from "@/lib/server/features/users/usersRoute";

@@ -1,1 +1,1 @@
-export { POST } from "@/lib/server/routes/fileSasRoute";
+export { POST } from "@/lib/server/features/files/fileSasRoute";

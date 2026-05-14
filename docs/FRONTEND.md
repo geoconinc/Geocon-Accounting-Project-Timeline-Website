@@ -9,7 +9,7 @@
 ## Components
 
 - **`components/AppShell.tsx`**, **`TopBar.tsx`**, **`nav/Sidebar.tsx`** — Chrome and navigation.
-- **`components/board/*`** — Board, rows, cells, drag-and-drop, dialogs. These import the HTTP/demo facade from **`@/lib/client/boardApi`** (`api`, `uploadFileDemo`).
+- **`components/features/board/*`** — Board, rows, cells, drag-and-drop, dialogs. These import the HTTP/demo facade from **`@/lib/client/boardApi`** (`api`, `uploadFileDemo`).
 - **`components/dashboard/`**, **`timeline/`**, **`documents/`**, **`team/`**, **`settings/`** — Feature views.
 
 ## Demo mode

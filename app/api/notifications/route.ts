@@ -1,1 +1,1 @@
-export { POST } from "@/lib/server/routes/notificationsRoute";
+export { POST } from "@/lib/server/features/notifications/notificationsRoute";

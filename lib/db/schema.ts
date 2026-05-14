@@ -67,6 +67,8 @@ export const projects = pgTable("projects", {
   cprContact: text("cpr_contact"),
   sharepointUrl: text("sharepoint_url"),
   office: text("office"),
+  projectManagerId: uuid("project_manager_id").references(() => users.id, { onDelete: "set null" }),
+  projectDirectorId: uuid("project_director_id").references(() => users.id, { onDelete: "set null" }),
   notes: text("notes"),
   lastUpdatedAt: timestamp("last_updated_at", { withTimezone: true }).notNull().defaultNow(),
   lastUpdatedBy: uuid("last_updated_by").references(() => users.id, { onDelete: "set null" }),

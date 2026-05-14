@@ -8,8 +8,11 @@ import {
   PieChart,
   CalendarRange,
   Folder,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Shield
 } from "lucide-react";
+import type { User } from "@/lib/types";
+import { isSuperAdminUser } from "@/lib/auth/superAdmin";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -20,8 +23,10 @@ const items = [
   { href: "/settings", label: "Settings", icon: SettingsIcon }
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ user }: { user?: User | null }) {
   const pathname = usePathname();
+  const showAdmin = user ? isSuperAdminUser(user) : false;
+
   return (
     <aside className="w-56 bg-white border-r border-slate-200 text-slate-700 flex flex-col shrink-0">
       <div className="h-20 flex flex-col items-center justify-center gap-1.5 px-4 border-b border-slate-200">
@@ -50,6 +55,20 @@ export default function Sidebar() {
             </Link>
           );
         })}
+        {showAdmin && (
+          <Link
+            href="/settings/admin"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+              pathname.startsWith("/settings/admin")
+                ? "bg-amber-50 text-amber-900 border border-amber-100"
+                : "text-amber-800 hover:bg-amber-50/80"
+            )}
+          >
+            <Shield size={16} />
+            Admin
+          </Link>
+        )}
       </nav>
       <div className="p-3 text-[10px] text-slate-400 border-t border-slate-200 text-center">
         Geocon · v0.1

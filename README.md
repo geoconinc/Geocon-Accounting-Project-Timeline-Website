@@ -69,13 +69,13 @@ app/
   UI routes live under app/(app)/. API routes live under app/api/.
 
 components/
-  React UI components grouped by feature: board, dashboard, documents,
-  navigation, settings, team, and timeline.
+  React UI: `features/board/` (grid, rows, cells), dashboard, documents,
+  navigation, settings, team, timeline, and shell pieces (AppShell, TopBar).
 
 lib/
-  Shared application code. This includes auth helpers, API route handlers,
-  storage drivers, database schema and migrations, notification dispatch,
-  Azure Blob helpers, demo mode helpers, and shared types.
+  Shared application code: auth, demo mode, domain rules (offices, defaults),
+  notifications (Graph email), storage drivers, DB schema, and server-side
+  HTTP handlers under lib/server/features/ (by area) plus site-data sync.
 
 scripts/
   Local maintenance scripts such as seed and database migration runners.

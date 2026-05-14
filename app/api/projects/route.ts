@@ -1,1 +1,1 @@
-export { GET, POST } from "@/lib/server/routes/projectsRoute";
+export { GET, POST } from "@/lib/server/features/projects/projectsRoute";

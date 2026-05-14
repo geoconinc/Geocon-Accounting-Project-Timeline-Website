@@ -1,1 +1,1 @@
-export { GET } from "@/lib/server/routes/fileUrlRoute";
+export { GET } from "@/lib/server/features/files/fileUrlRoute";

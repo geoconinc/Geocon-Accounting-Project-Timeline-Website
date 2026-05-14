@@ -1,6 +1,6 @@
 # HTTP API
 
-All handlers are implemented under **`lib/server/routes/`** and re-exported from **`app/api/**/route.ts`** so URLs stay stable and Next.js route config stays in `app/api` where required.
+All handlers are implemented under **`lib/server/features/**`** (grouped by area) and re-exported from **`app/api/**/route.ts`** so URLs stay stable and Next.js route config stays in `app/api` where required.
 
 ## Auth patterns
 

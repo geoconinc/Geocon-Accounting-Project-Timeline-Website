@@ -3,26 +3,39 @@
 import { useEffect, useState } from "react";
 import { Mail, Phone, UserPlus, X, Trash2 } from "lucide-react";
 import { demoStore, loadDb, type Invitation } from "@/lib/demo/localStore";
-import { DEMO_USER } from "@/lib/demo/config";
+import { DEMO_MODE, DEMO_USER } from "@/lib/demo/config";
 import type { User } from "@/lib/types";
-import { Avatar } from "@/components/board/Avatar";
+import type { BoardData } from "@/components/features/board/state";
+import { Avatar } from "@/components/features/board/Avatar";
 
 export function TeamView() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [users, setUsers] = useState<User[]>(() => (DEMO_MODE ? loadDb().users : []));
+  const [invitations, setInvitations] = useState<Invitation[]>(() =>
+    DEMO_MODE ? loadDb().invitations : []
+  );
   const [showInvite, setShowInvite] = useState(false);
 
-  function refresh() {
-    const db = loadDb();
-    setUsers(db.users);
-    setInvitations(db.invitations);
-  }
-
   useEffect(() => {
-    refresh();
-    const onChange = () => refresh();
-    window.addEventListener("geocon-demo-change", onChange);
-    return () => window.removeEventListener("geocon-demo-change", onChange);
+    if (DEMO_MODE) {
+      const refresh = () => {
+        const db = loadDb();
+        setUsers(db.users);
+        setInvitations(db.invitations);
+      };
+      refresh();
+      window.addEventListener("geocon-demo-change", refresh);
+      return () => window.removeEventListener("geocon-demo-change", refresh);
+    }
+
+    let cancelled = false;
+    const load = async () => {
+      const res = await fetch("/api/projects");
+      if (!res.ok || cancelled) return;
+      const data = (await res.json()) as BoardData;
+      setUsers(data.users);
+    };
+    void load();
+    return () => { cancelled = true; };
   }, []);
 
   return (
@@ -32,9 +45,11 @@ export function TeamView() {
           <h1 className="text-xl font-semibold text-brand-dark">Team</h1>
           <p className="text-sm text-slate-500">Everyone with access to this board.</p>
         </div>
-        <button onClick={() => setShowInvite(true)} className="btn-primary text-sm">
-          <UserPlus size={14} /> Invite person
-        </button>
+        {DEMO_MODE && (
+          <button onClick={() => setShowInvite(true)} className="btn-primary text-sm">
+            <UserPlus size={14} /> Invite person
+          </button>
+        )}
       </div>
 
       <div className="bg-white border border-slate-200 rounded-lg overflow-hidden mb-6">
@@ -79,7 +94,7 @@ export function TeamView() {
         </table>
       </div>
 
-      {invitations.length > 0 && (
+      {DEMO_MODE && invitations.length > 0 && (
         <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
           <div className="px-4 py-2 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500 font-medium border-b">
             Pending invitations
@@ -106,6 +121,7 @@ export function TeamView() {
                   </td>
                   <td className="px-4 py-2 text-right">
                     <button
+                      type="button"
                       onClick={() => {
                         demoStore.removeInvitation(inv.id);
                         window.dispatchEvent(new CustomEvent("geocon-demo-change"));

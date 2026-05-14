@@ -1,1 +1,1 @@
-export { POST } from "@/lib/server/routes/logoutRoute";
+export { POST } from "@/lib/server/features/auth-session/logoutRoute";

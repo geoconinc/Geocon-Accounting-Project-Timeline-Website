@@ -1,1 +1,1 @@
-export { POST } from "@/lib/server/routes/filesRoute";
+export { POST } from "@/lib/server/features/files/filesRoute";

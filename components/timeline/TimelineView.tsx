@@ -1,26 +1,77 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { addDays, differenceInCalendarDays, format, parseISO, startOfWeek } from "date-fns";
+import {
+  addDays,
+  differenceInCalendarDays,
+  format,
+  isValid,
+  parse,
+  parseISO,
+  startOfWeek
+} from "date-fns";
 import { loadDb } from "@/lib/demo/localStore";
-import type { Project } from "@/lib/types";
-import { projectColors } from "@/components/board/StatusCell";
-import { Avatar } from "@/components/board/Avatar";
+import type { Project, User } from "@/lib/types";
+import { DEMO_MODE } from "@/lib/demo/config";
+import type { BoardData } from "@/components/features/board/state";
+import { projectColors } from "@/components/features/board/StatusCell";
+import { Avatar } from "@/components/features/board/Avatar";
 
 const DAY_W = 28;
 const WINDOW_DAYS = 60;
 
+function parseProjectDate(value: string | null): Date | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const d = parse(trimmed, "yyyy-MM-dd", new Date());
+    return isValid(d) ? d : null;
+  }
+  const d = parseISO(trimmed);
+  return isValid(d) ? d : null;
+}
+
 export function TimelineView() {
-  const [db, setDb] = useState(() => loadDb());
+  const [projects, setProjects] = useState<Project[]>(() => (DEMO_MODE ? loadDb().projects : []));
+  const [users, setUsers] = useState<User[]>(() => (DEMO_MODE ? loadDb().users : []));
   const [anchor, setAnchor] = useState(() => startOfWeek(addDays(new Date(), -14)));
 
   useEffect(() => {
-    const onChange = () => setDb(loadDb());
-    window.addEventListener("geocon-demo-change", onChange);
-    window.addEventListener("storage", onChange);
+    if (DEMO_MODE) {
+      const refresh = () => {
+        const db = loadDb();
+        setProjects(db.projects);
+        setUsers(db.users);
+      };
+      refresh();
+      window.addEventListener("geocon-demo-change", refresh);
+      window.addEventListener("storage", refresh);
+      return () => {
+        window.removeEventListener("geocon-demo-change", refresh);
+        window.removeEventListener("storage", refresh);
+      };
+    }
+
+    let cancelled = false;
+    const refetch = async () => {
+      const res = await fetch("/api/projects");
+      if (!res.ok || cancelled) return;
+      const data = (await res.json()) as BoardData;
+      setProjects(data.projects);
+      setUsers(data.users);
+    };
+
+    const es = new EventSource("/api/events");
+    es.addEventListener("project.upsert", () => void refetch());
+    es.addEventListener("project.delete", () => void refetch());
+    es.addEventListener("subitem.upsert", () => void refetch());
+    es.addEventListener("subitem.delete", () => void refetch());
+    es.addEventListener("subitem.reorder", () => void refetch());
+    void refetch();
+
     return () => {
-      window.removeEventListener("geocon-demo-change", onChange);
-      window.removeEventListener("storage", onChange);
+      cancelled = true;
+      es.close();
     };
   }, []);
 
@@ -40,7 +91,7 @@ export function TimelineView() {
     return result;
   }, [days]);
 
-  const projects = db.projects.filter((p) => p.timelineStart || p.timelineEnd);
+  const withTimeline = projects.filter((p) => p.timelineStart || p.timelineEnd);
 
   return (
     <div className="p-6 overflow-auto h-full">
@@ -51,18 +102,21 @@ export function TimelineView() {
         </div>
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={() => setAnchor((a) => addDays(a, -14))}
             className="btn-ghost text-sm"
           >
             ← 2 weeks
           </button>
           <button
+            type="button"
             onClick={() => setAnchor(startOfWeek(addDays(new Date(), -14)))}
             className="btn-ghost text-sm"
           >
             Today
           </button>
           <button
+            type="button"
             onClick={() => setAnchor((a) => addDays(a, 14))}
             className="btn-ghost text-sm"
           >
@@ -71,7 +125,7 @@ export function TimelineView() {
         </div>
       </div>
 
-      {projects.length === 0 ? (
+      {withTimeline.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-lg p-8 text-sm text-slate-500 text-center">
           No projects with a timeline yet. Set Start Date and Timeline on a project to see it here.
         </div>
@@ -100,7 +154,11 @@ export function TimelineView() {
                       <div
                         key={i}
                         className={`text-[10px] text-center border-r border-slate-100 py-1 ${
-                          isToday ? "bg-brand text-white font-semibold" : isWeekend ? "bg-slate-50 text-slate-400" : "text-slate-500"
+                          isToday
+                            ? "bg-brand text-white font-semibold"
+                            : isWeekend
+                              ? "bg-slate-50 text-slate-400"
+                              : "text-slate-500"
                         }`}
                         style={{ width: DAY_W }}
                       >
@@ -111,8 +169,8 @@ export function TimelineView() {
                 </div>
               </div>
             </div>
-            {projects.map((p) => (
-              <TimelineRow key={p.id} project={p} days={days} users={db.users} />
+            {withTimeline.map((p) => (
+              <TimelineRow key={p.id} project={p} days={days} users={users} />
             ))}
           </div>
         </div>
@@ -128,11 +186,12 @@ function TimelineRow({
 }: {
   project: Project;
   days: Date[];
-  users: { id: string; name: string; email: string; initials: string }[];
+  users: User[];
 }) {
   const owner = users.find((u) => u.id === project.ownerId);
-  const start = project.timelineStart ? parseISO(project.timelineStart) : null;
-  const end = project.timelineEnd ? parseISO(project.timelineEnd) : start;
+  const start = parseProjectDate(project.timelineStart);
+  const endRaw = parseProjectDate(project.timelineEnd);
+  const end = endRaw ?? start;
 
   let barLeft = 0;
   let barWidth = 0;
@@ -141,7 +200,7 @@ function TimelineRow({
     const endIdx = differenceInCalendarDays(end, days[0]);
     const clampedStart = Math.max(0, startIdx);
     const clampedEnd = Math.min(days.length - 1, endIdx);
-    if (clampedEnd >= 0 && clampedStart <= days.length - 1) {
+    if (clampedEnd >= 0 && clampedStart <= days.length - 1 && clampedEnd >= clampedStart) {
       barLeft = clampedStart * DAY_W;
       barWidth = Math.max(DAY_W, (clampedEnd - clampedStart + 1) * DAY_W);
     }
@@ -150,7 +209,7 @@ function TimelineRow({
   return (
     <div className="flex border-b border-slate-100 hover:bg-slate-50">
       <div className="w-64 shrink-0 border-r border-slate-200 p-2 flex items-center gap-2">
-        <Avatar user={owner ? { ...owner, createdAt: "" } : null} size={24} />
+        <Avatar user={owner ?? null} size={24} />
         <div className="flex flex-col min-w-0">
           <span className="text-xs font-medium truncate">{project.code}</span>
           <span className="text-[11px] text-slate-500 truncate">{project.name}</span>

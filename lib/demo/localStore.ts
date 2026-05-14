@@ -4,11 +4,11 @@ import type { FileRef, Project, Subitem, User } from "@/lib/types";
 import { initialsFromName } from "@/lib/utils";
 import { DEMO_USER } from "./config";
 
-const KEY = "geocon-demo-db-v4";
+const KEY = "geocon-demo-db-v5";
 
-export { DEFAULT_SUBITEM_NAMES, CPR_SUBITEM_NAME } from "@/lib/projectDefaults";
-import { CPR_SUBITEM_NAME, DEFAULT_SUBITEM_NAMES } from "@/lib/projectDefaults";
-import { OFFICE_ASSIGNEES, isOffice, resolveAssigneeId } from "@/lib/offices";
+export { DEFAULT_SUBITEM_NAMES, CPR_SUBITEM_NAME } from "@/lib/domain/projectDefaults";
+import { CPR_SUBITEM_NAME, DEFAULT_SUBITEM_NAMES } from "@/lib/domain/projectDefaults";
+import { isOffice, subitemOwnerIdForOffice } from "@/lib/domain/offices";
 
 export interface DocumentRef {
   id: string;
@@ -77,6 +77,8 @@ function seedDb(): DemoDb {
     cprContact: null,
     sharepointUrl: null,
     office: null,
+    projectManagerId: ml.id,
+    projectDirectorId: me.id,
     notes: null,
     lastUpdatedAt: now,
     lastUpdatedBy: ml.id,
@@ -98,6 +100,8 @@ function seedDb(): DemoDb {
     cprContact: null,
     sharepointUrl: null,
     office: null,
+    projectManagerId: null,
+    projectDirectorId: null,
     notes: null,
     lastUpdatedAt: now,
     lastUpdatedBy: ml.id,
@@ -119,6 +123,8 @@ function seedDb(): DemoDb {
     cprContact: null,
     sharepointUrl: null,
     office: null,
+    projectManagerId: null,
+    projectDirectorId: null,
     notes: null,
     lastUpdatedAt: now,
     lastUpdatedBy: ml.id,
@@ -216,16 +222,17 @@ export const demoStore = {
       cprContact: input.cprContact ?? null,
       sharepointUrl: input.sharepointUrl ?? null,
       office: input.office ?? null,
+      projectManagerId: input.projectManagerId ?? null,
+      projectDirectorId: input.projectDirectorId ?? null,
       notes: input.notes ?? null,
       lastUpdatedAt: new Date().toISOString(),
       lastUpdatedBy: actorId,
       position: db.projects.filter((p) => p.group === group).length
     };
     db.projects.push(project);
-    const officeMap = isOffice(project.office) ? OFFICE_ASSIGNEES[project.office] : null;
+    const office = isOffice(project.office) ? project.office : null;
     DEFAULT_SUBITEM_NAMES.forEach((name, idx) => {
-      const assigneeName = officeMap?.[name];
-      const ownerId = assigneeName ? resolveAssigneeId(db.users, assigneeName) : null;
+      const ownerId = subitemOwnerIdForOffice(office, name, db.users, project.projectManagerId);
       db.subitems.push({
         id: uid("sub"),
         projectId: project.id,
@@ -246,6 +253,13 @@ export const demoStore = {
     const db = loadDb();
     const p = db.projects.find((x) => x.id === id);
     if (!p) return null;
+    if (
+      p.office &&
+      patch.office !== undefined &&
+      patch.office !== p.office
+    ) {
+      throw new Error("Office cannot be changed after it is set.");
+    }
     if (patch.status && patch.status !== p.status) {
       if (patch.status === "Completed") patch.group = "Completed";
       else if (patch.status === "Future") patch.group = "Future";
@@ -260,9 +274,18 @@ export const demoStore = {
 
   deleteProject(id: string) {
     const db = loadDb();
+    const subIds = new Set(db.subitems.filter((s) => s.projectId === id).map((s) => s.id));
+    const keepFile = (f: (typeof db.files)[0]) => {
+      if (f.parentType === "project" && f.parentId === id) return false;
+      if (f.parentType === "subitem" && subIds.has(f.parentId)) return false;
+      return true;
+    };
+    for (const f of db.files) {
+      if (!keepFile(f)) delete db.fileBlobs[f.id];
+    }
+    db.files = db.files.filter(keepFile);
     db.projects = db.projects.filter((p) => p.id !== id);
     db.subitems = db.subitems.filter((s) => s.projectId !== id);
-    db.files = db.files.filter((f) => !(f.parentType === "project" && f.parentId === id));
     saveDb(db);
   },
 
@@ -300,6 +323,9 @@ export const demoStore = {
 
   deleteSubitem(id: string) {
     const db = loadDb();
+    for (const f of db.files) {
+      if (f.parentType === "subitem" && f.parentId === id) delete db.fileBlobs[f.id];
+    }
     db.subitems = db.subitems.filter((s) => s.id !== id);
     db.files = db.files.filter((f) => !(f.parentType === "subitem" && f.parentId === id));
     saveDb(db);

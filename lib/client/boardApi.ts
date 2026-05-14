@@ -13,7 +13,17 @@ async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: { "content-type": "application/json", ...(init?.headers || {}) }
   });
-  if (!res.ok) throw new Error(`${url}: ${res.status}`);
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const j = (await res.json()) as { message?: string; error?: string };
+      detail = j.message ?? j.error ?? "";
+    } catch {
+      /* ignore */
+    }
+    const suffix = detail ? `: ${detail}` : "";
+    throw new Error(`${url}: ${res.status}${suffix}`);
+  }
   return (await res.json()) as T;
 }
 
