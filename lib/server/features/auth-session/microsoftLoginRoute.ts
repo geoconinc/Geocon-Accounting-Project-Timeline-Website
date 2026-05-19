@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
 import { initialsFromName } from "@/lib/utils";
+import { syncOfficeAssigneeUsersIntoStorage } from "@/lib/server/site-data/syncOfficeAssignees";
+import { syncRoleAssigneeUsersIntoStorage } from "@/lib/server/site-data/syncRoleAssignees";
 
 const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN ?? "geoconinc.com").toLowerCase();
 
@@ -44,6 +46,11 @@ export async function POST(req: Request) {
   });
 
   const session = await storage.createSession(user.id, 30);
+
+  await Promise.all([
+    syncRoleAssigneeUsersIntoStorage(),
+    syncOfficeAssigneeUsersIntoStorage()
+  ]);
 
   const res = NextResponse.json({ user });
   res.cookies.set(SESSION_COOKIE, session.token, {

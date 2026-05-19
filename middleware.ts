@@ -3,11 +3,7 @@ import { SESSION_COOKIE } from "@/lib/auth/constants";
 
 const PUBLIC_PATHS = ["/login", "/api/microsoft-login", "/api/verify-session", "/api/cron"];
 
-const DEMO_MODE = (process.env.NEXT_PUBLIC_DEMO_MODE ?? "true").toLowerCase() === "true";
-
 export function middleware(req: NextRequest) {
-  if (DEMO_MODE) return NextResponse.next();
-
   const { pathname } = req.nextUrl;
 
   if (

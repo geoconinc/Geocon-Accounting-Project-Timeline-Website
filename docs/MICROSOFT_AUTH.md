@@ -1,129 +1,95 @@
-# Microsoft Authentication — Setup Guide
+# Microsoft Authentication
 
-This app uses the same two-step trust flow as the existing Geocon AI website:
+## Flow
 
 ```
-Browser (MSAL)  ──acquireToken──►  Microsoft
-     │                                 │
-     │                                 ▼
-     │                          User.Read token
-     │                                 │
-     ▼                                 │
-POST /api/microsoft-login  ◄───────────┘
-     │
-     ▼
-Server verifies token against
-Microsoft Graph /v1.0/me
-     │
-     ├── Enforces @geoconinc.com domain
-     ├── Upserts user in DB
-     └── Issues httpOnly session_token cookie (30d)
+Browser (MSAL popup)
+  → User signs in with Microsoft
+  → acquireToken (scopes: User.Read, email, profile, openid)
+  → POST /api/microsoft-login { accessToken }
+
+Server
+  → GET https://graph.microsoft.com/v1.0/me (verify token)
+  → Check email domain matches ALLOWED_EMAIL_DOMAIN
+  → Upsert user in Postgres (name, email, initials from Graph profile)
+  → Generate random session token, store in sessions table
+  → Set httpOnly cookie: session_token (30-day expiry)
+
+Subsequent requests
+  → middleware.ts reads session_token cookie
+  → No token → redirect to /login (pages) or 401 JSON (API)
+  → Valid token → request proceeds
 ```
 
-After the cookie is set, every API call and protected page is authorized via
-the cookie — no tokens in JavaScript. `middleware.ts` redirects unauthenticated
-requests to `/login`.
+## Azure App Registration
 
----
+1. Go to [Microsoft Entra admin center](https://entra.microsoft.com) → **App registrations** → **New registration**.
+2. Name: `Geocon Project Timeline`
+3. Supported account types: **Accounts in this organizational directory only** (single tenant).
+4. Redirect URI: **Single-page application (SPA)** → `http://localhost:3000`
+5. After registration, add your production URL as a second SPA redirect URI.
 
-## Step 1 — Register the app in Azure (Microsoft Entra ID)
+Copy from the overview page:
+- **Application (client) ID** → `NEXT_PUBLIC_MSAL_CLIENT_ID`
+- **Directory (tenant) ID** → `NEXT_PUBLIC_MSAL_TENANT_ID`
 
-1. Go to <https://entra.microsoft.com> → **App registrations** → **New registration**.
-2. Name it: `Geocon Project Timeline`.
-3. **Supported account types**: *Accounts in this organizational directory only* (Geocon tenant only).
-4. **Redirect URI**: choose **Single-page application (SPA)** and enter:
-   - `http://localhost:3000` (for local dev)
-   - Add another for prod once you deploy, e.g. `https://timeline.geoconinc.com`.
-5. Click **Register**.
+## API Permissions
 
-From the app overview page copy:
-- **Application (client) ID** → goes into `NEXT_PUBLIC_MSAL_CLIENT_ID`
-- **Directory (tenant) ID** → goes into `NEXT_PUBLIC_MSAL_TENANT_ID`
-
-## Step 2 — Configure API permissions
-
-Under **API permissions** → **Add a permission** → **Microsoft Graph** → **Delegated permissions**:
-
-- `User.Read` (already selected by default)
+Under **API permissions** → **Add a permission** → **Microsoft Graph** → **Delegated**:
+- `User.Read` (default)
 - `email`
 - `profile`
 - `openid`
 
-Click **Grant admin consent for Geocon**. (Same as the AI site.)
+Click **Grant admin consent for Geocon**.
 
-No client secret is required — this is a pure SPA / public client flow.
+No client secret needed — this is a public SPA client (PKCE flow).
 
-## Step 3 — Fill in your `.env.local`
-
-Copy `.env.example` to `.env.local` at the project root and fill the auth section:
+## Environment Variables
 
 ```bash
-NEXT_PUBLIC_DEMO_MODE=false                # turn off demo mode
-NEXT_PUBLIC_MSAL_CLIENT_ID=<paste client id>
-NEXT_PUBLIC_MSAL_TENANT_ID=<paste tenant id>
-NEXT_PUBLIC_MSAL_REDIRECT_URI=http://localhost:3000
-
-ALLOWED_EMAIL_DOMAIN=geoconinc.com         # backend domain enforcement
-SESSION_SECRET=<long random string>        # used by server when signing tokens
-
-STORAGE_DRIVER=json                        # keep json for local; postgres for prod
+NEXT_PUBLIC_MSAL_CLIENT_ID=<application client id>
+NEXT_PUBLIC_MSAL_TENANT_ID=<directory tenant id>
+NEXT_PUBLIC_MSAL_REDIRECT_URI=http://localhost:3000   # production: https://your-domain.com
+ALLOWED_EMAIL_DOMAIN=geoconinc.com                     # server-side domain enforcement
 ```
 
-For production also set `NEXT_PUBLIC_MSAL_REDIRECT_URI` to your live origin and
-make sure that URI is also registered in Azure under **Authentication → SPA**.
+## Graph App Registration (for email + SharePoint)
 
-## Step 4 — Restart the dev server
+A **separate** app registration is needed for server-side Graph operations (sending email, SharePoint file uploads). This uses **client credentials** (app-only), not delegated permissions.
+
+1. Create a new app registration: `Geocon Timeline Notifier`
+2. Add **Application permissions**: `Mail.Send`, `Sites.ReadWrite.All`
+3. Grant admin consent.
+4. Create a **client secret** under Certificates & secrets.
 
 ```bash
-# Stop any running next dev, then:
-rm -rf .next
-npm run dev
+GRAPH_APP_TENANT_ID=<tenant id>
+GRAPH_APP_CLIENT_ID=<notifier app client id>
+GRAPH_APP_CLIENT_SECRET=<client secret value>
+NOTIFY_FROM_ADDRESS=notifications@geoconinc.com
 ```
 
-Visit <http://localhost:3000>. You should be redirected to `/login`, see
-**“Sign in with Microsoft”**, click it → real Microsoft popup → consent → land
-back in the app with a session cookie.
+Optionally restrict `Mail.Send` to a specific mailbox via an [Exchange Application Access Policy](https://learn.microsoft.com/en-us/graph/auth-limit-mailbox-access).
 
-## Step 5 — Verify it's working
-
-1. **DevTools → Application → Cookies** should show `session_token` (httpOnly).
-2. `GET /api/verify-session` should return `{ authenticated: true, user: ... }`.
-3. Try signing in with a non-`@geoconinc.com` account — server returns 403 with
-   `domain_not_allowed`.
-4. Click **Log out** in the top bar — cookie cleared, redirected to `/login`.
-
----
-
-## File map (for reference — all of this already exists)
+## File Map
 
 | Concern | File |
-|---|---|
+|---------|------|
 | MSAL client config | `lib/auth/msalConfig.ts` |
-| MSAL provider mount (skipped in demo) | `app/providers.tsx` |
-| Login page (real flow + demo flow) | `app/login/page.tsx` |
-| Token verification + session issuance | `lib/server/features/auth-session/microsoftLoginRoute.ts` |
+| MSAL provider | `app/providers.tsx` |
+| Login page | `app/login/page.tsx` |
+| Token verification + session | `lib/server/features/auth-session/microsoftLoginRoute.ts` |
 | Session cookie + lookup | `lib/auth/session.ts`, `lib/auth/constants.ts` |
-| Auth middleware (redirects to /login) | `middleware.ts` |
-| Verify-session endpoint | `app/api/verify-session/route.ts` |
-| Logout endpoint | `app/api/logout/route.ts` |
-| Server-side user fetch in pages | `app/(app)/layout.tsx` (`getCurrentUser()`) |
+| Auth middleware | `middleware.ts` |
+| Graph app token (email/SharePoint) | `lib/graph/appAccessToken.ts` |
 
-## Common pitfalls
+## Troubleshooting
 
-- **`AADSTS50011` redirect URI mismatch**: the URI in your `.env` must match the
-  URI registered in Azure exactly (including http vs https and trailing slash).
-- **Popup blocked**: MSAL falls back to redirect mode automatically; allow popups
-  for cleanest UX.
-- **CORS error to `graph.microsoft.com`**: the backend (server) calls Graph, not
-  the browser — make sure the request is hitting `/api/microsoft-login` and not
-  Graph directly.
-- **Session lost on refresh**: confirm the cookie is `httpOnly` + `path=/` and
-  that you're not running on a different origin between issue and read.
-
-## Going to production
-
-1. Add the prod URL to Azure App registration → Authentication → SPA redirect URIs.
-2. Set `NEXT_PUBLIC_MSAL_REDIRECT_URI` to that URL.
-3. Use a Postgres-backed `STORAGE_DRIVER=postgres` so sessions survive restarts
-   (the JSON store is fine locally but not for multi-instance deployments).
-4. `NODE_ENV=production` automatically flips the cookie to `secure: true`.
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| `AADSTS50011` redirect mismatch | Redirect URI in env doesn't match Azure registration | Ensure exact match including protocol and trailing slash |
+| Popup blocked | Browser settings | Allow popups for the app domain |
+| CORS error to graph.microsoft.com | Client calling Graph directly | The server calls Graph, not the browser — check that `/api/microsoft-login` is being called |
+| Session lost on refresh | Cookie config issue | Verify cookie is `httpOnly`, `path=/`, and on the same origin |
+| `domain_not_allowed` error | User email not matching `ALLOWED_EMAIL_DOMAIN` | Check the user's email domain matches |

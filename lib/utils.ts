@@ -13,6 +13,15 @@ export function initialsFromName(name: string): string {
   return (first + last).toUpperCase();
 }
 
+/** Coalesce rapid calls (e.g. SSE bursts) into one invocation. */
+export function debounce<T extends (...args: never[]) => void>(fn: T, delayMs: number): T {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return ((...args: Parameters<T>) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delayMs);
+  }) as T;
+}
+
 export function formatRelativeTime(iso: string): string {
   const then = new Date(iso).getTime();
   const now = Date.now();

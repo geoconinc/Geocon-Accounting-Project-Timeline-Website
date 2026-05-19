@@ -1,40 +1,97 @@
-# HTTP API
+# HTTP API Reference
 
-All handlers are implemented under **`lib/server/features/**`** (grouped by area) and re-exported from **`app/api/**/route.ts`** so URLs stay stable and Next.js route config stays in `app/api` where required.
+All route handlers live in `lib/server/features/` grouped by domain area. The `app/api/**/route.ts` files are thin re-exports that keep Next.js segment config next to the URL.
 
-## Auth patterns
+## Authentication
 
-| Pattern | Use case |
-|---------|----------|
-| **`authenticateRequest()`** | Mutations and reads that need a logged-in user; returns `User` or `Response` (401). |
-| **`getCurrentUser()`** | Soft check (for example SSE and verify-session). |
+| Pattern | Usage |
+|---------|-------|
+| `authenticateRequest()` | Returns `User` or `Response(401)`. Used by all mutation and data-reading endpoints. |
+| `getCurrentUser()` | Soft check — returns `User | null`. Used by SSE and verify-session. |
 
-## Routes (summary)
+All non-public endpoints require a valid `session_token` cookie. Middleware redirects unauthenticated page requests to `/login` and returns `401` JSON for API calls.
 
-| Method | Path | Handler module | Notes |
-|--------|------|----------------|-------|
-| GET | `/api/projects` | `projectsRoute` | Bundle: projects, subitems, users, files, `me`. |
-| POST | `/api/projects` | `projectsRoute` | Create project; publishes bus event. |
-| PATCH | `/api/projects/[id]` | `projectByIdRoute` | Update; notifications + activity on certain fields. |
-| DELETE | `/api/projects/[id]` | `projectByIdRoute` | |
-| POST | `/api/projects/[id]/subitems` | `subitemsByProjectRoute` | Create subitem. |
-| PUT | `/api/projects/[id]/subitems` | `subitemsByProjectRoute` | Reorder `orderedIds`. |
-| PATCH | `/api/subitems/[id]` | `subitemByIdRoute` | |
-| DELETE | `/api/subitems/[id]` | `subitemByIdRoute` | |
-| POST | `/api/files` | `filesRoute` | Record metadata after blob upload. |
-| POST | `/api/files/sas` | `fileSasRoute` | Upload SAS URL when Azure blob env is set. |
-| GET | `/api/files/[id]/url` | `fileUrlRoute` | Read SAS for download. |
-| GET, PATCH | `/api/users` | `usersRoute` | List users; patch profile fields. |
-| POST | `/api/notifications` | `notificationsRoute` | Internal-style notify dispatch. |
-| GET, POST | `/api/notification-prefs` | `notificationPrefsRoute` | Query string `projectId` on GET. |
-| POST | `/api/microsoft-login` | `microsoftLoginRoute` | Graph token → session cookie. |
-| GET | `/api/verify-session` | `verifySessionRoute` | |
-| POST | `/api/logout` | `logoutRoute` | |
-| GET | `/api/events` | `eventsRoute` | SSE; `dynamic` + `runtime` exported from `app/api/events/route.ts`. |
-| POST | `/api/cron/due-dates` | `cronDueDatesRoute` | Header `X-Cron-Secret` must match `CRON_SHARED_SECRET`. |
+## Routes
 
-Request/response bodies match the previous inline `route.ts` implementations (this refactor moved code only).
+### Auth & Session
 
-## Blob storage
+| Method | Path | Handler | Description |
+|--------|------|---------|-------------|
+| POST | `/api/microsoft-login` | `microsoftLoginRoute` | Exchange Graph access token for session cookie |
+| GET | `/api/verify-session` | `verifySessionRoute` | Check current session validity |
+| POST | `/api/logout` | `logoutRoute` | Clear session cookie |
 
-**`lib/blob/sas.ts`** — helpers for Azure Blob SAS URLs. File routes return `503` with `blob_not_configured` when environment variables are missing.
+### Projects
+
+| Method | Path | Handler | Description |
+|--------|------|---------|-------------|
+| GET | `/api/projects` | `projectsRoute` | Board payload: projects, subitems, users, files, `me` (filtered by access) |
+| POST | `/api/projects` | `projectsRoute` | Create project with auto-generated subitems |
+| PATCH | `/api/projects/[id]` | `projectByIdRoute` | Update project fields; triggers notifications on assignment changes |
+| DELETE | `/api/projects/[id]` | `projectByIdRoute` | Delete project and all associated subitems/files |
+
+### Subitems
+
+| Method | Path | Handler | Description |
+|--------|------|---------|-------------|
+| POST | `/api/projects/[id]/subitems` | `subitemsByProjectRoute` | Create subitem |
+| PUT | `/api/projects/[id]/subitems` | `subitemsByProjectRoute` | Reorder subitems (`{ orderedIds: [...] }`) |
+| PATCH | `/api/subitems/[id]` | `subitemByIdRoute` | Update subitem fields |
+| DELETE | `/api/subitems/[id]` | `subitemByIdRoute` | Delete subitem |
+
+### Files
+
+| Method | Path | Handler | Description |
+|--------|------|---------|-------------|
+| POST | `/api/files/sas` | `fileSasRoute` | Get upload URL (SharePoint session or Azure Blob SAS) |
+| POST | `/api/files` | `filesRoute` | Record file metadata after upload completes |
+| GET | `/api/files/[id]/url` | `fileUrlRoute` | Get download URL (SharePoint or Blob read SAS) |
+
+**Upload flow:**
+1. Client calls `POST /api/files/sas` with `{ parentType, parentId, filename, fileSize }`.
+2. Server returns `{ provider: "sharepoint", uploadUrl, driveId }` or `{ provider: "blob", uploadUrl, blobPath }`.
+3. Client uploads directly to the returned URL.
+4. Client calls `POST /api/files` with metadata including the `blobPath`.
+
+### Users
+
+| Method | Path | Handler | Description |
+|--------|------|---------|-------------|
+| GET | `/api/users` | `usersRoute` | List all users |
+| PATCH | `/api/users` | `usersRoute` | Update profile fields |
+
+### Notifications
+
+| Method | Path | Handler | Description |
+|--------|------|---------|-------------|
+| POST | `/api/notifications` | `notificationsRoute` | Send email notification to a user |
+
+### Role Assignees
+
+| Method | Path | Handler | Description |
+|--------|------|---------|-------------|
+| GET | `/api/role-assignees` | `roleAssigneesRoute` | Get project managers and directors with matched users |
+
+### Admin
+
+| Method | Path | Handler | Description |
+|--------|------|---------|-------------|
+| GET | `/api/admin/site-config` | (route.ts) | Get office assignees + role roster (super-admin only) |
+| PUT | `/api/admin/site-config` | (route.ts) | Update office assignees + role roster (super-admin only) |
+
+### Events & Cron
+
+| Method | Path | Handler | Description |
+|--------|------|---------|-------------|
+| GET | `/api/events` | `eventsRoute` | SSE stream for real-time board updates |
+| POST | `/api/cron/due-dates` | `cronDueDatesRoute` | Scheduled job: send due-date reminder emails. Requires `X-Cron-Secret` header. |
+
+## Error Responses
+
+All endpoints return JSON error bodies:
+
+```json
+{ "error": "error_code", "message": "Human-readable description" }
+```
+
+Common codes: `unauthorized` (401), `forbidden` (403), `not_found` (404), `invalid_json` (400).

@@ -2,8 +2,7 @@
 
 import { useEffect, useReducer, useRef } from "react";
 import type { FileRef, Project, Subitem, User } from "@/lib/types";
-import { DEMO_MODE } from "@/lib/demo/config";
-import { getCurrentDemoUserId, loadDb } from "@/lib/demo/localStore";
+import { debounce } from "@/lib/utils";
 
 export interface BoardData {
   projects: Project[];
@@ -80,17 +79,7 @@ function reducer(state: BoardData, a: Action): BoardData {
   }
 }
 
-function reloadFromDemoStorage(): BoardData {
-  const db = loadDb();
-  const me = getCurrentDemoUserId() ?? db.users[0]?.id ?? "demo-user";
-  return {
-    projects: db.projects,
-    subitems: db.subitems,
-    users: db.users,
-    files: db.files,
-    me
-  };
-}
+const POLL_INTERVAL_MS = 30_000;
 
 export function useBoardState(initial: BoardData) {
   const [state, dispatch] = useReducer(reducer, initial);
@@ -98,39 +87,45 @@ export function useBoardState(initial: BoardData) {
   dispatchRef.current = dispatch;
 
   useEffect(() => {
-    if (DEMO_MODE) {
-      dispatchRef.current({ type: "set", data: reloadFromDemoStorage() });
-      const onChange = () =>
-        dispatchRef.current({ type: "set", data: reloadFromDemoStorage() });
-      window.addEventListener("geocon-demo-change", onChange);
-      window.addEventListener("storage", onChange);
-      return () => {
-        window.removeEventListener("geocon-demo-change", onChange);
-        window.removeEventListener("storage", onChange);
-      };
-    }
-
-    const es = new EventSource("/api/events");
     const refetch = async () => {
-      const res = await fetch(`/api/projects`);
-      if (!res.ok) return;
-      const data = (await res.json()) as BoardData;
-      dispatchRef.current({ type: "set", data });
+      try {
+        const res = await fetch("/api/projects");
+        if (!res.ok) return;
+        const data = (await res.json()) as BoardData;
+        dispatchRef.current({ type: "set", data });
+      } catch {
+        // network error — will retry on next poll
+      }
     };
 
-    es.addEventListener("project.upsert", refetch);
-    es.addEventListener("project.delete", (ev: MessageEvent) => {
-      const { id } = JSON.parse(ev.data) as { id: string };
-      dispatchRef.current({ type: "deleteProject", id });
-    });
-    es.addEventListener("subitem.upsert", refetch);
-    es.addEventListener("subitem.delete", (ev: MessageEvent) => {
-      const { id } = JSON.parse(ev.data) as { id: string };
-      dispatchRef.current({ type: "deleteSubitem", id });
-    });
-    es.addEventListener("subitem.reorder", refetch);
-    es.addEventListener("file.added", refetch);
-    return () => es.close();
+    const scheduleRefetch = debounce(() => void refetch(), 400);
+
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource("/api/events");
+      es.addEventListener("project.upsert", scheduleRefetch);
+      es.addEventListener("project.delete", (ev: MessageEvent) => {
+        const { id } = JSON.parse(ev.data) as { id: string };
+        dispatchRef.current({ type: "deleteProject", id });
+      });
+      es.addEventListener("subitem.upsert", scheduleRefetch);
+      es.addEventListener("subitem.delete", (ev: MessageEvent) => {
+        const { id } = JSON.parse(ev.data) as { id: string };
+        dispatchRef.current({ type: "deleteSubitem", id });
+      });
+      es.addEventListener("subitem.reorder", scheduleRefetch);
+      es.addEventListener("file.added", scheduleRefetch);
+      es.onerror = scheduleRefetch;
+    } catch {
+      // SSE not available (serverless) — polling only
+    }
+
+    const interval = setInterval(refetch, POLL_INTERVAL_MS);
+
+    return () => {
+      es?.close();
+      clearInterval(interval);
+    };
   }, []);
 
   return { state, dispatch };

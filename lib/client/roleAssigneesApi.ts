@@ -9,6 +9,7 @@ export type RoleAssigneesResponse = {
     email: string;
     job: string;
     office: string;
+    inEmployeeList: boolean;
     user: User;
   }[];
   projectManagers: {

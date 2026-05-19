@@ -9,7 +9,8 @@
     "lint": "next lint",
     "seed": "tsx scripts/seed.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx scripts/migrate.ts"
+    "db:migrate": "tsx --env-file=.env.local scripts/migrate.ts",
+    "db:seed-roster": "tsx --env-file=.env.local scripts/seed-site-config.ts"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.20.0",
@@ -32,6 +33,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.15.11",
     "@types/node": "^20.16.5",
     "@types/pg": "^8.11.10",
     "@types/proper-lockfile": "^4.1.4",

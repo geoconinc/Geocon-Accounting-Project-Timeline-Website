@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@/lib/types";
 import { LogOut, X } from "lucide-react";
-import { DEMO_MODE } from "@/lib/demo/config";
-import { clearDemoSession } from "@/lib/demo/auth";
 
 export default function TopBar({ user }: { user: User }) {
   const router = useRouter();
@@ -21,11 +19,7 @@ export default function TopBar({ user }: { user: User }) {
 
   async function logout() {
     setBusy(true);
-    if (DEMO_MODE) {
-      clearDemoSession();
-    } else {
-      await fetch("/api/logout", { method: "POST" });
-    }
+    await fetch("/api/logout", { method: "POST" });
     router.push("/login");
     router.refresh();
   }

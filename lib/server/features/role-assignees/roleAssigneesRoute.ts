@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
 import type { User } from "@/lib/types";
 import { storage } from "@/lib/storage";
 import { authenticateRequest } from "@/lib/server/routeAuth";
-import { loadRoleAssigneesJson, syncRoleAssigneeUsersIntoStorage } from "@/lib/server/site-data/syncRoleAssignees";
-import { syncOfficeAssigneeUsersIntoStorage } from "@/lib/server/site-data/syncOfficeAssignees";
+import { loadRoleAssigneesJson } from "@/lib/server/site-data/syncRoleAssignees";
 
 export async function GET() {
   const user = await authenticateRequest();
   if (user instanceof Response) return user;
 
-  await syncRoleAssigneeUsersIntoStorage();
-  await syncOfficeAssigneeUsersIntoStorage();
   const data = await loadRoleAssigneesJson();
   if (!data) {
     return NextResponse.json(

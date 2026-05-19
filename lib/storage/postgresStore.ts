@@ -311,6 +311,25 @@ export const postgresStore: Storage = {
     });
   },
 
+  async listAllSubitems() {
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(subitems)
+      .orderBy(
+        subitems.projectId,
+        sql`CASE WHEN ${subitems.status} = 'NA' THEN 1 ELSE 0 END`,
+        subitems.position
+      );
+    return rows.map(mapSubitem);
+  },
+
+  async getSubitemById(id) {
+    const db = getDb();
+    const rows = await db.select().from(subitems).where(eq(subitems.id, id)).limit(1);
+    return rows[0] ? mapSubitem(rows[0]) : null;
+  },
+
   async listSubitems(projectId) {
     const db = getDb();
     const rows = await db
@@ -394,6 +413,18 @@ export const postgresStore: Storage = {
           .where(and(eq(subitems.id, sid), eq(subitems.projectId, projectId)));
       }
     });
+  },
+
+  async listAllFiles() {
+    const db = getDb();
+    const rows = await db.select().from(files);
+    return rows.map(mapFile);
+  },
+
+  async getFileById(id) {
+    const db = getDb();
+    const rows = await db.select().from(files).where(eq(files.id, id)).limit(1);
+    return rows[0] ? mapFile(rows[0]) : null;
   },
 
   async listFiles(parentType, parentId) {

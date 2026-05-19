@@ -1,13 +1,14 @@
 import type { User } from "@/lib/types";
-import roster from "@/data/geoconRoleAssignees.json";
+import type { GeoconRoleAssigneesFile } from "@/lib/types/roleAssigneeData";
 
 function normEmail(e: string | undefined | null): string | null {
   const t = (e ?? "").trim().toLowerCase();
   return t || null;
 }
 
-export function rosterDirectorEmails(): Set<string> {
+export function rosterDirectorEmails(roster: GeoconRoleAssigneesFile | null): Set<string> {
   const s = new Set<string>();
+  if (!roster) return s;
   for (const d of roster.projectDirectors) {
     const n = normEmail(d.email);
     if (n) s.add(n);
@@ -15,8 +16,9 @@ export function rosterDirectorEmails(): Set<string> {
   return s;
 }
 
-export function rosterPmEmails(): Set<string> {
+export function rosterPmEmails(roster: GeoconRoleAssigneesFile | null): Set<string> {
   const s = new Set<string>();
+  if (!roster) return s;
   for (const p of roster.projectManagers) {
     const n = normEmail(p.email);
     if (n) s.add(n);
@@ -24,15 +26,21 @@ export function rosterPmEmails(): Set<string> {
   return s;
 }
 
-export function usersMatchingDirectorRoster(allUsers: User[]): User[] {
-  const emails = rosterDirectorEmails();
+export function usersMatchingDirectorRoster(
+  allUsers: User[],
+  roster: GeoconRoleAssigneesFile | null
+): User[] {
+  const emails = rosterDirectorEmails(roster);
   return allUsers
     .filter((u) => emails.has(u.email.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export function usersMatchingPmRoster(allUsers: User[]): User[] {
-  const emails = rosterPmEmails();
+export function usersMatchingPmRoster(
+  allUsers: User[],
+  roster: GeoconRoleAssigneesFile | null
+): User[] {
+  const emails = rosterPmEmails(roster);
   return allUsers
     .filter((u) => emails.has(u.email.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));

@@ -6,7 +6,7 @@ import type { ProjectStatus, User } from "@/lib/types";
 import { projectColors, projectLabel } from "./StatusCell";
 import { Avatar } from "./Avatar";
 import { usePopover } from "./Popover";
-import { usersMatchingDirectorRoster, usersMatchingPmRoster } from "@/lib/domain/roleAssigneeRoster";
+import { useRoleRoster } from "@/components/providers/RoleRosterProvider";
 
 export type SortKey = "position" | "name" | "code" | "lastUpdated" | "timeline";
 
@@ -44,8 +44,9 @@ export function Toolbar({
   const filterPop = usePopover();
   const sortPop = usePopover();
 
-  const pmRosterUsers = useMemo(() => usersMatchingPmRoster(users), [users]);
-  const directorRosterUsers = useMemo(() => usersMatchingDirectorRoster(users), [users]);
+  const { pmRosterUsers, directorRosterUsers } = useRoleRoster();
+  const pmFilterUsers = useMemo(() => pmRosterUsers(users), [users, pmRosterUsers]);
+  const directorFilterUsers = useMemo(() => directorRosterUsers(users), [users, directorRosterUsers]);
 
   const activeCount =
     filters.ownerIds.length +
@@ -164,10 +165,10 @@ export function Toolbar({
               Project manager
             </div>
             <div className="flex flex-col gap-1 mb-3 max-h-36 overflow-y-auto">
-              {pmRosterUsers.length === 0 ? (
+              {pmFilterUsers.length === 0 ? (
                 <span className="text-xs text-slate-400">No roster PMs in directory.</span>
               ) : (
-                pmRosterUsers.map((u) => (
+                pmFilterUsers.map((u) => (
                   <label key={u.id} className="flex items-center gap-2 text-xs cursor-pointer">
                     <input
                       type="checkbox"
@@ -184,10 +185,10 @@ export function Toolbar({
               Project director
             </div>
             <div className="flex flex-col gap-1 mb-3 max-h-36 overflow-y-auto">
-              {directorRosterUsers.length === 0 ? (
+              {directorFilterUsers.length === 0 ? (
                 <span className="text-xs text-slate-400">No roster directors in directory.</span>
               ) : (
-                directorRosterUsers.map((u) => (
+                directorFilterUsers.map((u) => (
                   <label key={u.id} className="flex items-center gap-2 text-xs cursor-pointer">
                     <input
                       type="checkbox"

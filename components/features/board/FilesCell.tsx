@@ -3,8 +3,8 @@
 import { useRef, useState } from "react";
 import { Plus, FileIcon } from "lucide-react";
 import type { FileRef } from "@/lib/types";
-import { api, uploadFileDemo } from "@/lib/client/boardApi";
-import { DEMO_MODE } from "@/lib/demo/config";
+import { api } from "@/lib/client/boardApi";
+import { encodeSharePointBlobRef } from "@/lib/fileStorage/sharepointBlobRef";
 
 export function FilesCell({
   parentType,
@@ -25,27 +25,32 @@ export function FilesCell({
     setBusy(true);
     try {
       for (const file of Array.from(fileList)) {
-        if (DEMO_MODE) {
-          await uploadFileDemo(parentType, parentId, file);
+        const prep = await api.requestUploadSas(parentType, parentId, file.name, file.size);
+        if (prep.provider === "sharepoint") {
+          if (file.size < 1) throw new Error("empty file");
+          const last = file.size - 1;
+          const put = await fetch(prep.uploadUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Length": String(file.size),
+              "Content-Range": `bytes 0-${last}/${file.size}`
+            },
+            body: file
+          });
+          if (!put.ok) throw new Error(`upload failed (${put.status})`);
+          const item = (await put.json()) as { id?: string };
+          if (!item.id) throw new Error("upload response missing id");
+          const blobPath = encodeSharePointBlobRef(prep.driveId, item.id);
+          await api.recordFile({ parentType, parentId, blobPath, filename: file.name, size: file.size });
           continue;
         }
-        const sas = await api.requestUploadSas(parentType, parentId, file.name);
-        const put = await fetch(sas.uploadUrl, {
+        const put = await fetch(prep.uploadUrl, {
           method: "PUT",
-          headers: {
-            "x-ms-blob-type": "BlockBlob",
-            "content-type": file.type || "application/octet-stream"
-          },
+          headers: { "x-ms-blob-type": "BlockBlob", "content-type": file.type || "application/octet-stream" },
           body: file
         });
         if (!put.ok) throw new Error(`upload failed (${put.status})`);
-        await api.recordFile({
-          parentType,
-          parentId,
-          blobPath: sas.blobPath,
-          filename: file.name,
-          size: file.size
-        });
+        await api.recordFile({ parentType, parentId, blobPath: prep.blobPath, filename: file.name, size: file.size });
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : "upload failed");
@@ -66,13 +71,7 @@ export function FilesCell({
 
   return (
     <div className="w-full h-full flex items-center gap-1 px-1 overflow-hidden">
-      <input
-        ref={inputRef}
-        type="file"
-        multiple
-        className="hidden"
-        onChange={(e) => upload(e.target.files)}
-      />
+      <input ref={inputRef} type="file" multiple className="hidden" onChange={(e) => upload(e.target.files)} />
       <div className="flex gap-1 overflow-x-auto scrollbar-thin flex-1 min-w-0">
         {files.map((f) => (
           <button

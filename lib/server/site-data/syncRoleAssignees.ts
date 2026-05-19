@@ -1,53 +1,37 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { storage } from "@/lib/storage";
 import { initialsFromName } from "@/lib/utils";
 import type { GeoconRoleAssigneesFile } from "@/lib/types/roleAssigneeData";
 import { readAdminSiteConfig } from "./adminSiteConfigStore";
 
-let cached: GeoconRoleAssigneesFile | null = null;
+let cached: GeoconRoleAssigneesFile | null | undefined;
 
 export function invalidateRoleAssigneesCache(): void {
-  cached = null;
+  cached = undefined;
 }
 
+function isValidRoleAssignees(data: unknown): data is GeoconRoleAssigneesFile {
+  if (!data || typeof data !== "object") return false;
+  const d = data as GeoconRoleAssigneesFile;
+  return Array.isArray(d.projectDirectors) && Array.isArray(d.projectManagers);
+}
+
+/** Load PM/director roster from Postgres site_config (no local JSON files). */
 export async function loadRoleAssigneesJson(): Promise<GeoconRoleAssigneesFile | null> {
-  const admin = await readAdminSiteConfig();
-  if (
-    admin?.roleAssignees &&
-    Array.isArray(admin.roleAssignees.projectDirectors) &&
-    Array.isArray(admin.roleAssignees.projectManagers)
-  ) {
-    return admin.roleAssignees;
-  }
-  if (cached) return cached;
-  try {
-    const p = path.join(process.cwd(), "data", "geoconRoleAssignees.json");
-    const raw = readFileSync(p, "utf8");
-    cached = JSON.parse(raw) as GeoconRoleAssigneesFile;
-    return cached;
-  } catch (e) {
-    console.warn("geoconRoleAssignees.json not loaded:", e);
-    return null;
-  }
-}
+  if (cached !== undefined) return cached;
 
-/** Sync loader for modules that cannot await (use `loadRoleAssigneesJson` when possible). */
-export function loadRoleAssigneesJsonSync(): GeoconRoleAssigneesFile | null {
-  if (cached) return cached;
-  try {
-    const p = path.join(process.cwd(), "data", "geoconRoleAssignees.json");
-    const raw = readFileSync(p, "utf8");
-    cached = JSON.parse(raw) as GeoconRoleAssigneesFile;
+  const admin = await readAdminSiteConfig();
+  if (admin?.roleAssignees && isValidRoleAssignees(admin.roleAssignees)) {
+    cached = admin.roleAssignees;
     return cached;
-  } catch {
-    return null;
   }
+
+  cached = null;
+  return null;
 }
 
 /**
  * Ensures everyone listed as project manager or director (with an email) exists in storage.
- * Idempotent; safe to call on each board load.
+ * Idempotent; safe to call on login.
  */
 export async function syncRoleAssigneeUsersIntoStorage(): Promise<void> {
   const data = await loadRoleAssigneesJson();
@@ -69,11 +53,16 @@ export async function syncRoleAssigneeUsersIntoStorage(): Promise<void> {
     people.push({ name: p.name, email: p.email.trim() });
   }
 
-  for (const person of people) {
-    await storage.upsertUser({
-      email: person.email,
-      name: person.name,
-      initials: initialsFromName(person.name)
-    });
+  const BATCH = 8;
+  for (let i = 0; i < people.length; i += BATCH) {
+    await Promise.all(
+      people.slice(i, i + BATCH).map((person) =>
+        storage.upsertUser({
+          email: person.email,
+          name: person.name,
+          initials: initialsFromName(person.name)
+        })
+      )
+    );
   }
 }

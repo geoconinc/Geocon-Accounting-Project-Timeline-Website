@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { MsalProvider } from "@azure/msal-react";
 import { PublicClientApplication, EventType, AuthenticationResult } from "@azure/msal-browser";
 import { msalConfig } from "@/lib/auth/msalConfig";
-import { DEMO_MODE } from "@/lib/demo/config";
 
 let pca: PublicClientApplication | null = null;
 
@@ -28,7 +27,7 @@ function getPca() {
 }
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const instance = useMemo(() => (DEMO_MODE ? null : getPca()), []);
+  const instance = useMemo(() => getPca(), []);
   if (!instance) return <>{children}</>;
   return <MsalProvider instance={instance}>{children}</MsalProvider>;
 }

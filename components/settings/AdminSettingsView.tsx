@@ -203,7 +203,7 @@ export function AdminSettingsView() {
       <section className="mb-8">
         <h2 className="text-sm font-semibold text-slate-800 mb-3">Project roster (PM &amp; director JSON)</h2>
         <p className="text-[11px] text-slate-500 mb-2">
-          Same shape as <code className="bg-slate-100 px-1 rounded">data/geoconRoleAssignees.json</code> —
+          Stored in Postgres <code className="bg-slate-100 px-1 rounded">site_config</code> — same JSON shape as
           must include <code className="bg-slate-100 px-1 rounded">projectDirectors</code> and{" "}
           <code className="bg-slate-100 px-1 rounded">projectManagers</code>.
         </p>

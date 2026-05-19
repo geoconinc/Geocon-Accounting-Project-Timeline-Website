@@ -14,13 +14,12 @@ import {
   buildProjectManagerCreationEmail
 } from "@/lib/notifications/projectCreationTemplates";
 
-export async function GET() {
+export async function GET(req: Request) {
   const user = await authenticateRequest();
   if (user instanceof Response) return user;
 
-  await syncRoleAssigneeUsersIntoStorage();
-  await syncOfficeAssigneeUsersIntoStorage();
-  return NextResponse.json(await getBoardPayloadForUser(user));
+  const includeFiles = new URL(req.url).searchParams.get("includeFiles") !== "false";
+  return NextResponse.json(await getBoardPayloadForUser(user, { includeFiles }));
 }
 
 export async function POST(req: Request) {

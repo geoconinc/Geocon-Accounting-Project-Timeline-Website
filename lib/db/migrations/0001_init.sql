@@ -1,7 +1,6 @@
 -- Geocon Project Timeline initial migration
 -- Apply with: psql "$DATABASE_URL" -f lib/db/migrations/0001_init.sql
-
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+-- gen_random_uuid() is built-in on PostgreSQL 13+ (no pgcrypto extension required on Azure).
 
 DO $$ BEGIN
   CREATE TYPE project_status AS ENUM ('New','Completed','InProgress','Missing','Future');

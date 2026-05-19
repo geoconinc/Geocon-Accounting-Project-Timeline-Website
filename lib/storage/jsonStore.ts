@@ -191,6 +191,22 @@ export const jsonStore: Storage = {
     });
   },
 
+  async listAllSubitems() {
+    const db = await readDb();
+    return [...db.subitems].sort((a, b) => {
+      if (a.projectId !== b.projectId) return a.projectId.localeCompare(b.projectId);
+      const aNa = a.status === "NA" ? 1 : 0;
+      const bNa = b.status === "NA" ? 1 : 0;
+      if (aNa !== bNa) return aNa - bNa;
+      return a.position - b.position;
+    });
+  },
+
+  async getSubitemById(id) {
+    const db = await readDb();
+    return db.subitems.find((s) => s.id === id) ?? null;
+  },
+
   async listSubitems(projectId) {
     const db = await readDb();
     return db.subitems
@@ -238,6 +254,16 @@ export const jsonStore: Storage = {
         if (s) s.position = idx;
       });
     });
+  },
+
+  async listAllFiles() {
+    const db = await readDb();
+    return db.files;
+  },
+
+  async getFileById(id) {
+    const db = await readDb();
+    return db.files.find((f) => f.id === id) ?? null;
   },
 
   async listFiles(parentType, parentId) {

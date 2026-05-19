@@ -23,6 +23,8 @@ export interface Storage {
   deleteProject(id: string): Promise<void>;
 
   // subitems
+  listAllSubitems(): Promise<Subitem[]>;
+  getSubitemById(id: string): Promise<Subitem | null>;
   listSubitems(projectId: string): Promise<Subitem[]>;
   createSubitem(input: Omit<Subitem, "id" | "position"> & { id?: string }): Promise<Subitem>;
   updateSubitem(id: string, patch: Partial<Subitem>): Promise<Subitem | null>;
@@ -30,6 +32,8 @@ export interface Storage {
   reorderSubitems(projectId: string, orderedIds: string[]): Promise<void>;
 
   // files
+  listAllFiles(): Promise<FileRef[]>;
+  getFileById(id: string): Promise<FileRef | null>;
   listFiles(parentType: FileRef["parentType"], parentId: string): Promise<FileRef[]>;
   addFile(input: Omit<FileRef, "id" | "uploadedAt"> & { id?: string }): Promise<FileRef>;
   deleteFile(id: string): Promise<void>;

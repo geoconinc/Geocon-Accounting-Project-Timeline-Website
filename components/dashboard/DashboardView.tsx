@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { loadDb } from "@/lib/demo/localStore";
-import { DEMO_MODE } from "@/lib/demo/config";
 import type { Project, ProjectStatus, Subitem, SubitemStatus, User } from "@/lib/types";
 import type { BoardData } from "@/components/features/board/state";
 import { projectColors, projectLabel, subColors, subLabel } from "@/components/features/board/StatusCell";
@@ -22,54 +20,45 @@ function safeParseDateStr(v: string): Date {
   return parseISO(v);
 }
 
-export function DashboardView() {
-  const [projects, setProjects] = useState<Project[]>(() =>
-    DEMO_MODE ? loadDb().projects : []
-  );
-  const [subitems, setSubitems] = useState<Subitem[]>(() =>
-    DEMO_MODE ? loadDb().subitems : []
-  );
-  const [users, setUsers] = useState<User[]>(() =>
-    DEMO_MODE ? loadDb().users : []
-  );
-  const [loading, setLoading] = useState(!DEMO_MODE);
+export function DashboardView({ initialData }: { initialData?: BoardData }) {
+  const [projects, setProjects] = useState<Project[]>(initialData?.projects ?? []);
+  const [subitems, setSubitems] = useState<Subitem[]>(initialData?.subitems ?? []);
+  const [users, setUsers] = useState<User[]>(initialData?.users ?? []);
+  const [loading, setLoading] = useState(!initialData);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (DEMO_MODE) {
-      const refresh = () => {
-        const db = loadDb();
-        setProjects(db.projects);
-        setSubitems(db.subitems);
-        setUsers(db.users);
-      };
-      refresh();
-      window.addEventListener("geocon-demo-change", refresh);
-      window.addEventListener("storage", refresh);
-      return () => {
-        window.removeEventListener("geocon-demo-change", refresh);
-        window.removeEventListener("storage", refresh);
-      };
-    }
-
+    if (initialData) return;
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await fetch("/api/projects");
-        if (!res.ok || cancelled) return;
+        const res = await fetch("/api/projects?includeFiles=false");
+        if (cancelled) return;
+        if (!res.ok) {
+          setError("Could not load dashboard data.");
+          return;
+        }
         const data = (await res.json()) as BoardData;
         setProjects(data.projects);
         setSubitems(data.subitems);
         setUsers(data.users);
+        setError(null);
+      } catch {
+        if (!cancelled) setError("Could not load dashboard data.");
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
     void load();
     return () => { cancelled = true; };
-  }, []);
+  }, [initialData]);
 
   if (loading) {
     return <div className="p-8 text-slate-500 text-sm">Loading dashboard...</div>;
+  }
+
+  if (error) {
+    return <div className="p-8 text-sm text-red-600">{error}</div>;
   }
 
   const today = new Date();
@@ -117,57 +106,24 @@ export function DashboardView() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard
-          icon={<FolderOpen size={18} />}
-          label="Total projects"
-          value={projects.length}
-          accent="bg-brand"
-        />
-        <StatCard
-          icon={<Clock size={18} />}
-          label="In progress"
-          value={projects.filter((p) => p.status === "InProgress").length}
-          accent="bg-status-progress"
-        />
-        <StatCard
-          icon={<CheckCircle2 size={18} />}
-          label="Subitem completion"
-          value={`${completionPct}%`}
-          subtext={`${completedCounted}/${totalCounted}`}
-          accent="bg-status-completed"
-        />
-        <StatCard
-          icon={<AlertTriangle size={18} />}
-          label="Overdue subitems"
-          value={overdue}
-          accent="bg-status-missing"
-        />
+        <StatCard icon={<FolderOpen size={18} />} label="Total projects" value={projects.length} accent="bg-brand" />
+        <StatCard icon={<Clock size={18} />} label="In progress" value={projects.filter((p) => p.status === "InProgress").length} accent="bg-status-progress" />
+        <StatCard icon={<CheckCircle2 size={18} />} label="Subitem completion" value={`${completionPct}%`} subtext={`${completedCounted}/${totalCounted}`} accent="bg-status-completed" />
+        <StatCard icon={<AlertTriangle size={18} />} label="Overdue subitems" value={overdue} accent="bg-status-missing" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <Card title="Projects by status">
           <div className="flex flex-col gap-2">
             {projByStatus.map((row) => (
-              <BarRow
-                key={row.status}
-                label={projectLabel[row.status]}
-                count={row.count}
-                total={projects.length}
-                color={projectColors[row.status]}
-              />
+              <BarRow key={row.status} label={projectLabel[row.status]} count={row.count} total={projects.length} color={projectColors[row.status]} />
             ))}
           </div>
         </Card>
         <Card title="Subitems by status">
           <div className="flex flex-col gap-2">
             {subByStatus.map((row) => (
-              <BarRow
-                key={row.status}
-                label={subLabel[row.status]}
-                count={row.count}
-                total={subitems.length}
-                color={subColors[row.status]}
-              />
+              <BarRow key={row.status} label={subLabel[row.status]} count={row.count} total={subitems.length} color={subColors[row.status]} />
             ))}
           </div>
         </Card>
@@ -184,24 +140,10 @@ export function DashboardView() {
                   <span className={`w-2 h-2 rounded-full ${subColors[sub.status]}`} />
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-medium truncate">{sub.name}</div>
-                    <div className="text-[11px] text-slate-500 truncate">
-                      {project.code} · {project.name}
-                    </div>
+                    <div className="text-[11px] text-slate-500 truncate">{project.code} · {project.name}</div>
                   </div>
-                  <div
-                    className={`text-[11px] font-medium ${
-                      days < 0
-                        ? "text-red-600"
-                        : days === 0
-                          ? "text-amber-600"
-                          : "text-slate-500"
-                    }`}
-                  >
-                    {days < 0
-                      ? `${Math.abs(days)}d overdue`
-                      : days === 0
-                        ? "Due today"
-                        : `In ${days}d`}
+                  <div className={`text-[11px] font-medium ${days < 0 ? "text-red-600" : days === 0 ? "text-amber-600" : "text-slate-500"}`}>
+                    {days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? "Due today" : `In ${days}d`}
                   </div>
                 </li>
               ))}
@@ -224,24 +166,10 @@ export function DashboardView() {
   );
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-  subtext,
-  accent
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number | string;
-  subtext?: string;
-  accent: string;
-}) {
+function StatCard({ icon, label, value, subtext, accent }: { icon: React.ReactNode; label: string; value: number | string; subtext?: string; accent: string }) {
   return (
     <div className="bg-white rounded-lg border border-slate-200 p-4 flex items-center gap-3">
-      <div className={`w-10 h-10 rounded-md text-white grid place-items-center ${accent}`}>
-        {icon}
-      </div>
+      <div className={`w-10 h-10 rounded-md text-white grid place-items-center ${accent}`}>{icon}</div>
       <div className="flex flex-col min-w-0">
         <span className="text-[11px] uppercase tracking-wide text-slate-500">{label}</span>
         <span className="text-2xl font-semibold text-brand-dark leading-tight">{value}</span>
@@ -260,17 +188,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-function BarRow({
-  label,
-  count,
-  total,
-  color
-}: {
-  label: string;
-  count: number;
-  total: number;
-  color: string;
-}) {
+function BarRow({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
   const pct = total ? (count / total) * 100 : 0;
   return (
     <div>
@@ -291,16 +209,11 @@ function RecentRow({ project, users }: { project: Project; users: User[] }) {
     <li className="py-2 flex items-center gap-3">
       <Avatar user={owner} size={26} />
       <div className="flex-1 min-w-0">
-        <div className="text-xs font-medium truncate">
-          {project.code} · {project.name}
-        </div>
+        <div className="text-xs font-medium truncate">{project.code} · {project.name}</div>
         <div className="text-[11px] text-slate-500">
           {projectLabel[project.status]}
           {project.timelineStart && project.timelineEnd
-            ? ` · ${format(safeParseDateStr(project.timelineStart), "MMM d")} – ${format(
-                safeParseDateStr(project.timelineEnd),
-                "MMM d"
-              )}`
+            ? ` · ${format(safeParseDateStr(project.timelineStart), "MMM d")} – ${format(safeParseDateStr(project.timelineEnd), "MMM d")}`
             : ""}
         </div>
       </div>

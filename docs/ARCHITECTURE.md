@@ -1,62 +1,103 @@
 # Architecture
 
-## Product shape
+## Overview
 
-Next.js 14 **App Router** application: authenticated Microsoft users (or demo mode) manage **projects**, **subitems**, **files**, and **notification** preferences. The main surface is a board-style UI with dashboard, timeline, documents, team, and settings areas.
+Next.js 14 App Router application. Authenticated Microsoft users manage **projects**, **subitems** (tasks), **file attachments**, and **notification preferences**. The primary interface is a board-style grid with supporting dashboard, timeline, team, documents, and admin settings views.
 
-## Layered layout
+## System Layers
 
-```mermaid
-flowchart TB
-  subgraph browser [Browser]
-    Pages[app pages client + server components]
-    ClientLib[lib/client - e.g. boardApi]
-    Components[components]
-  end
-  subgraph next [Next.js server]
-    RouteStubs[app/api/**/route.ts re-exports]
-    Handlers[lib/server/features - route handlers]
-    Auth[lib/auth - session MSAL constants]
-    Storage[lib/storage - Storage interface]
-    Bus[lib/events/bus - SSE pubsub]
-    Notify[lib/notifications - email dispatch]
-  end
-  subgraph data [Persistence]
-    Json[jsonStore file-backed]
-    Pg[postgresStore template]
-  end
-  Pages --> ClientLib
-  Pages --> Components
-  ClientLib --> RouteStubs
-  RouteStubs --> Handlers
-  Handlers --> Auth
-  Handlers --> Storage
-  Handlers --> Bus
-  Handlers --> Notify
-  Storage --> Json
-  Storage --> Pg
+```
+┌─────────────────────────────────────────────────────┐
+│  Browser                                            │
+│  ┌──────────────┐  ┌────────────────┐               │
+│  │ Pages/Views   │  │ lib/client/    │               │
+│  │ (components/) │  │ boardApi.ts    │               │
+│  └──────┬───────┘  └──────┬─────────┘               │
+│         │                  │ fetch(/api/...)          │
+└─────────┼──────────────────┼────────────────────────┘
+          │                  │
+┌─────────┼──────────────────┼────────────────────────┐
+│  Next.js Server            │                         │
+│  ┌─────────────────────────▼──────────────────────┐ │
+│  │ app/api/**/route.ts  (thin re-exports)         │ │
+│  └──────────────────────────┬─────────────────────┘ │
+│                              │                       │
+│  ┌───────────────────────────▼────────────────────┐ │
+│  │ lib/server/features/   (route handlers)        │ │
+│  │   auth-session/  cron/  events/  files/        │ │
+│  │   notifications/  projects/  role-assignees/   │ │
+│  │   users/                                       │ │
+│  └────────┬──────────┬───────────┬────────────────┘ │
+│           │          │           │                   │
+│  ┌────────▼──┐ ┌─────▼────┐ ┌───▼──────────────┐   │
+│  │ Storage   │ │ Events   │ │ Notifications     │   │
+│  │ interface │ │ bus.ts   │ │ Graph email       │   │
+│  └────┬──────┘ └──────────┘ └───────────────────┘   │
+│       │                                              │
+│  ┌────▼──────────────────────────────────────────┐  │
+│  │ Postgres (postgresStore)  or  JSON (jsonStore) │  │
+│  └────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────┘
 ```
 
-- **`app/`** — Routing only for pages; **`app/api/*/route.ts`** files stay minimal so Next.js segment config (for example `dynamic`, `runtime`) remains next to the URL. They re-export handlers from **`lib/server/features/`**.
-- **`lib/server/`** — Server-only helpers: **`routeAuth.ts`** (`authenticateRequest`) and **`routes/*`** — the real request/response logic for each API segment.
-- **`lib/client/`** — Browser-only modules (for example **`boardApi.ts`**) that call `/api/*` or the in-memory demo store.
-- **`lib/storage/`** — Single **`Storage`** interface; **`STORAGE_DRIVER`** selects JSON or Postgres adapter.
-- **`lib/db/`** — Drizzle schema and SQL migrations aligned with the JSON document shape.
-- **`lib/events/bus.ts`** — In-process publish/subscribe used by **`/api/events`** (Server-Sent Events). Comment in source notes multi-instance limitations.
+## Key Design Decisions
 
-## Authentication and access control
+### Route handler separation
+`app/api/**/route.ts` files are kept minimal — they re-export functions from `lib/server/features/`. This keeps Next.js route segment config (`dynamic`, `runtime`) next to the URL while business logic lives in testable modules.
 
-- **`middleware.ts`** — When `NEXT_PUBLIC_DEMO_MODE` is not truthy `"true"`, unauthenticated requests to non-public paths receive a redirect to `/login` (pages) or `401` JSON (API). Public paths include login, Microsoft login, verify-session, and cron.
-- **`lib/auth/session.ts`** — Reads the session cookie, resolves the user via **`storage`**, exposes **`getCurrentUser`** and **`requireUser`** (throws a `Response` with JSON body on failure).
-- **`lib/server/routeAuth.ts`** — **`authenticateRequest()`** wraps `requireUser().catch((r) => r)` so API handlers consistently get `User | Response` without repeating the pattern.
+### Storage abstraction
+`lib/storage/index.ts` defines a `Storage` interface. The active implementation is selected by `STORAGE_DRIVER`:
+- **`postgres`** — `postgresStore.ts` using Drizzle ORM against Azure Postgres.
+- **`json`** — `jsonStore.ts` for local development (file-backed, single-node only).
 
-## Real-time updates
+### File attachments
+Uploads go directly to **SharePoint** via Microsoft Graph upload sessions (or Azure Blob SAS as fallback). Only metadata (blob path, filename, size) is stored in Postgres. The `blobPath` field uses a `sp1.base64` encoding for SharePoint drive item references.
 
-Server handlers call **`bus.publish(...)`** after mutations. Clients open an SSE stream to **`GET /api/events`**, which subscribes to the bus and forwards typed events. This keeps the UI in sync after project/subitem/file changes when not in isolated demo mode.
+### Admin site config
+Office assignees and role rosters are stored in the `site_config` Postgres table (JSON column) when using Postgres, falling back to `data/admin-site-config.json` for local dev. This ensures config survives serverless ephemeral filesystems.
 
-## Extension guidelines
+## Authentication Flow
 
-1. **New REST capability** — Add a module under **`lib/server/features/<area>/`**, then add or extend **`app/api/.../route.ts`** to export the HTTP methods (and any route segment config). Keeps handlers testable and avoids bloating `app/api` with business logic.
-2. **New persisted fields** — Update **`lib/types/`**, **`lib/db/schema.ts`**, migrations under **`lib/db/migrations/`**, and both **`jsonStore`** and (when ready) **`postgresStore`** implementations.
-3. **New UI that talks to the API** — Prefer **`lib/client/`** for fetch wrappers so components stay presentational.
-4. **Background jobs** — Follow **`/api/cron/due-dates`**: shared secret header, logic in **`lib/server/features/cron/`**, thin `app/api` export.
+```
+Browser (MSAL popup)
+  → acquireToken (User.Read scope)
+  → POST /api/microsoft-login { accessToken }
+
+Server
+  → Graph GET /v1.0/me (verify token)
+  → Enforce @geoconinc.com domain
+  → Upsert user in storage
+  → Issue httpOnly session_token cookie (30 days)
+
+Subsequent requests
+  → middleware.ts checks session_token cookie
+  → Unauthenticated → redirect to /login (pages) or 401 (API)
+```
+
+## Access Control
+
+- **Board admins** (`BOARD_ADMIN_EMAILS`) — see and manage all projects/subitems.
+- **Project owners** — see their full project including all subitems and files.
+- **Subitem owners** — see the parent project row plus their assigned subitems and files.
+- **Super admin** (`NEXT_PUBLIC_SUPER_ADMIN_EMAIL`) — access to `/settings/admin` for managing role rosters and office assignees.
+
+Enforced server-side in `lib/server/access.ts`, not just hidden in the UI.
+
+## Real-time Updates
+
+Route handlers call `bus.publish()` after mutations. The `/api/events` SSE endpoint streams typed events to connected browsers. Clients also poll every 30 seconds as a fallback (required for serverless deployments where SSE connections may not persist).
+
+Event types: `project.upsert`, `project.delete`, `subitem.upsert`, `subitem.delete`, `subitem.reorder`, `file.added`.
+
+## Database Schema
+
+Managed by Drizzle ORM. Tables: `users`, `sessions`, `projects`, `subitems`, `files`, `activity`, `site_config`. Schema defined in `lib/db/schema.ts`, migrations in `lib/db/migrations/`.
+
+See [DATA_AND_STORAGE.md](./DATA_AND_STORAGE.md) for full schema details.
+
+## Extension Guidelines
+
+1. **New API endpoint** — Add handler in `lib/server/features/<area>/`, re-export from `app/api/.../route.ts`.
+2. **New persisted field** — Update `lib/types/`, `lib/db/schema.ts`, add migration, update both storage implementations.
+3. **New UI feature** — Use `lib/client/` for API wrappers; keep components presentational.
+4. **Background job** — Follow the `/api/cron/due-dates` pattern: shared secret header, handler in `lib/server/features/cron/`.

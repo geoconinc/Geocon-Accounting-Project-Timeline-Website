@@ -1,124 +1,106 @@
 # Geocon Project Timeline
 
-A Monday.com-style project timeline and management app for Geocon. Built with
-Next.js 14 App Router, TypeScript, Tailwind CSS, MSAL, Azure Blob Storage, and a
-swappable JSON/Postgres storage layer.
+Internal project management application for Geocon's accounting team. Tracks projects, subitems (tasks), file attachments, assignments, and due-date notifications in a Monday.com-style board interface.
 
-## What It Does
+**Stack:** Next.js 14 (App Router) · TypeScript · Tailwind CSS · Azure Postgres · SharePoint (file attachments) · Microsoft Graph (auth + email) · MSAL
 
-- Microsoft login with Graph `/me` verification and a server-issued session cookie.
-- Project groups for Current, Future, and Completed work.
-- Project rows with owners, subitems, files, drag ordering, status summaries, and live updates.
-- File uploads through Azure Blob SAS URLs.
-- Due-date and assignment notifications through Microsoft Graph email.
-- Local JSON storage for development, with a Postgres schema and migration path ready.
+## Features
+
+- **Microsoft SSO** — MSAL popup login with server-side Graph `/me` verification and httpOnly session cookies.
+- **Project board** — Grouped by Current / Future / Completed with inline editing, drag-and-drop reordering, and live updates via SSE + polling fallback.
+- **Subitems** — Per-project task rows with owner assignment, status, due dates, file attachments, and notes.
+- **File uploads** — Direct-to-SharePoint uploads via Microsoft Graph upload sessions (Azure Blob fallback available).
+- **Dashboard** — At-a-glance project health: status breakdown, completion percentage, overdue items, recent activity.
+- **Timeline** — Gantt-style 60-day view with project bars and date navigation.
+- **Email notifications** — Assignment and due-date reminders via Microsoft Graph `sendMail`.
+- **Role-based access** — Board admins see everything; project owners see their projects; subitem owners see their assigned items.
+- **Admin settings** — Super-admin page for managing office assignees and role rosters (stored in Postgres).
 
 ## Quick Start
 
 ```bash
 npm install
-cp .env.example .env
-npm run seed
-npm run dev
+cp .env.example .env.local    # fill in your values
+npm run db:migrate             # apply Postgres schema
+npm run dev                    # http://localhost:3000
 ```
 
-The app runs at `http://localhost:3000`. Fill in the Microsoft auth values in
-`.env` before using real sign-in. Local demo data is stored in `data/db.json`,
-which is intentionally ignored by git.
+## Scripts
 
-## Useful Commands
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Next.js dev server |
+| `npm run build` | Production build |
+| `npm run start` | Serve production build |
+| `npm run lint` | Run Next.js linter |
+| `npm run db:migrate` | Apply SQL migrations to Postgres |
+| `npm run db:generate` | Generate Drizzle migration files |
+| `npm run seed` | Seed local JSON storage (dev only) |
 
-```bash
-npm run dev         # Start the local Next.js dev server
-npm run build       # Build the production app
-npm run start       # Start a production build
-npm run lint        # Run Next.js lint checks
-npm run seed        # Seed local JSON storage
-npm run db:generate # Generate Drizzle migrations
-npm run db:migrate  # Apply the SQL migration script
+## Environment Variables
+
+Copy `.env.example` to `.env.local`. Key groups:
+
+| Group | Variables | Purpose |
+|-------|-----------|---------|
+| **Auth** | `NEXT_PUBLIC_MSAL_CLIENT_ID`, `NEXT_PUBLIC_MSAL_TENANT_ID`, `NEXT_PUBLIC_MSAL_REDIRECT_URI`, `ALLOWED_EMAIL_DOMAIN` | Microsoft login |
+| **Database** | `STORAGE_DRIVER=postgres`, `DATABASE_URL` | Azure Postgres connection |
+| **Files** | `FILE_STORAGE_DRIVER`, `SHAREPOINT_HOSTNAME`, `SHAREPOINT_SITE_PATH` | SharePoint file uploads |
+| **Email** | `GRAPH_APP_TENANT_ID`, `GRAPH_APP_CLIENT_ID`, `GRAPH_APP_CLIENT_SECRET`, `NOTIFY_FROM_ADDRESS` | Graph sendMail |
+| **App** | `APP_BASE_URL`, `BOARD_ADMIN_EMAILS`, `NEXT_PUBLIC_SUPER_ADMIN_EMAIL`, `CRON_SHARED_SECRET` | Access control + cron |
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for Netlify/Azure setup and exact values.
+
+## Project Structure
+
 ```
+app/                    Next.js App Router
+  (app)/                Authenticated pages (board, dashboard, timeline, team, settings)
+  api/                  API routes (thin re-exports from lib/server/features/)
+  login/                Microsoft sign-in page
 
-## Environment
+components/             React UI
+  features/board/       Board grid, rows, cells, dialogs, toolbar
+  dashboard/            Dashboard charts and stats
+  timeline/             Gantt timeline view
+  team/                 Team member directory
+  documents/            Document templates view
+  settings/             User and admin settings
+  nav/                  Sidebar navigation
 
-Use `.env.example` as the source of truth for required settings. The most
-important groups are:
+lib/                    Shared application code
+  auth/                 MSAL config, session management, super-admin check
+  blob/                 Azure Blob SAS helpers (legacy fallback)
+  client/               Browser-side API wrappers (boardApi, roleAssigneesApi)
+  config/               Shared config (allowed domain, local templates)
+  db/                   Drizzle schema, migrations, client
+  domain/               Business rules (offices, project defaults, role rosters)
+  events/               In-process SSE pub/sub bus
+  fileStorage/          SharePoint attachment helpers + blob ref encoding
+  graph/                Microsoft Graph app-only access token
+  notifications/        Email dispatch, templates
+  server/               Server-only code
+    features/           Route handlers grouped by area
+    site-data/          Admin config store, role/office sync
+  storage/              Storage interface + JSON/Postgres implementations
+  types/                TypeScript types and enums
 
-- Microsoft login: `NEXT_PUBLIC_MSAL_CLIENT_ID`,
-  `NEXT_PUBLIC_MSAL_TENANT_ID`, `NEXT_PUBLIC_MSAL_REDIRECT_URI`,
-  `SESSION_SECRET`, and `ALLOWED_EMAIL_DOMAIN`.
-- Board access: `BOARD_ADMIN_EMAILS` for users who can see and manage all
-  projects and subitems.
-- Storage: `STORAGE_DRIVER`, `DATABASE_URL`, and the local JSON files under
-  `data/`.
-- Azure Blob uploads: `AZURE_STORAGE_ACCOUNT`, `AZURE_STORAGE_KEY`, and
-  `AZURE_STORAGE_CONTAINER`.
-- SharePoint templates: `SHAREPOINT_TEMPLATES_URL`.
-- Email notifications: `GRAPH_APP_TENANT_ID`, `GRAPH_APP_CLIENT_ID`,
-  `GRAPH_APP_CLIENT_SECRET`, `NOTIFY_FROM_ADDRESS`, and `APP_BASE_URL`.
-- Scheduled notifications: `CRON_SHARED_SECRET` for `/api/cron/due-dates`.
-
-Detailed setup notes live in `docs/MICROSOFT_AUTH.md` and
-`docs/DATA_AND_STORAGE.md`. Production service placement is covered in
-`docs/ONLINE_SETUP.md`.
-
-## Repository Structure
-
-```text
-app/
-  Next.js App Router pages, layouts, providers, and API route entrypoints.
-  UI routes live under app/(app)/. API routes live under app/api/.
-
-components/
-  React UI: `features/board/` (grid, rows, cells), dashboard, documents,
-  navigation, settings, team, timeline, and shell pieces (AppShell, TopBar).
-
-lib/
-  Shared application code: auth, demo mode, domain rules (offices, defaults),
-  notifications (Graph email), storage drivers, DB schema, and server-side
-  HTTP handlers under lib/server/features/ (by area) plus site-data sync.
-
-scripts/
-  Local maintenance scripts such as seed and database migration runners.
-
-docs/
-  Project documentation. Start with docs/README.md for architecture, API,
-  frontend, auth, storage, and database planning notes.
-
-docs/assets/
-  Documentation-only screenshots and reference images.
-
-public/
-  Static assets served by Next.js. Runtime images referenced as /asset-name
-  should live here, including public/logo.png.
-
-data/
-  Local JSON storage directory. JSON files are gitignored; data/.gitkeep keeps
-  the folder in the repository.
-
-Root config files
-  package.json, package-lock.json, next.config.mjs, tsconfig.json,
-  tailwind.config.ts, postcss.config.js, drizzle.config.ts, middleware.ts,
-  next-env.d.ts, .env.example, and .gitignore configure the app and tooling.
+scripts/                Migration runner, seed script, data tools
+data/                   Static reference data (role assignees, office directory)
+docs/                   Technical documentation
 ```
 
 ## Documentation
 
-- `docs/README.md` indexes all project docs.
-- `docs/ARCHITECTURE.md` explains the app layers and data flow.
-- `docs/API.md` lists the HTTP routes and their handlers.
-- `docs/FRONTEND.md` explains pages, components, and demo mode.
-- `docs/DATA_AND_STORAGE.md` explains storage drivers, Drizzle, migrations, and local data.
-- `docs/MICROSOFT_AUTH.md` explains Microsoft login and Graph setup.
-- `docs/ONLINE_SETUP.md` explains where to put production database, attachment,
-  template, email, and access-control settings.
-- `docs/DATABASE_PLAN.md` captures the database migration plan.
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/ARCHITECTURE.md) | System layers, data flow, auth, real-time updates |
+| [API Reference](docs/API.md) | All HTTP routes, request/response shapes |
+| [Frontend](docs/FRONTEND.md) | Pages, components, state management |
+| [Data & Storage](docs/DATA_AND_STORAGE.md) | Storage drivers, Drizzle schema, migrations |
+| [Microsoft Auth](docs/MICROSOFT_AUTH.md) | Azure app registration, MSAL setup, session flow |
+| [Deployment](docs/DEPLOYMENT.md) | Netlify, Azure, environment variables, production checklist |
 
-## Storage Notes
+## License
 
-The default local storage driver writes to `data/db.json`. To reset local data,
-delete that file and run `npm run seed` again.
-
-Postgres support is structured around `lib/db/schema.ts`,
-`lib/db/migrations/0001_init.sql`, and `lib/storage/postgresStore.ts`. Set
-`STORAGE_DRIVER=postgres` and `DATABASE_URL=postgres://...` when the Postgres
-driver is ready for use.
+Proprietary — Geocon internal use only.

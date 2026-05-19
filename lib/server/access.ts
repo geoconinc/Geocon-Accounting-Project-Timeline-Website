@@ -10,6 +10,11 @@ export interface BoardPayload {
   me: string;
 }
 
+export interface BoardPayloadOptions {
+  /** When false, skips the files query (faster for dashboard, timeline, team). */
+  includeFiles?: boolean;
+}
+
 export interface LocatedSubitem {
   project: Project;
   subitem: Subitem;
@@ -47,35 +52,42 @@ export function forbidden(message = "forbidden") {
   return NextResponse.json({ error: message }, { status: 403 });
 }
 
-export async function getBoardPayloadForUser(user: User): Promise<BoardPayload> {
-  const [projects, users] = await Promise.all([storage.listProjects(), storage.listUsers()]);
-  const subitemArrays = await Promise.all(projects.map((project) => storage.listSubitems(project.id)));
-  const allSubitems = subitemArrays.flat();
+export async function getBoardPayloadForUser(
+  user: User,
+  options: BoardPayloadOptions = {}
+): Promise<BoardPayload> {
+  const includeFiles = options.includeFiles !== false;
+
+  const [projects, users, allSubitems, allFiles] = await Promise.all([
+    storage.listProjects(),
+    storage.listUsers(),
+    storage.listAllSubitems(),
+    includeFiles ? storage.listAllFiles() : Promise.resolve([] as FileRef[])
+  ]);
 
   if (hasFullBoardAccess(user)) {
-    const projectFileArrays = await Promise.all(
-      projects.map((project) => storage.listFiles("project", project.id))
-    );
-    const subitemFileArrays = await Promise.all(
-      allSubitems.map((subitem) => storage.listFiles("subitem", subitem.id))
-    );
-
     return {
       projects,
       subitems: allSubitems,
       users,
-      files: [...projectFileArrays.flat(), ...subitemFileArrays.flat()],
+      files: allFiles,
       me: user.id
     };
+  }
+
+  const subsByProject = new Map<string, Subitem[]>();
+  for (const subitem of allSubitems) {
+    const list = subsByProject.get(subitem.projectId);
+    if (list) list.push(subitem);
+    else subsByProject.set(subitem.projectId, [subitem]);
   }
 
   const visibleProjects: Project[] = [];
   const visibleSubitems: Subitem[] = [];
   const visibleProjectIds = new Set<string>();
-  const visibleProjectFileIds = new Set<string>();
 
   for (const project of projects) {
-    const projectSubitems = allSubitems.filter((subitem) => subitem.projectId === project.id);
+    const projectSubitems = subsByProject.get(project.id) ?? [];
     const leadsProject = isProjectLead(user, project);
     const assignedSubitems = projectSubitems.filter((subitem) => subitem.ownerId === user.id);
 
@@ -86,38 +98,37 @@ export async function getBoardPayloadForUser(user: User): Promise<BoardPayload> 
 
     if (leadsProject) {
       visibleSubitems.push(...projectSubitems);
-      visibleProjectFileIds.add(project.id);
     } else {
       visibleSubitems.push(...assignedSubitems);
     }
   }
 
-  const projectFileArrays = await Promise.all(
-    [...visibleProjectFileIds].map((projectId) => storage.listFiles("project", projectId))
-  );
-  const subitemFileArrays = await Promise.all(
-    visibleSubitems.map((subitem) => storage.listFiles("subitem", subitem.id))
-  );
+  let files: FileRef[] = [];
+  if (includeFiles && allFiles.length > 0) {
+    const visibleSubitemIds = new Set(visibleSubitems.map((s) => s.id));
+    files = allFiles.filter((file) => {
+      if (file.parentType === "project") {
+        return visibleProjectIds.has(file.parentId);
+      }
+      return visibleSubitemIds.has(file.parentId);
+    });
+  }
 
   return {
-    projects: visibleProjects.filter((project) => visibleProjectIds.has(project.id)),
+    projects: visibleProjects,
     subitems: visibleSubitems,
     users,
-    files: [...projectFileArrays.flat(), ...subitemFileArrays.flat()],
+    files,
     me: user.id
   };
 }
 
 export async function findSubitem(subitemId: string): Promise<LocatedSubitem | null> {
-  const projects = await storage.listProjects();
-
-  for (const project of projects) {
-    const subitems = await storage.listSubitems(project.id);
-    const subitem = subitems.find((candidate) => candidate.id === subitemId);
-    if (subitem) return { project, subitem };
-  }
-
-  return null;
+  const subitem = await storage.getSubitemById(subitemId);
+  if (!subitem) return null;
+  const project = await storage.getProject(subitem.projectId);
+  if (!project) return null;
+  return { project, subitem };
 }
 
 export function canViewProject(user: User, project: Project, subitems: Subitem[]): boolean {
@@ -157,19 +168,14 @@ export async function canAccessFileParent(
 }
 
 export async function findFile(fileId: string): Promise<LocatedFile | null> {
-  const projects = await storage.listProjects();
+  const file = await storage.getFileById(fileId);
+  if (!file) return null;
 
-  for (const project of projects) {
-    for (const file of await storage.listFiles("project", project.id)) {
-      if (file.id === fileId) return { file, project, subitem: null };
-    }
-
-    for (const subitem of await storage.listSubitems(project.id)) {
-      for (const file of await storage.listFiles("subitem", subitem.id)) {
-        if (file.id === fileId) return { file, project, subitem };
-      }
-    }
+  if (file.parentType === "project") {
+    const project = await storage.getProject(file.parentId);
+    return project ? { file, project, subitem: null } : null;
   }
 
-  return null;
+  const located = await findSubitem(file.parentId);
+  return located ? { file, project: located.project, subitem: located.subitem } : null;
 }

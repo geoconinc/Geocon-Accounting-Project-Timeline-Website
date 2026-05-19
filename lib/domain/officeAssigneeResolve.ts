@@ -1,5 +1,4 @@
 import type { User } from "@/lib/types";
-import directory from "@/data/officeAssigneeDirectory.json";
 
 export interface OfficeAssigneeRow {
   displayName: string;
@@ -7,21 +6,17 @@ export interface OfficeAssigneeRow {
   email: string;
 }
 
-const defaultRows: OfficeAssigneeRow[] =
-  (directory as { assignees: OfficeAssigneeRow[] }).assignees ?? [];
-
 /**
  * Resolves a matrix label (e.g. "Joanne Brightman") to a user id.
- * Employee export uses "Last, First" names; directory maps display → email + Excel name.
+ * Rows come from Postgres site_config (office assignee directory).
  */
 export function resolveMatrixAssigneeId(
   matrixLabel: string,
   users: Array<Pick<User, "id" | "name" | "email">>,
-  rows?: OfficeAssigneeRow[]
+  rows: OfficeAssigneeRow[]
 ): string | null {
-  const useRows = rows ?? defaultRows;
   const label = matrixLabel.trim().toLowerCase();
-  const entry = useRows.find((r) => r.displayName.trim().toLowerCase() === label);
+  const entry = rows.find((r) => r.displayName.trim().toLowerCase() === label);
   if (!entry) {
     return users.find((u) => u.name.trim().toLowerCase() === label)?.id ?? null;
   }

@@ -1,19 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useBoardState, type BoardData } from "./features/board/state";
 import { Group } from "./features/board/Group";
 import { Toolbar, applyFilters, DEFAULT_FILTERS, type BoardFilters } from "./features/board/Toolbar";
-import { DEMO_MODE } from "@/lib/demo/config";
-import { syncDemoRoleRosterUsersOnce } from "@/lib/demo/syncRoleRosterToDemo";
 
 export default function Board({ initialData }: { initialData: BoardData }) {
   const { state, dispatch } = useBoardState(initialData);
   const [filters, setFilters] = useState<BoardFilters>(DEFAULT_FILTERS);
-
-  useEffect(() => {
-    if (DEMO_MODE) syncDemoRoleRosterUsersOnce();
-  }, []);
 
   const subsByProject = useMemo(() => {
     const map: Record<string, { name: string; ownerId: string | null }[]> = {};

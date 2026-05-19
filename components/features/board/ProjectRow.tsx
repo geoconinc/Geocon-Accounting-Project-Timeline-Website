@@ -23,7 +23,7 @@ import { NotificationButton } from "./NotificationButton";
 import { SubitemsStatusCell } from "./SubitemsStatusCell";
 import { SubitemRow, SubitemHeader } from "./SubitemRow";
 import { api } from "@/lib/client/boardApi";
-import { usersMatchingDirectorRoster, usersMatchingPmRoster } from "@/lib/domain/roleAssigneeRoster";
+import { useRoleRoster } from "@/components/providers/RoleRosterProvider";
 
 function rosterPickerUsers(rosterMatched: User[], allUsers: User[], currentId: string | null): User[] {
   const map = new Map<string, User>();
@@ -92,6 +92,7 @@ export function ProjectRow({
   onSubitemUpdated?: (subitem: Subitem) => void;
   onSubitemDeleted?: (id: string) => void;
 }) {
+  const { pmRosterUsers, directorRosterUsers } = useRoleRoster();
   const [open, setOpen] = useState(true);
   const [orderedIds, setOrderedIds] = useState<string[]>([]);
   const [code, setCode] = useState(project.code);
@@ -111,13 +112,13 @@ export function ProjectRow({
   }, [files]);
 
   const pmPickerUsers = useMemo(
-    () => rosterPickerUsers(usersMatchingPmRoster(users), users, project.projectManagerId),
-    [users, project.projectManagerId]
+    () => rosterPickerUsers(pmRosterUsers(users), users, project.projectManagerId),
+    [users, project.projectManagerId, pmRosterUsers]
   );
   const directorPickerUsers = useMemo(
     () =>
-      rosterPickerUsers(usersMatchingDirectorRoster(users), users, project.projectDirectorId),
-    [users, project.projectDirectorId]
+      rosterPickerUsers(directorRosterUsers(users), users, project.projectDirectorId),
+    [users, project.projectDirectorId, directorRosterUsers]
   );
 
   async function patch(p: Partial<Project>) {
@@ -225,7 +226,6 @@ export function ProjectRow({
             ownerId={project.projectManagerId ?? null}
             users={pmPickerUsers}
             onChange={(id) => patch({ projectManagerId: id })}
-            allowAddNewContact={false}
           />
         </div>
         <div className="cell !p-0">
@@ -233,7 +233,6 @@ export function ProjectRow({
             ownerId={project.projectDirectorId ?? null}
             users={directorPickerUsers}
             onChange={(id) => patch({ projectDirectorId: id })}
-            allowAddNewContact={false}
           />
         </div>
         <div className="cell !p-0">

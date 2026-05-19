@@ -157,7 +157,7 @@ export function resolveOfficeSubitemOwnerId(
   if (!assigneeRule) return null;
   if (assigneeRule === ASSIGNEE_PROJECT_MANAGER) return projectManagerId;
   return (
-    resolveMatrixAssigneeId(assigneeRule, users, assigneeRows) ??
+    resolveMatrixAssigneeId(assigneeRule, users, assigneeRows ?? []) ??
     resolveAssigneeId(users, assigneeRule)
   );
 }

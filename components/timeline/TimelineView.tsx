@@ -10,12 +10,11 @@ import {
   parseISO,
   startOfWeek
 } from "date-fns";
-import { loadDb } from "@/lib/demo/localStore";
 import type { Project, User } from "@/lib/types";
-import { DEMO_MODE } from "@/lib/demo/config";
 import type { BoardData } from "@/components/features/board/state";
 import { projectColors } from "@/components/features/board/StatusCell";
 import { Avatar } from "@/components/features/board/Avatar";
+import { debounce } from "@/lib/utils";
 
 const DAY_W = 28;
 const WINDOW_DAYS = 60;
@@ -32,46 +31,40 @@ function parseProjectDate(value: string | null): Date | null {
 }
 
 export function TimelineView() {
-  const [projects, setProjects] = useState<Project[]>(() => (DEMO_MODE ? loadDb().projects : []));
-  const [users, setUsers] = useState<User[]>(() => (DEMO_MODE ? loadDb().users : []));
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [anchor, setAnchor] = useState(() => startOfWeek(addDays(new Date(), -14)));
 
   useEffect(() => {
-    if (DEMO_MODE) {
-      const refresh = () => {
-        const db = loadDb();
-        setProjects(db.projects);
-        setUsers(db.users);
-      };
-      refresh();
-      window.addEventListener("geocon-demo-change", refresh);
-      window.addEventListener("storage", refresh);
-      return () => {
-        window.removeEventListener("geocon-demo-change", refresh);
-        window.removeEventListener("storage", refresh);
-      };
-    }
-
     let cancelled = false;
     const refetch = async () => {
-      const res = await fetch("/api/projects");
+      const res = await fetch("/api/projects?includeFiles=false");
       if (!res.ok || cancelled) return;
       const data = (await res.json()) as BoardData;
       setProjects(data.projects);
       setUsers(data.users);
     };
 
-    const es = new EventSource("/api/events");
-    es.addEventListener("project.upsert", () => void refetch());
-    es.addEventListener("project.delete", () => void refetch());
-    es.addEventListener("subitem.upsert", () => void refetch());
-    es.addEventListener("subitem.delete", () => void refetch());
-    es.addEventListener("subitem.reorder", () => void refetch());
+    const scheduleRefetch = debounce(() => void refetch(), 400);
+
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource("/api/events");
+      es.addEventListener("project.upsert", scheduleRefetch);
+      es.addEventListener("project.delete", scheduleRefetch);
+      es.addEventListener("subitem.upsert", scheduleRefetch);
+      es.addEventListener("subitem.delete", scheduleRefetch);
+      es.addEventListener("subitem.reorder", scheduleRefetch);
+    } catch {
+      // SSE not available
+    }
     void refetch();
 
+    const interval = setInterval(refetch, 30_000);
     return () => {
       cancelled = true;
-      es.close();
+      es?.close();
+      clearInterval(interval);
     };
   }, []);
 
@@ -101,27 +94,9 @@ export function TimelineView() {
           <p className="text-sm text-slate-500">All projects across the next 60 days.</p>
         </div>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setAnchor((a) => addDays(a, -14))}
-            className="btn-ghost text-sm"
-          >
-            ← 2 weeks
-          </button>
-          <button
-            type="button"
-            onClick={() => setAnchor(startOfWeek(addDays(new Date(), -14)))}
-            className="btn-ghost text-sm"
-          >
-            Today
-          </button>
-          <button
-            type="button"
-            onClick={() => setAnchor((a) => addDays(a, 14))}
-            className="btn-ghost text-sm"
-          >
-            2 weeks →
-          </button>
+          <button type="button" onClick={() => setAnchor((a) => addDays(a, -14))} className="btn-ghost text-sm">← 2 weeks</button>
+          <button type="button" onClick={() => setAnchor(startOfWeek(addDays(new Date(), -14)))} className="btn-ghost text-sm">Today</button>
+          <button type="button" onClick={() => setAnchor((a) => addDays(a, 14))} className="btn-ghost text-sm">2 weeks →</button>
         </div>
       </div>
 
@@ -137,13 +112,7 @@ export function TimelineView() {
               <div className="flex flex-col">
                 <div className="flex">
                   {months.map((m, i) => (
-                    <div
-                      key={i}
-                      className="text-[11px] font-semibold text-slate-600 border-r border-slate-200 px-2 py-1"
-                      style={{ width: m.span * DAY_W }}
-                    >
-                      {m.label}
-                    </div>
+                    <div key={i} className="text-[11px] font-semibold text-slate-600 border-r border-slate-200 px-2 py-1" style={{ width: m.span * DAY_W }}>{m.label}</div>
                   ))}
                 </div>
                 <div className="flex">
@@ -153,13 +122,7 @@ export function TimelineView() {
                     return (
                       <div
                         key={i}
-                        className={`text-[10px] text-center border-r border-slate-100 py-1 ${
-                          isToday
-                            ? "bg-brand text-white font-semibold"
-                            : isWeekend
-                              ? "bg-slate-50 text-slate-400"
-                              : "text-slate-500"
-                        }`}
+                        className={`text-[10px] text-center border-r border-slate-100 py-1 ${isToday ? "bg-brand text-white font-semibold" : isWeekend ? "bg-slate-50 text-slate-400" : "text-slate-500"}`}
                         style={{ width: DAY_W }}
                       >
                         {format(d, "d")}
@@ -179,15 +142,7 @@ export function TimelineView() {
   );
 }
 
-function TimelineRow({
-  project,
-  days,
-  users
-}: {
-  project: Project;
-  days: Date[];
-  users: User[];
-}) {
+function TimelineRow({ project, days, users }: { project: Project; days: Date[]; users: User[] }) {
   const owner = users.find((u) => u.id === project.ownerId);
   const start = parseProjectDate(project.timelineStart);
   const endRaw = parseProjectDate(project.timelineEnd);
@@ -219,13 +174,7 @@ function TimelineRow({
         {days.map((d, i) => {
           const isWeekend = d.getDay() === 0 || d.getDay() === 6;
           return (
-            <div
-              key={i}
-              className={`absolute top-0 bottom-0 border-r border-slate-100 ${
-                isWeekend ? "bg-slate-50/60" : ""
-              }`}
-              style={{ left: i * DAY_W, width: DAY_W }}
-            />
+            <div key={i} className={`absolute top-0 bottom-0 border-r border-slate-100 ${isWeekend ? "bg-slate-50/60" : ""}`} style={{ left: i * DAY_W, width: DAY_W }} />
           );
         })}
         {barWidth > 0 && (
