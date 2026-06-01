@@ -47,10 +47,11 @@ export async function POST(req: Request) {
 
   const session = await storage.createSession(user.id, 30);
 
-  await Promise.all([
+  // Fire-and-forget: sync roster users in background, don't block login response
+  Promise.all([
     syncRoleAssigneeUsersIntoStorage(),
     syncOfficeAssigneeUsersIntoStorage()
-  ]);
+  ]).catch(() => {});
 
   const res = NextResponse.json({ user });
   res.cookies.set(SESSION_COOKIE, session.token, {

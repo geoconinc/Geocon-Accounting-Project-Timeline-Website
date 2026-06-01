@@ -30,7 +30,7 @@ export default function Sidebar({ user }: { user?: User | null }) {
   return (
     <aside className="w-56 bg-white border-r border-slate-200 text-slate-700 flex flex-col shrink-0">
       <div className="h-20 flex flex-col items-center justify-center gap-1.5 px-4 border-b border-slate-200">
-        <Image src="/logo.png" alt="Geocon" width={140} height={36} className="h-8 w-auto" />
+        <Image src="/logo.png" alt="Geocon" width={140} height={52} priority className="h-8 w-auto" />
         <span className="text-[10px] uppercase tracking-[0.18em] text-slate-400">
           Project Management
         </span>
@@ -44,7 +44,7 @@ export default function Sidebar({ user }: { user?: User | null }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                "nav-link flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium",
                 active
                   ? "bg-brand/10 text-brand-dark"
                   : "text-slate-600 hover:bg-slate-100 hover:text-brand-dark"
@@ -59,7 +59,7 @@ export default function Sidebar({ user }: { user?: User | null }) {
           <Link
             href="/settings/admin"
             className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+              "nav-link flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium",
               pathname.startsWith("/settings/admin")
                 ? "bg-amber-50 text-amber-900 border border-amber-100"
                 : "text-amber-800 hover:bg-amber-50/80"

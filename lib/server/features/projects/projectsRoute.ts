@@ -27,8 +27,10 @@ export async function POST(req: Request) {
   if (user instanceof Response) return user;
   const body = (await req.json()) as Partial<Parameters<typeof storage.createProject>[0]>;
 
-  await syncRoleAssigneeUsersIntoStorage();
-  await syncOfficeAssigneeUsersIntoStorage();
+  await Promise.all([
+    syncRoleAssigneeUsersIntoStorage(),
+    syncOfficeAssigneeUsersIntoStorage()
+  ]);
 
   const project = await storage.createProject({
     code: body.code ?? "NEW",
@@ -61,24 +63,26 @@ export async function POST(req: Request) {
   const office = isOffice(project.office) ? project.office : null;
   const assigneeRows = await getEffectiveOfficeAssigneeRows();
 
-  for (const name of DEFAULT_SUBITEM_NAMES) {
-    const ownerId = subitemOwnerIdForOffice(
-      office,
-      name,
-      allUsers,
-      project.projectManagerId,
-      assigneeRows
-    );
-    await storage.createSubitem({
-      projectId: project.id,
-      name,
-      ownerId,
-      status: "NotStarted",
-      dueDate: null,
-      dateCompleted: null,
-      notes: null
-    });
-  }
+  await Promise.all(
+    DEFAULT_SUBITEM_NAMES.map((name) => {
+      const ownerId = subitemOwnerIdForOffice(
+        office,
+        name,
+        allUsers,
+        project.projectManagerId,
+        assigneeRows
+      );
+      return storage.createSubitem({
+        projectId: project.id,
+        name,
+        ownerId,
+        status: "NotStarted",
+        dueDate: null,
+        dateCompleted: null,
+        notes: null
+      });
+    })
+  );
 
   bus.publish({ type: "project.upsert", payload: { id: project.id } });
 

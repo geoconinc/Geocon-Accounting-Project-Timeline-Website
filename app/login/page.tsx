@@ -44,9 +44,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen grid place-items-center bg-gradient-to-br from-brand-dark via-brand to-brand-light p-6">
-      <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md animate-fade-in-up">
         <div className="flex flex-col items-center text-center">
-          <Image src="/logo.png" alt="Geocon" width={120} height={120} className="mb-4" />
+          <Image src="/logo.png" alt="Geocon" width={120} height={44} priority className="mb-4" />
           <h1 className="text-2xl font-bold text-brand-dark">Project Management</h1>
           <p className="text-slate-500 mt-2 text-sm">
             Sign in with your Geocon Microsoft account.
@@ -54,7 +54,7 @@ export default function LoginPage() {
           <button
             onClick={signIn}
             disabled={busy}
-            className="mt-6 w-full inline-flex items-center justify-center gap-2.5 bg-[#2F2F2F] hover:bg-black text-white text-sm font-semibold px-4 py-2.5 rounded shadow-sm disabled:opacity-60"
+            className="btn mt-6 w-full inline-flex items-center justify-center gap-2.5 bg-[#2F2F2F] hover:bg-black text-white text-sm font-semibold px-4 py-2.5 rounded shadow-sm hover:shadow-md disabled:opacity-60"
           >
             <MicrosoftLogo />
             {busy ? "Signing in..." : "Sign in with Microsoft"}

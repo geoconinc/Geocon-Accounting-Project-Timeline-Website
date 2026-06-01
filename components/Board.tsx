@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useBoardState, type BoardData } from "./features/board/state";
 import { Group } from "./features/board/Group";
 import { Toolbar, applyFilters, DEFAULT_FILTERS, type BoardFilters } from "./features/board/Toolbar";
+import type { Project, Subitem } from "@/lib/types";
 
 export default function Board({ initialData }: { initialData: BoardData }) {
   const { state, dispatch } = useBoardState(initialData);
@@ -21,9 +22,34 @@ export default function Board({ initialData }: { initialData: BoardData }) {
     [state.projects, subsByProject, filters, state.me]
   );
 
-  const current = filtered.filter((p) => p.group === "Current");
-  const future = filtered.filter((p) => p.group === "Future");
-  const completed = filtered.filter((p) => p.group === "Completed");
+  const { current, future, completed } = useMemo(() => {
+    const c: Project[] = [];
+    const f: Project[] = [];
+    const d: Project[] = [];
+    for (const p of filtered) {
+      if (p.group === "Current") c.push(p);
+      else if (p.group === "Future") f.push(p);
+      else d.push(p);
+    }
+    return { current: c, future: f, completed: d };
+  }, [filtered]);
+
+  const onProjectUpdated = useCallback(
+    (project: Project) => dispatch({ type: "upsertProject", project }),
+    [dispatch]
+  );
+  const onProjectDeleted = useCallback(
+    (id: string) => dispatch({ type: "deleteProject", id }),
+    [dispatch]
+  );
+  const onSubitemUpdated = useCallback(
+    (subitem: Subitem) => dispatch({ type: "upsertSubitem", subitem }),
+    [dispatch]
+  );
+  const onSubitemDeleted = useCallback(
+    (id: string) => dispatch({ type: "deleteSubitem", id }),
+    [dispatch]
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -36,10 +62,10 @@ export default function Board({ initialData }: { initialData: BoardData }) {
             allSubitems={state.subitems}
             users={state.users}
             files={state.files}
-            onProjectUpdated={(project) => dispatch({ type: "upsertProject", project })}
-            onProjectDeleted={(id) => dispatch({ type: "deleteProject", id })}
-            onSubitemUpdated={(subitem) => dispatch({ type: "upsertSubitem", subitem })}
-            onSubitemDeleted={(id) => dispatch({ type: "deleteSubitem", id })}
+            onProjectUpdated={onProjectUpdated}
+            onProjectDeleted={onProjectDeleted}
+            onSubitemUpdated={onSubitemUpdated}
+            onSubitemDeleted={onSubitemDeleted}
           />
           <Group
             name="Future"
@@ -47,10 +73,10 @@ export default function Board({ initialData }: { initialData: BoardData }) {
             allSubitems={state.subitems}
             users={state.users}
             files={state.files}
-            onProjectUpdated={(project) => dispatch({ type: "upsertProject", project })}
-            onProjectDeleted={(id) => dispatch({ type: "deleteProject", id })}
-            onSubitemUpdated={(subitem) => dispatch({ type: "upsertSubitem", subitem })}
-            onSubitemDeleted={(id) => dispatch({ type: "deleteSubitem", id })}
+            onProjectUpdated={onProjectUpdated}
+            onProjectDeleted={onProjectDeleted}
+            onSubitemUpdated={onSubitemUpdated}
+            onSubitemDeleted={onSubitemDeleted}
           />
           {!filters.hideCompleted && (
             <Group
@@ -59,10 +85,10 @@ export default function Board({ initialData }: { initialData: BoardData }) {
               allSubitems={state.subitems}
               users={state.users}
               files={state.files}
-              onProjectUpdated={(project) => dispatch({ type: "upsertProject", project })}
-              onProjectDeleted={(id) => dispatch({ type: "deleteProject", id })}
-              onSubitemUpdated={(subitem) => dispatch({ type: "upsertSubitem", subitem })}
-              onSubitemDeleted={(id) => dispatch({ type: "deleteSubitem", id })}
+              onProjectUpdated={onProjectUpdated}
+              onProjectDeleted={onProjectDeleted}
+              onSubitemUpdated={onSubitemUpdated}
+              onSubitemDeleted={onSubitemDeleted}
             />
           )}
         </div>

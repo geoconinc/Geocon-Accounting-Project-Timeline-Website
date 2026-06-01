@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import type { Project, ProjectStatus, Subitem, SubitemStatus, User } from "@/lib/types";
 import type { BoardData } from "@/components/features/board/state";
 import { projectColors, projectLabel, subColors, subLabel } from "@/components/features/board/StatusCell";
@@ -77,7 +78,24 @@ export function DashboardView({ initialData }: { initialData?: BoardData }) {
   }, [initialData, refetch]);
 
   if (loading) {
-    return <div className="p-8 text-slate-500 text-sm">Loading dashboard...</div>;
+    return (
+      <div className="p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="skeleton w-12 h-12 rounded-lg" />
+          <div className="space-y-2">
+            <div className="skeleton w-28 h-5" />
+            <div className="skeleton w-48 h-3" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => <div key={i} className="skeleton h-20 rounded-lg" />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="skeleton h-48 rounded-lg" />
+          <div className="skeleton h-48 rounded-lg" />
+        </div>
+      </div>
+    );
   }
 
   if (error) {
@@ -116,26 +134,24 @@ export function DashboardView({ initialData }: { initialData?: BoardData }) {
 
   return (
     <div className="p-6 overflow-auto h-full">
-      <div className="mb-6 flex items-center gap-3">
-        <img
-          src="/logo.png"
-          alt="Geocon"
-          className="w-12 h-12 rounded-lg bg-white border border-slate-200 p-1.5 shadow-sm"
-        />
+      <div className="mb-6 flex items-center gap-3 animate-fade-in-up">
+        <div className="w-12 h-12 rounded-lg bg-white border border-slate-200 p-1.5 shadow-sm grid place-items-center">
+          <Image src="/logo.png" alt="Geocon" width={36} height={13} priority />
+        </div>
         <div>
           <h1 className="text-xl font-semibold text-brand-dark">Dashboard</h1>
           <p className="text-sm text-slate-500">A quick view of project health across the team.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 stagger-children">
         <StatCard icon={<FolderOpen size={18} />} label="Total projects" value={projects.length} accent="bg-brand" />
         <StatCard icon={<Clock size={18} />} label="In progress" value={projects.filter((p) => p.status === "InProgress").length} accent="bg-status-progress" />
         <StatCard icon={<CheckCircle2 size={18} />} label="Subitem completion" value={`${completionPct}%`} subtext={`${completedCounted}/${totalCounted}`} accent="bg-status-completed" />
         <StatCard icon={<AlertTriangle size={18} />} label="Overdue subitems" value={overdue} accent="bg-status-missing" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 stagger-children">
         <Card title="Projects by status">
           <div className="flex flex-col gap-2">
             {projByStatus.map((row) => (
@@ -152,7 +168,7 @@ export function DashboardView({ initialData }: { initialData?: BoardData }) {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 stagger-children">
         <Card title="Coming up / overdue">
           {dueSoon.length === 0 ? (
             <p className="text-xs text-slate-400">No upcoming or overdue subitems.</p>
@@ -191,7 +207,7 @@ export function DashboardView({ initialData }: { initialData?: BoardData }) {
 
 function StatCard({ icon, label, value, subtext, accent }: { icon: React.ReactNode; label: string; value: number | string; subtext?: string; accent: string }) {
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4 flex items-center gap-3">
+    <div className="card-hover bg-white rounded-lg border border-slate-200 p-4 flex items-center gap-3">
       <div className={`w-10 h-10 rounded-md text-white grid place-items-center ${accent}`}>{icon}</div>
       <div className="flex flex-col min-w-0">
         <span className="text-[11px] uppercase tracking-wide text-slate-500">{label}</span>
@@ -204,7 +220,7 @@ function StatCard({ icon, label, value, subtext, accent }: { icon: React.ReactNo
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4">
+    <div className="card-hover bg-white rounded-lg border border-slate-200 p-4">
       <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-3">{title}</h2>
       {children}
     </div>
@@ -220,7 +236,7 @@ function BarRow({ label, count, total, color }: { label: string; count: number; 
         <span className="text-slate-500">{count}</span>
       </div>
       <div className="h-2 rounded bg-slate-100 overflow-hidden">
-        <div className={color} style={{ width: `${pct}%`, height: "100%" }} />
+        <div className={`${color} animate-bar-fill`} style={{ width: `${pct}%`, height: "100%" }} />
       </div>
     </div>
   );

@@ -42,7 +42,7 @@ export default function TopBar({ user }: { user: User }) {
       </div>
       <button
         onClick={() => setConfirming(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-sm"
+        className="btn flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-sm hover:shadow-md"
         title="Sign out"
       >
         <LogOut size={14} /> Log out
@@ -54,7 +54,7 @@ export default function TopBar({ user }: { user: User }) {
           onClick={() => !busy && setConfirming(false)}
         >
           <div
-            className="bg-white rounded-lg shadow-2xl w-full max-w-sm p-6"
+            className="bg-white rounded-lg shadow-2xl w-full max-w-sm p-6 animate-fade-in-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-2">

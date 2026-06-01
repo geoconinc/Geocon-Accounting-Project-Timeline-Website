@@ -17,7 +17,9 @@ function getPool(): Pool {
       url.includes("sslmode=require");
     g.__geoconPgPool = new Pool({
       connectionString: url,
-      max: 10,
+      max: 20,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 5_000,
       ssl: needsSsl ? { rejectUnauthorized: false } : undefined
     });
   }

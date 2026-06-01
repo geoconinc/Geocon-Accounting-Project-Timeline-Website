@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import type { FileRef, Project, ProjectGroup, Subitem, User } from "@/lib/types";
 import { ProjectHeader, ProjectRow } from "./ProjectRow";
@@ -36,16 +36,28 @@ export function Group({
   const [open, setOpen] = useState(true);
   const [adding, setAdding] = useState(false);
 
+  const subsByProjectId = useMemo(() => {
+    const map = new Map<string, Subitem[]>();
+    for (const s of allSubitems) {
+      const arr = map.get(s.projectId);
+      if (arr) arr.push(s);
+      else map.set(s.projectId, [s]);
+    }
+    return map;
+  }, [allSubitems]);
+
   const style = groupStyle[name];
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 animate-fade-in-up">
       <div className="flex items-center gap-3 mb-2 px-1">
         <button
           onClick={() => setOpen((o) => !o)}
-          className={`flex items-center gap-2 text-sm font-semibold ${style.text}`}
+          className={`flex items-center gap-2 text-sm font-semibold transition-transform ${style.text}`}
         >
-          {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          <span className={`transition-transform duration-150 ${open ? "rotate-0" : "-rotate-90"}`}>
+            <ChevronDown size={16} />
+          </span>
           <span className={`w-2 h-2 rounded-full ${style.dot}`} />
           {name}
         </button>
@@ -55,7 +67,7 @@ export function Group({
         <div className="flex-1" />
         <button
           onClick={() => setAdding(true)}
-          className="text-[11px] text-slate-500 hover:text-brand-dark flex items-center gap-1 px-2 py-1 rounded hover:bg-white"
+          className="text-[11px] text-slate-500 hover:text-brand-dark flex items-center gap-1 px-2 py-1 rounded hover:bg-white transition-colors"
         >
           <Plus size={12} /> Add project
         </button>
@@ -66,7 +78,7 @@ export function Group({
           {projects.length === 0 ? (
             <button
               onClick={() => setAdding(true)}
-              className="w-full px-6 py-8 text-xs text-slate-400 hover:text-brand-dark hover:bg-slate-50 flex items-center justify-center gap-2 border-dashed"
+              className="w-full px-6 py-8 text-xs text-slate-400 hover:text-brand-dark hover:bg-slate-50 flex items-center justify-center gap-2 border-dashed transition-colors"
             >
               <Plus size={14} /> No projects in {name} yet — click to add one
             </button>
@@ -75,7 +87,7 @@ export function Group({
               <ProjectRow
                 key={p.id}
                 project={p}
-                subitems={allSubitems.filter((s) => s.projectId === p.id)}
+                subitems={subsByProjectId.get(p.id) ?? []}
                 users={users}
                 files={files}
                 onProjectUpdated={onProjectUpdated}

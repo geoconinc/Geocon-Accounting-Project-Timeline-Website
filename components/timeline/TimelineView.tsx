@@ -84,11 +84,22 @@ export function TimelineView() {
     return result;
   }, [days]);
 
+  const loading = projects.length === 0 && users.length === 0;
   const withTimeline = projects.filter((p) => p.timelineStart || p.timelineEnd);
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-4">
+        <div className="skeleton w-32 h-6 mb-1" />
+        <div className="skeleton w-64 h-4" />
+        <div className="skeleton h-64 rounded-lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 overflow-auto h-full">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between animate-fade-in-up">
         <div>
           <h1 className="text-xl font-semibold text-brand-dark">Timeline</h1>
           <p className="text-sm text-slate-500">All projects across the next 60 days.</p>
