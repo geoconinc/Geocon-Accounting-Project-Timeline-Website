@@ -19,8 +19,7 @@ const items = [
   { href: "/", label: "Board", icon: LayoutGrid },
   { href: "/dashboard", label: "Dashboard", icon: PieChart },
   { href: "/timeline", label: "Timeline", icon: CalendarRange },
-  { href: "/documents", label: "Documents", icon: Folder },
-  { href: "/settings", label: "Settings", icon: SettingsIcon }
+  { href: "/documents", label: "Documents", icon: Folder }
 ];
 
 export default function Sidebar({ user }: { user?: User | null }) {

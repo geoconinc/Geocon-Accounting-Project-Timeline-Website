@@ -22,7 +22,7 @@ export default function PageTransition({ children }: { children: ReactNode }) {
   }, [pathname, children]);
 
   return (
-    <div className={animating ? "page-enter" : ""}>
+    <div className={`h-full ${animating ? "page-enter" : ""}`}>
       {displayChildren}
     </div>
   );

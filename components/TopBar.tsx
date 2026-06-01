@@ -1,21 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@/lib/types";
-import { LogOut, X } from "lucide-react";
+import { LogOut, Mail, Settings, X } from "lucide-react";
 
 export default function TopBar({ user }: { user: User }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [busy, setBusy] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!confirming) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setConfirming(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setConfirming(false);
+        setShowSettings(false);
+      }
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [confirming]);
+  }, []);
+
+  useEffect(() => {
+    if (!showSettings) return;
+    const onClick = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setShowSettings(false);
+      }
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [showSettings]);
 
   async function logout() {
     setBusy(true);
@@ -40,6 +57,55 @@ export default function TopBar({ user }: { user: User }) {
           <span className="text-[10px] text-white/60">{user.email}</span>
         </div>
       </div>
+
+      <div className="relative" ref={settingsRef}>
+        <button
+          onClick={() => setShowSettings((s) => !s)}
+          className="p-2 rounded-md text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          title="Settings"
+        >
+          <Settings size={16} />
+        </button>
+
+        {showSettings && (
+          <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-lg shadow-2xl border border-slate-200 z-50 animate-fade-in-up">
+            <div className="p-4 border-b border-slate-100">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-slate-800">Settings</h3>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-brand/10 text-brand grid place-items-center text-sm font-semibold">
+                  {user.initials}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-800 truncate">{user.name}</p>
+                  <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-3">
+              <p className="text-xs text-slate-500 mb-2">Need help?</p>
+              <a
+                href="mailto:mundra@geoconinc.com"
+                className="flex items-center gap-2 text-xs text-brand hover:text-brand-dark font-medium"
+              >
+                <Mail size={14} />
+                mundra@geoconinc.com
+              </a>
+            </div>
+            <div className="p-3 pt-0">
+              <p className="text-[10px] text-slate-400">Geocon · v0.1</p>
+            </div>
+          </div>
+        )}
+      </div>
+
       <button
         onClick={() => setConfirming(true)}
         className="btn flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-sm hover:shadow-md"

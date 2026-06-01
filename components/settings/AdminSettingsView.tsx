@@ -33,7 +33,8 @@ export function AdminSettingsView() {
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<"pm" | "director" | "office">("pm");
+  const [boardAdminEmails, setBoardAdminEmails] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<"pm" | "director" | "office" | "admins">("pm");
   const [dbStats, setDbStats] = useState<DbStats | null>(null);
   const [dbLoading, setDbLoading] = useState(true);
 
@@ -64,6 +65,7 @@ export function AdminSettingsView() {
       const data = (await res.json()) as {
         officeAssignees: OfficeAssigneeRow[];
         roleAssignees: GeoconRoleAssigneesFile | null;
+        boardAdminEmails?: string[];
         meta: { updatedAt: string | null; updatedByEmail: string | null };
       };
       setOfficeAssignees(data.officeAssignees);
@@ -71,6 +73,7 @@ export function AdminSettingsView() {
       setProjectManagers(ra?.projectManagers ?? []);
       setProjectDirectors(ra?.projectDirectors ?? []);
       setRosterSource(ra?.source ?? "admin");
+      setBoardAdminEmails(data.boardAdminEmails ?? []);
       setMeta(data.meta);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Load failed");
@@ -109,7 +112,7 @@ export function AdminSettingsView() {
       const res = await fetch("/api/admin/site-config", {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ officeAssignees, roleAssignees })
+        body: JSON.stringify({ officeAssignees, roleAssignees, boardAdminEmails })
       });
       if (res.status === 403) {
         setErr("You do not have permission to save.");
@@ -135,17 +138,18 @@ export function AdminSettingsView() {
   const tabs = [
     { key: "pm" as const, label: "Project Managers", count: projectManagers.length },
     { key: "director" as const, label: "Project Directors", count: projectDirectors.length },
-    { key: "office" as const, label: "Office Directory", count: officeAssignees.length }
+    { key: "office" as const, label: "Office Directory", count: officeAssignees.length },
+    { key: "admins" as const, label: "Board Admins", count: boardAdminEmails.length }
   ];
 
   return (
-    <div className="p-6 overflow-auto h-full max-w-5xl">
+    <div className="p-6 overflow-y-auto h-full max-w-5xl">
       <div className="mb-4 flex items-center gap-4">
         <Link
-          href="/settings"
+          href="/"
           className="text-slate-500 hover:text-brand inline-flex items-center gap-1 text-sm"
         >
-          <ArrowLeft size={16} /> Settings
+          <ArrowLeft size={16} /> Board
         </Link>
       </div>
       <h1 className="text-xl font-semibold text-brand-dark mb-1">Admin · site data</h1>
@@ -200,6 +204,12 @@ export function AdminSettingsView() {
         <OfficeDirectoryTable
           rows={officeAssignees}
           onChange={setOfficeAssignees}
+        />
+      )}
+      {activeTab === "admins" && (
+        <BoardAdminsTable
+          emails={boardAdminEmails}
+          onChange={setBoardAdminEmails}
         />
       )}
 
@@ -547,6 +557,82 @@ function OfficeDirectoryTable({
                     onClick={() => remove(i)}
                     className="text-slate-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Remove row"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function BoardAdminsTable({
+  emails,
+  onChange
+}: {
+  emails: string[];
+  onChange: (next: string[]) => void;
+}) {
+  function add() {
+    onChange([...emails, ""]);
+  }
+  function update(i: number, value: string) {
+    const next = [...emails];
+    next[i] = value;
+    onChange(next);
+  }
+  function remove(i: number) {
+    onChange(emails.filter((_, j) => j !== i));
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs text-slate-500">
+          Board admins can see and edit all projects. Add emails of users who should have full access.
+        </p>
+        <button type="button" onClick={add} className="btn-primary text-xs inline-flex items-center gap-1">
+          <Plus size={14} /> Add admin
+        </button>
+      </div>
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
+            <tr>
+              <th className="text-left px-3 py-2 font-medium w-8">#</th>
+              <th className="text-left px-3 py-2 font-medium">Email</th>
+              <th className="w-12" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {emails.length === 0 && (
+              <tr>
+                <td colSpan={3} className="px-3 py-6 text-center text-xs text-slate-400">
+                  No board admins configured. Click &quot;Add admin&quot; to add one.
+                </td>
+              </tr>
+            )}
+            {emails.map((email, i) => (
+              <tr key={i} className="group">
+                <td className="px-3 py-1 text-xs text-slate-400">{i + 1}</td>
+                <td className="px-2 py-1">
+                  <input
+                    value={email}
+                    onChange={(e) => update(i, e.target.value)}
+                    className="w-full border border-slate-200 rounded px-2 py-1 text-xs font-mono focus:ring-1 focus:ring-brand outline-none"
+                    placeholder="email@geoconinc.com"
+                  />
+                </td>
+                <td className="px-1 py-1">
+                  <button
+                    type="button"
+                    onClick={() => remove(i)}
+                    className="text-slate-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove admin"
                   >
                     <Trash2 size={14} />
                   </button>

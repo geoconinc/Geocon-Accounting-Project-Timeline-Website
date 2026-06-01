@@ -7,18 +7,23 @@ import { useMsal } from "@azure/msal-react";
 import { loginRequest } from "@/lib/auth/msalConfig";
 import { ALLOWED_DOMAIN } from "@/lib/config/allowedDomain";
 
+type Stage = "idle" | "ms-popup" | "verifying" | "redirecting";
+
 export default function LoginPage() {
   const { instance } = useMsal();
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState<Stage>("idle");
   const [err, setErr] = useState<string | null>(null);
 
   async function signIn() {
-    setBusy(true);
+    setStage("ms-popup");
     setErr(null);
     try {
       const result = await instance.loginPopup(loginRequest);
       if (!result.account) throw new Error("No account returned from Microsoft");
+
+      setStage("verifying");
+
       const tokenRes = await instance.acquireTokenSilent({
         ...loginRequest,
         account: result.account
@@ -31,15 +36,34 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) {
         setErr(data.message || data.error || "Login failed");
+        setStage("idle");
         return;
       }
+
+      setStage("redirecting");
       router.push("/");
       router.refresh();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Login failed");
-    } finally {
-      setBusy(false);
+      setStage("idle");
     }
+  }
+
+  if (stage === "verifying" || stage === "redirecting") {
+    return (
+      <div className="min-h-screen grid place-items-center bg-gradient-to-br from-brand-dark via-brand to-brand-light p-6">
+        <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md animate-fade-in-up">
+          <div className="flex flex-col items-center text-center gap-4">
+            <Image src="/logo.png" alt="Geocon" width={120} height={44} priority />
+            <div className="w-8 h-8 border-3 border-brand/30 border-t-brand rounded-full animate-spin" />
+            <p className="text-sm font-medium text-brand-dark">
+              {stage === "verifying" ? "Verifying your account..." : "Loading your workspace..."}
+            </p>
+            <p className="text-xs text-slate-400">This will only take a moment</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -53,11 +77,11 @@ export default function LoginPage() {
           </p>
           <button
             onClick={signIn}
-            disabled={busy}
+            disabled={stage !== "idle"}
             className="btn mt-6 w-full inline-flex items-center justify-center gap-2.5 bg-[#2F2F2F] hover:bg-black text-white text-sm font-semibold px-4 py-2.5 rounded shadow-sm hover:shadow-md disabled:opacity-60"
           >
             <MicrosoftLogo />
-            {busy ? "Signing in..." : "Sign in with Microsoft"}
+            {stage === "ms-popup" ? "Waiting for Microsoft..." : "Sign in with Microsoft"}
           </button>
           {err && (
             <div className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3 w-full">

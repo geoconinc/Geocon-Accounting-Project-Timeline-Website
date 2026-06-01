@@ -81,6 +81,50 @@ export async function writeAdminSiteConfig(
   await fs.rename(tmp, FILE);
 }
 
+const ADMIN_EMAILS_KEY = "board_admin_emails";
+
+let cachedAdminEmails: string[] | null = null;
+
+export function invalidateAdminEmailsCache(): void {
+  cachedAdminEmails = null;
+}
+
+export async function getStoredBoardAdminEmails(): Promise<string[]> {
+  if (cachedAdminEmails) return cachedAdminEmails;
+
+  if (usePostgres()) {
+    const db = await pgDb();
+    const rows = await db.execute<{ value: unknown }>(
+      sql`SELECT value FROM site_config WHERE key = ${ADMIN_EMAILS_KEY} LIMIT 1`
+    );
+    const row = rows.rows[0];
+    if (row && Array.isArray((row.value as { emails?: string[] }).emails)) {
+      cachedAdminEmails = (row.value as { emails: string[] }).emails;
+      return cachedAdminEmails;
+    }
+  }
+
+  cachedAdminEmails = [];
+  return cachedAdminEmails;
+}
+
+export async function setStoredBoardAdminEmails(
+  emails: string[],
+  actorEmail: string
+): Promise<void> {
+  if (usePostgres()) {
+    const db = await pgDb();
+    const value = { emails };
+    await db.execute(sql`
+      INSERT INTO site_config (key, value, updated_at, updated_by)
+      VALUES (${ADMIN_EMAILS_KEY}, ${JSON.stringify(value)}::jsonb, now(), ${actorEmail})
+      ON CONFLICT (key) DO UPDATE
+        SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at, updated_by = EXCLUDED.updated_by
+    `);
+  }
+  cachedAdminEmails = emails;
+}
+
 /** Admin Postgres override when set; otherwise bundled data/officeAssigneeDirectory.json. */
 export async function getEffectiveOfficeAssigneeRows(): Promise<OfficeAssigneeRow[]> {
   const admin = await readAdminSiteConfig();

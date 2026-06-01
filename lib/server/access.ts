@@ -35,8 +35,28 @@ function configuredEmails(name: string): Set<string> {
   );
 }
 
+let storedAdminEmailsCache: Set<string> | null = null;
+
+export function invalidateAccessCache(): void {
+  storedAdminEmailsCache = null;
+}
+
 export function hasFullBoardAccess(user: User): boolean {
-  return configuredEmails("BOARD_ADMIN_EMAILS").has(user.email.toLowerCase());
+  const email = user.email.toLowerCase();
+  if (configuredEmails("BOARD_ADMIN_EMAILS").has(email)) return true;
+  if (storedAdminEmailsCache?.has(email)) return true;
+  return false;
+}
+
+export async function hasFullBoardAccessAsync(user: User): Promise<boolean> {
+  if (hasFullBoardAccess(user)) return true;
+
+  const { getStoredBoardAdminEmails } = await import(
+    "@/lib/server/site-data/adminSiteConfigStore"
+  );
+  const stored = await getStoredBoardAdminEmails();
+  storedAdminEmailsCache = new Set(stored.map((e) => e.toLowerCase()));
+  return storedAdminEmailsCache.has(user.email.toLowerCase());
 }
 
 /** Owner, project manager, or project director (not board admin — use hasFullBoardAccess for that). */
@@ -65,7 +85,7 @@ export async function getBoardPayloadForUser(
     includeFiles ? storage.listAllFiles() : Promise.resolve([] as FileRef[])
   ]);
 
-  if (hasFullBoardAccess(user)) {
+  if (await hasFullBoardAccessAsync(user)) {
     return {
       projects,
       subitems: allSubitems,

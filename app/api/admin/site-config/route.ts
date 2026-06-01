@@ -4,8 +4,12 @@ import { isSuperAdminUser } from "@/lib/auth/superAdmin";
 import {
   readAdminSiteConfig,
   writeAdminSiteConfig,
-  getEffectiveOfficeAssigneeRows
+  getEffectiveOfficeAssigneeRows,
+  getStoredBoardAdminEmails,
+  setStoredBoardAdminEmails,
+  invalidateAdminEmailsCache
 } from "@/lib/server/site-data/adminSiteConfigStore";
+import { invalidateAccessCache } from "@/lib/server/access";
 import { loadRoleAssigneesJson, invalidateRoleAssigneesCache } from "@/lib/server/site-data/syncRoleAssignees";
 import type { GeoconRoleAssigneesFile } from "@/lib/types/roleAssigneeData";
 import type { OfficeAssigneeRow } from "@/lib/domain/officeAssigneeResolve";
@@ -19,13 +23,23 @@ export async function GET() {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const officeAssignees = await getEffectiveOfficeAssigneeRows();
-  const roleAssignees = await loadRoleAssigneesJson();
-  const meta = await readAdminSiteConfig();
+  const [officeAssignees, roleAssignees, meta, boardAdminEmails] = await Promise.all([
+    getEffectiveOfficeAssigneeRows(),
+    loadRoleAssigneesJson(),
+    readAdminSiteConfig(),
+    getStoredBoardAdminEmails()
+  ]);
+
+  const envAdmins = (process.env.BOARD_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const allAdminEmails = [...new Set([...envAdmins, ...boardAdminEmails])];
 
   return NextResponse.json({
     officeAssignees,
     roleAssignees,
+    boardAdminEmails: allAdminEmails,
     meta: {
       updatedAt: meta?.updatedAt ?? null,
       updatedByEmail: meta?.updatedByEmail ?? null
@@ -50,6 +64,7 @@ export async function PUT(req: Request) {
   const rec = body as {
     officeAssignees?: OfficeAssigneeRow[];
     roleAssignees?: GeoconRoleAssigneesFile | null;
+    boardAdminEmails?: string[];
   };
 
   if (!Array.isArray(rec.officeAssignees)) {
@@ -97,6 +112,15 @@ export async function PUT(req: Request) {
     user.email
   );
   invalidateRoleAssigneesCache();
+
+  if (Array.isArray(rec.boardAdminEmails)) {
+    const cleaned = rec.boardAdminEmails
+      .map((e) => (typeof e === "string" ? e.trim().toLowerCase() : ""))
+      .filter(Boolean);
+    await setStoredBoardAdminEmails(cleaned, user.email);
+    invalidateAdminEmailsCache();
+    invalidateAccessCache();
+  }
 
   return NextResponse.json({ ok: true });
 }

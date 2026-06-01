@@ -92,7 +92,7 @@ export function ProjectRow({
   onSubitemUpdated?: (subitem: Subitem) => void;
   onSubitemDeleted?: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(project.group !== "Completed");
   const [orderedIds, setOrderedIds] = useState<string[]>([]);
   const [code, setCode] = useState(project.code);
   const [name, setName] = useState(project.name);
