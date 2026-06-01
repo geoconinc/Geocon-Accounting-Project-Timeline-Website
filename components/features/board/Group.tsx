@@ -87,7 +87,7 @@ export function Group({
           )}
         </div>
       )}
-      <AddProjectDialog group={name} open={adding} onClose={() => setAdding(false)} />
+      <AddProjectDialog group={name} open={adding} onClose={() => setAdding(false)} users={users} />
     </div>
   );
 }

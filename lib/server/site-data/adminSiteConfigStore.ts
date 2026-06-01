@@ -81,15 +81,11 @@ export async function writeAdminSiteConfig(
   await fs.rename(tmp, FILE);
 }
 
-/** Office assignee matrix — Postgres site_config only in production (no bundled JSON). */
+/** Admin Postgres override when set; otherwise bundled data/officeAssigneeDirectory.json. */
 export async function getEffectiveOfficeAssigneeRows(): Promise<OfficeAssigneeRow[]> {
   const admin = await readAdminSiteConfig();
   if (admin?.officeAssignees && admin.officeAssignees.length > 0) {
     return admin.officeAssignees;
-  }
-
-  if (usePostgres()) {
-    return [];
   }
 
   try {

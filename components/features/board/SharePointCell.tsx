@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, Edit3 } from "lucide-react";
+import { FolderOpen, Edit3, Copy } from "lucide-react";
+import { localPathToFileUrl } from "@/lib/config/localTemplates";
 
 export function SharePointCell({
   url,
@@ -12,6 +13,7 @@ export function SharePointCell({
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(url ?? "");
+  const [copied, setCopied] = useState(false);
 
   function commit() {
     const trimmed = draft.trim();
@@ -19,9 +21,21 @@ export function SharePointCell({
     setEditing(false);
   }
 
-  function open() {
+  function openFolder() {
     if (!url) return;
-    window.open(url, "_blank", "noopener,noreferrer");
+    const fileUrl = localPathToFileUrl(url);
+    window.open(fileUrl, "_blank", "noopener,noreferrer");
+  }
+
+  async function copyPath() {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      window.prompt("Copy this path:", url);
+    }
   }
 
   if (editing) {
@@ -39,8 +53,8 @@ export function SharePointCell({
               setEditing(false);
             }
           }}
-          placeholder="Paste SharePoint folder URL"
-          className="flex-1 bg-white text-[11px] outline-none border border-brand rounded px-1.5 py-0.5"
+          placeholder="F:\GeoconFiles\ProjectName"
+          className="flex-1 bg-white text-[11px] outline-none border border-brand rounded px-1.5 py-0.5 font-mono"
         />
       </div>
     );
@@ -52,7 +66,7 @@ export function SharePointCell({
         onClick={() => setEditing(true)}
         className="w-full h-full flex items-center justify-start px-2 text-[11px] text-slate-400 hover:text-brand"
       >
-        + Add SharePoint link
+        + Add folder path
       </button>
     );
   }
@@ -60,12 +74,19 @@ export function SharePointCell({
   return (
     <div className="w-full h-full flex items-center gap-1 px-1.5 group">
       <button
-        onClick={open}
+        onClick={openFolder}
         className="flex-1 min-w-0 flex items-center gap-1.5 text-[11px] text-brand hover:text-brand-dark hover:underline"
         title={url}
       >
-        <ExternalLink size={11} className="shrink-0" />
-        <span className="truncate">Open in SharePoint</span>
+        <FolderOpen size={11} className="shrink-0" />
+        <span className="truncate">Open folder</span>
+      </button>
+      <button
+        onClick={copyPath}
+        className="text-slate-300 hover:text-brand opacity-0 group-hover:opacity-100"
+        title={copied ? "Copied!" : "Copy path"}
+      >
+        <Copy size={11} />
       </button>
       <button
         onClick={() => {
@@ -73,7 +94,7 @@ export function SharePointCell({
           setEditing(true);
         }}
         className="text-slate-300 hover:text-brand opacity-0 group-hover:opacity-100"
-        title="Edit URL"
+        title="Edit path"
       >
         <Edit3 size={11} />
       </button>

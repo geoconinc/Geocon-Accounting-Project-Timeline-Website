@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   const initialData = user
-    ? await getBoardPayloadForUser(user, { includeFiles: false })
+    ? await getBoardPayloadForUser(user)
     : { projects: [], subitems: [], users: [], files: [], me: "" };
 
   return <DashboardView initialData={initialData} />;

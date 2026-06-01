@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { Search, Filter, ArrowUpDown, EyeOff, X, User as UserIcon } from "lucide-react";
-import type { ProjectStatus, User } from "@/lib/types";
-import { projectColors, projectLabel } from "./StatusCell";
+import type { ProjectStatus, SubitemStatus, User } from "@/lib/types";
+import { projectColors, projectLabel, subColors, subLabel } from "./StatusCell";
 import { Avatar } from "./Avatar";
 import { usePopover } from "./Popover";
-import { useRoleRoster } from "@/components/providers/RoleRosterProvider";
+import { rosterDirectorPickerUsers, rosterPmPickerUsers } from "@/lib/domain/roleAssigneeRoster";
+import { DEFAULT_SUBITEM_NAMES } from "@/lib/domain/projectDefaults";
 
 export type SortKey = "position" | "name" | "code" | "lastUpdated" | "timeline";
 
@@ -19,6 +20,9 @@ export interface BoardFilters {
   hideCompleted: boolean;
   mineOnly: boolean;
   sort: SortKey;
+  subitemStatuses: SubitemStatus[];
+  subitemNames: string[];
+  subitemOwnerIds: string[];
 }
 
 export const DEFAULT_FILTERS: BoardFilters = {
@@ -29,7 +33,10 @@ export const DEFAULT_FILTERS: BoardFilters = {
   statuses: [],
   hideCompleted: false,
   mineOnly: true,
-  sort: "position"
+  sort: "position",
+  subitemStatuses: [],
+  subitemNames: [],
+  subitemOwnerIds: []
 };
 
 export function Toolbar({
@@ -44,15 +51,17 @@ export function Toolbar({
   const filterPop = usePopover();
   const sortPop = usePopover();
 
-  const { pmRosterUsers, directorRosterUsers } = useRoleRoster();
-  const pmFilterUsers = useMemo(() => pmRosterUsers(users), [users, pmRosterUsers]);
-  const directorFilterUsers = useMemo(() => directorRosterUsers(users), [users, directorRosterUsers]);
+  const pmFilterUsers = useMemo(() => rosterPmPickerUsers(users), [users]);
+  const directorFilterUsers = useMemo(() => rosterDirectorPickerUsers(users), [users]);
 
   const activeCount =
     filters.ownerIds.length +
     filters.projectManagerIds.length +
     filters.projectDirectorIds.length +
     filters.statuses.length +
+    filters.subitemStatuses.length +
+    filters.subitemNames.length +
+    filters.subitemOwnerIds.length +
     (filters.hideCompleted ? 1 : 0);
 
   function update<K extends keyof BoardFilters>(key: K, value: BoardFilters[K]) {
@@ -95,6 +104,35 @@ export function Toolbar({
     );
   }
 
+  function toggleSubitemStatus(s: SubitemStatus) {
+    update(
+      "subitemStatuses",
+      filters.subitemStatuses.includes(s)
+        ? filters.subitemStatuses.filter((x) => x !== s)
+        : [...filters.subitemStatuses, s]
+    );
+  }
+
+  function toggleSubitemName(name: string) {
+    update(
+      "subitemNames",
+      filters.subitemNames.includes(name)
+        ? filters.subitemNames.filter((x) => x !== name)
+        : [...filters.subitemNames, name]
+    );
+  }
+
+  function toggleSubitemOwner(id: string) {
+    update(
+      "subitemOwnerIds",
+      filters.subitemOwnerIds.includes(id)
+        ? filters.subitemOwnerIds.filter((x) => x !== id)
+        : [...filters.subitemOwnerIds, id]
+    );
+  }
+
+  const [filterTab, setFilterTab] = useState<"project" | "subitem">("project");
+
   return (
     <div className="bg-white border-b border-slate-200 px-5 py-2.5 flex items-center gap-2 flex-wrap shrink-0">
       <div className="relative flex-1 min-w-[220px] max-w-md">
@@ -125,88 +163,171 @@ export function Toolbar({
           <Filter size={14} /> Filter {activeCount > 0 && <span className="ml-1 bg-brand text-white text-[10px] rounded-full px-1.5">{activeCount}</span>}
         </button>
         {filterPop.open && (
-          <div className="absolute z-30 top-full left-0 mt-1 w-72 bg-white border border-slate-200 rounded-md shadow-lg p-3 max-h-[min(520px,70vh)] overflow-y-auto">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
-              Status
+          <div className="absolute z-30 top-full left-0 mt-1 w-80 bg-white border border-slate-200 rounded-md shadow-lg max-h-[min(560px,70vh)] overflow-hidden flex flex-col">
+            <div className="flex border-b border-slate-200 shrink-0">
+              <button
+                onClick={() => setFilterTab("project")}
+                className={`flex-1 text-xs font-medium py-2 transition-colors ${
+                  filterTab === "project"
+                    ? "text-brand border-b-2 border-brand"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Project
+              </button>
+              <button
+                onClick={() => setFilterTab("subitem")}
+                className={`flex-1 text-xs font-medium py-2 transition-colors ${
+                  filterTab === "subitem"
+                    ? "text-brand border-b-2 border-brand"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Subitem
+              </button>
             </div>
-            <div className="flex flex-col gap-1 mb-3">
-              {(["New", "InProgress", "Completed", "Missing", "Future"] as ProjectStatus[]).map((s) => (
-                <label key={s} className="flex items-center gap-2 text-xs cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filters.statuses.includes(s)}
-                    onChange={() => toggleStatus(s)}
-                  />
-                  <span className={`w-2.5 h-2.5 rounded ${projectColors[s]}`} />
-                  {projectLabel[s]}
-                </label>
-              ))}
-            </div>
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
-              Owner
-            </div>
-            <div className="flex flex-col gap-1 mb-3 max-h-40 overflow-y-auto">
-              {users.length === 0 && (
-                <span className="text-xs text-slate-400">No users yet.</span>
-              )}
-              {users.map((u) => (
-                <label key={u.id} className="flex items-center gap-2 text-xs cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filters.ownerIds.includes(u.id)}
-                    onChange={() => toggleOwner(u.id)}
-                  />
-                  <Avatar user={u} size={20} />
-                  <span className="truncate">{u.name}</span>
-                </label>
-              ))}
-            </div>
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
-              Project manager
-            </div>
-            <div className="flex flex-col gap-1 mb-3 max-h-36 overflow-y-auto">
-              {pmFilterUsers.length === 0 ? (
-                <span className="text-xs text-slate-400">No roster PMs in directory.</span>
+            <div className="p-3 overflow-y-auto flex-1">
+              {filterTab === "project" ? (
+                <>
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                    Status
+                  </div>
+                  <div className="flex flex-col gap-1 mb-3">
+                    {(["New", "InProgress", "Completed", "Missing", "Future"] as ProjectStatus[]).map((s) => (
+                      <label key={s} className="flex items-center gap-2 text-xs cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.statuses.includes(s)}
+                          onChange={() => toggleStatus(s)}
+                        />
+                        <span className={`w-2.5 h-2.5 rounded ${projectColors[s]}`} />
+                        {projectLabel[s]}
+                      </label>
+                    ))}
+                  </div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                    Owner
+                  </div>
+                  <div className="flex flex-col gap-1 mb-3 max-h-40 overflow-y-auto">
+                    {users.length === 0 && (
+                      <span className="text-xs text-slate-400">No users yet.</span>
+                    )}
+                    {users.map((u) => (
+                      <label key={u.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.ownerIds.includes(u.id)}
+                          onChange={() => toggleOwner(u.id)}
+                        />
+                        <Avatar user={u} size={20} />
+                        <span className="truncate">{u.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                    Project manager
+                  </div>
+                  <div className="flex flex-col gap-1 mb-3 max-h-36 overflow-y-auto">
+                    {pmFilterUsers.length === 0 ? (
+                      <span className="text-xs text-slate-400">No roster PMs in directory.</span>
+                    ) : (
+                      pmFilterUsers.map((u) => (
+                        <label key={u.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filters.projectManagerIds.includes(u.id)}
+                            onChange={() => toggleProjectManager(u.id)}
+                          />
+                          <Avatar user={u} size={20} />
+                          <span className="truncate">{u.name}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                    Project director
+                  </div>
+                  <div className="flex flex-col gap-1 mb-3 max-h-36 overflow-y-auto">
+                    {directorFilterUsers.length === 0 ? (
+                      <span className="text-xs text-slate-400">No roster directors in directory.</span>
+                    ) : (
+                      directorFilterUsers.map((u) => (
+                        <label key={u.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filters.projectDirectorIds.includes(u.id)}
+                            onChange={() => toggleProjectDirector(u.id)}
+                          />
+                          <Avatar user={u} size={20} />
+                          <span className="truncate">{u.name}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </>
               ) : (
-                pmFilterUsers.map((u) => (
-                  <label key={u.id} className="flex items-center gap-2 text-xs cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={filters.projectManagerIds.includes(u.id)}
-                      onChange={() => toggleProjectManager(u.id)}
-                    />
-                    <Avatar user={u} size={20} />
-                    <span className="truncate">{u.name}</span>
-                  </label>
-                ))
+                <>
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                    Subitem status
+                  </div>
+                  <div className="flex flex-col gap-1 mb-3">
+                    {(["Completed", "InProgress", "Missing", "NotStarted", "NA"] as SubitemStatus[]).map((s) => (
+                      <label key={s} className="flex items-center gap-2 text-xs cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.subitemStatuses.includes(s)}
+                          onChange={() => toggleSubitemStatus(s)}
+                        />
+                        <span className={`w-2.5 h-2.5 rounded ${subColors[s]}`} />
+                        {subLabel[s]}
+                      </label>
+                    ))}
+                  </div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                    Subitem type
+                  </div>
+                  <div className="flex flex-col gap-1 mb-3 max-h-48 overflow-y-auto">
+                    {DEFAULT_SUBITEM_NAMES.map((name) => (
+                      <label key={name} className="flex items-center gap-2 text-xs cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.subitemNames.includes(name)}
+                          onChange={() => toggleSubitemName(name)}
+                        />
+                        <span className="truncate">{name}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                    Assigned to
+                  </div>
+                  <div className="flex flex-col gap-1 mb-3 max-h-40 overflow-y-auto">
+                    {users.length === 0 && (
+                      <span className="text-xs text-slate-400">No users yet.</span>
+                    )}
+                    {users.map((u) => (
+                      <label key={u.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.subitemOwnerIds.includes(u.id)}
+                          onChange={() => toggleSubitemOwner(u.id)}
+                        />
+                        <Avatar user={u} size={20} />
+                        <span className="truncate">{u.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
-              Project director
+            <div className="border-t border-slate-200 p-2 shrink-0">
+              <button
+                onClick={() => onChange({ ...DEFAULT_FILTERS, sort: filters.sort })}
+                className="text-xs text-slate-500 hover:text-brand"
+              >
+                Clear all filters
+              </button>
             </div>
-            <div className="flex flex-col gap-1 mb-3 max-h-36 overflow-y-auto">
-              {directorFilterUsers.length === 0 ? (
-                <span className="text-xs text-slate-400">No roster directors in directory.</span>
-              ) : (
-                directorFilterUsers.map((u) => (
-                  <label key={u.id} className="flex items-center gap-2 text-xs cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={filters.projectDirectorIds.includes(u.id)}
-                      onChange={() => toggleProjectDirector(u.id)}
-                    />
-                    <Avatar user={u} size={20} />
-                    <span className="truncate">{u.name}</span>
-                  </label>
-                ))
-              )}
-            </div>
-            <button
-              onClick={() => onChange({ ...DEFAULT_FILTERS, sort: filters.sort })}
-              className="text-xs text-slate-500 hover:text-brand"
-            >
-              Clear filters
-            </button>
           </div>
         )}
       </div>
@@ -287,7 +408,7 @@ export function applyFilters<
   }
 >(
   projects: P[],
-  subitemsByProject: Record<string, { name: string; ownerId: string | null }[]>,
+  subitemsByProject: Record<string, { name: string; ownerId: string | null; status: string }[]>,
   filters: BoardFilters,
   meId: string | null
 ): P[] {
@@ -319,6 +440,24 @@ export function applyFilters<
       (p) => p.projectDirectorId && filters.projectDirectorIds.includes(p.projectDirectorId)
     );
   }
+
+  const hasSubFilters =
+    filters.subitemStatuses.length > 0 ||
+    filters.subitemNames.length > 0 ||
+    filters.subitemOwnerIds.length > 0;
+
+  if (hasSubFilters) {
+    result = result.filter((p) => {
+      const subs = subitemsByProject[p.id] ?? [];
+      return subs.some((s) => {
+        if (filters.subitemStatuses.length > 0 && !filters.subitemStatuses.includes(s.status as SubitemStatus)) return false;
+        if (filters.subitemNames.length > 0 && !filters.subitemNames.includes(s.name)) return false;
+        if (filters.subitemOwnerIds.length > 0 && (!s.ownerId || !filters.subitemOwnerIds.includes(s.ownerId))) return false;
+        return true;
+      });
+    });
+  }
+
   if (filters.search.trim()) {
     const q = filters.search.toLowerCase();
     result = result.filter((p) => {

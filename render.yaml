@@ -1,0 +1,59 @@
+# Render Blueprint — Geocon Project Timeline
+# Connect repo in Render → New → Blueprint, or create a Web Service manually with these settings.
+#
+# Set secret env vars in the Render dashboard (Environment tab) before the first deploy.
+# NEXT_PUBLIC_* vars must exist at build time.
+
+services:
+  - type: web
+    name: geocon-project-timeline
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      - key: STORAGE_DRIVER
+        value: postgres
+      - key: ALLOWED_EMAIL_DOMAIN
+        value: geoconinc.com
+      - key: FILE_STORAGE_DRIVER
+        value: sharepoint
+      - key: SHAREPOINT_LIBRARY_NAME
+        value: Documents
+      - key: SHAREPOINT_FOLDER_ROOT
+        value: Geocon Project Timeline
+      # --- Set these in the Render dashboard (sync: false = not in git) ---
+      - key: DATABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_MSAL_CLIENT_ID
+        sync: false
+      - key: NEXT_PUBLIC_MSAL_TENANT_ID
+        sync: false
+      - key: NEXT_PUBLIC_MSAL_REDIRECT_URI
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+      - key: BOARD_ADMIN_EMAILS
+        sync: false
+      - key: NEXT_PUBLIC_SUPER_ADMIN_EMAIL
+        sync: false
+      - key: SHAREPOINT_HOSTNAME
+        sync: false
+      - key: SHAREPOINT_SITE_PATH
+        sync: false
+      - key: GRAPH_APP_TENANT_ID
+        sync: false
+      - key: GRAPH_APP_CLIENT_ID
+        sync: false
+      - key: GRAPH_APP_CLIENT_SECRET
+        sync: false
+      - key: NOTIFY_FROM_ADDRESS
+        sync: false
+      - key: CRON_SHARED_SECRET
+        sync: false

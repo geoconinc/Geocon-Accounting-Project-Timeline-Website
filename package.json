@@ -9,8 +9,8 @@
     "lint": "next lint",
     "seed": "tsx scripts/seed.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file=.env.local scripts/migrate.ts",
-    "db:seed-roster": "tsx --env-file=.env.local scripts/seed-site-config.ts"
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed-roster": "tsx scripts/seed-site-config.ts"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.20.0",

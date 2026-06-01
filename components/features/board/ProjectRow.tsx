@@ -23,7 +23,7 @@ import { NotificationButton } from "./NotificationButton";
 import { SubitemsStatusCell } from "./SubitemsStatusCell";
 import { SubitemRow, SubitemHeader } from "./SubitemRow";
 import { api } from "@/lib/client/boardApi";
-import { useRoleRoster } from "@/components/providers/RoleRosterProvider";
+import { rosterDirectorPickerUsers, rosterPmPickerUsers } from "@/lib/domain/roleAssigneeRoster";
 
 function rosterPickerUsers(rosterMatched: User[], allUsers: User[], currentId: string | null): User[] {
   const map = new Map<string, User>();
@@ -61,7 +61,7 @@ export function ProjectHeader({ collapsed }: { collapsed: boolean }) {
       <div className="header-cell">Subitems Status</div>
       <div className="header-cell">Start Date</div>
       <div className="header-cell">Timeline</div>
-      <div className="header-cell">SharePoint</div>
+      <div className="header-cell">Project Folder</div>
       <div className="header-cell">Last updated</div>
       <div className="header-cell">Notes</div>
       <div className="header-cell">DIR #</div>
@@ -92,7 +92,6 @@ export function ProjectRow({
   onSubitemUpdated?: (subitem: Subitem) => void;
   onSubitemDeleted?: (id: string) => void;
 }) {
-  const { pmRosterUsers, directorRosterUsers } = useRoleRoster();
   const [open, setOpen] = useState(true);
   const [orderedIds, setOrderedIds] = useState<string[]>([]);
   const [code, setCode] = useState(project.code);
@@ -112,13 +111,13 @@ export function ProjectRow({
   }, [files]);
 
   const pmPickerUsers = useMemo(
-    () => rosterPickerUsers(pmRosterUsers(users), users, project.projectManagerId),
-    [users, project.projectManagerId, pmRosterUsers]
+    () => rosterPickerUsers(rosterPmPickerUsers(users), users, project.projectManagerId),
+    [users, project.projectManagerId]
   );
   const directorPickerUsers = useMemo(
     () =>
-      rosterPickerUsers(directorRosterUsers(users), users, project.projectDirectorId),
-    [users, project.projectDirectorId, directorRosterUsers]
+      rosterPickerUsers(rosterDirectorPickerUsers(users), users, project.projectDirectorId),
+    [users, project.projectDirectorId]
   );
 
   async function patch(p: Partial<Project>) {

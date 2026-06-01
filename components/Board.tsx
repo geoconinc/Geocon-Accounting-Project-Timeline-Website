@@ -10,9 +10,9 @@ export default function Board({ initialData }: { initialData: BoardData }) {
   const [filters, setFilters] = useState<BoardFilters>(DEFAULT_FILTERS);
 
   const subsByProject = useMemo(() => {
-    const map: Record<string, { name: string; ownerId: string | null }[]> = {};
+    const map: Record<string, { name: string; ownerId: string | null; status: string }[]> = {};
     for (const s of state.subitems)
-      (map[s.projectId] ||= []).push({ name: s.name, ownerId: s.ownerId });
+      (map[s.projectId] ||= []).push({ name: s.name, ownerId: s.ownerId, status: s.status });
     return map;
   }, [state.subitems]);
 

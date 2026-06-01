@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
-import { Copy, ExternalLink, FolderOpen } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Copy, ExternalLink, FolderOpen, Search, X } from "lucide-react";
 import { DEFAULT_SUBITEM_NAMES } from "@/lib/domain/projectDefaults";
 import {
   getDasFormsFolder,
@@ -10,6 +10,9 @@ import {
   joinTemplateFolderPath,
   localPathToFileUrl
 } from "@/lib/config/localTemplates";
+import type { Project } from "@/lib/types";
+import type { BoardData } from "@/components/features/board/state";
+import { debounce } from "@/lib/utils";
 
 const TEMPLATE_CATEGORIES = DEFAULT_SUBITEM_NAMES;
 
@@ -17,8 +20,48 @@ export function DocumentsView() {
   const dasRoot = getDasFormsFolder();
   const base = getLocalTemplatesBase();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
   const configured = Boolean(dasRoot || base);
+
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [search, setSearch] = useState("");
+  const cancelledRef = useRef(false);
+
+  const refetch = useCallback(async () => {
+    try {
+      const res = await fetch("/api/projects?includeFiles=false");
+      if (!res.ok || cancelledRef.current) return;
+      const data = (await res.json()) as BoardData;
+      setProjects(data.projects);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    cancelledRef.current = false;
+    void refetch();
+
+    const scheduleRefetch = debounce(() => void refetch(), 400);
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource("/api/events");
+      es.addEventListener("project.upsert", scheduleRefetch);
+      es.addEventListener("project.delete", scheduleRefetch);
+    } catch { /* SSE not available */ }
+
+    const poll = setInterval(() => void refetch(), 30_000);
+    return () => {
+      cancelledRef.current = true;
+      es?.close();
+      clearInterval(poll);
+    };
+  }, [refetch]);
+
+  const projectsWithFolder = projects.filter((p) => p.sharepointUrl);
+  const q = search.toLowerCase();
+  const filtered = q
+    ? projectsWithFolder.filter(
+        (p) => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q)
+      )
+    : projectsWithFolder;
 
   return (
     <div className="p-6 overflow-auto h-full max-w-5xl">
@@ -92,6 +135,59 @@ export function DocumentsView() {
         </>
       ) : null}
 
+      {/* Project folder paths */}
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-brand-dark mb-1">Project Folders</h2>
+        <p className="text-sm text-slate-500 mb-4">
+          Click &quot;Open folder&quot; to open the project&apos;s directory on your computer.
+          Folder paths are set on each project row in the Board view.
+        </p>
+
+        {projectsWithFolder.length === 0 ? (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+            No projects have a folder path set yet. Add one from the Board view&apos;s
+            &quot;Project Folder&quot; column.
+          </div>
+        ) : (
+          <>
+            {projectsWithFolder.length > 5 && (
+              <div className="relative max-w-md mb-4">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search projects..."
+                  className="w-full pl-8 pr-8 py-1.5 text-sm border border-slate-200 rounded-md outline-none focus:ring-2 focus:ring-brand"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {filtered.map((p) => (
+                <ProjectFolderCard
+                  key={p.id}
+                  code={p.code}
+                  name={p.name}
+                  path={p.sharepointUrl!}
+                  copied={copiedKey === p.id}
+                  onCopied={() => {
+                    setCopiedKey(p.id);
+                    window.setTimeout(() => setCopiedKey(null), 2000);
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
       {configured ? (
         <p className="mt-6 text-[11px] text-slate-400 max-w-2xl">
           Browsers often block opening <code className="text-[10px]">file://</code> links from web
@@ -99,6 +195,66 @@ export function DocumentsView() {
           the File Explorer address bar (Windows) or Finder&apos;s Go → Go to Folder (macOS).
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function ProjectFolderCard({
+  code,
+  name,
+  path,
+  copied,
+  onCopied
+}: {
+  code: string;
+  name: string;
+  path: string;
+  copied: boolean;
+  onCopied: () => void;
+}) {
+  const fileUrl = localPathToFileUrl(path);
+
+  async function copyPath() {
+    try {
+      await navigator.clipboard.writeText(path);
+      onCopied();
+    } catch {
+      window.prompt("Copy this path:", path);
+    }
+  }
+
+  function openFolder() {
+    if (!fileUrl) return;
+    window.open(fileUrl, "_blank", "noopener,noreferrer");
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col gap-2">
+      <div>
+        <h3 className="text-sm font-semibold text-slate-800">
+          <span className="text-brand font-mono mr-1.5">{code}</span>
+          {name}
+        </h3>
+        <p className="text-[11px] text-slate-500 font-mono break-all mt-1">{path}</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={openFolder}
+          className="btn-primary text-xs inline-flex items-center gap-1.5"
+        >
+          <FolderOpen size={14} />
+          Open folder
+        </button>
+        <button
+          type="button"
+          onClick={copyPath}
+          className="btn-ghost text-xs border border-slate-200 inline-flex items-center gap-1.5"
+        >
+          <Copy size={14} />
+          {copied ? "Copied!" : "Copy path"}
+        </button>
+      </div>
     </div>
   );
 }

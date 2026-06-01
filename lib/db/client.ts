@@ -11,7 +11,10 @@ function getPool(): Pool {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is required when STORAGE_DRIVER=postgres");
   if (!g.__geoconPgPool) {
-    const needsSsl = url.includes("azure.com") || url.includes("sslmode=require");
+    const needsSsl =
+      url.includes("azure.com") ||
+      url.includes("render.com") ||
+      url.includes("sslmode=require");
     g.__geoconPgPool = new Pool({
       connectionString: url,
       max: 10,

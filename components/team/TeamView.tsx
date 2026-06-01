@@ -1,30 +1,53 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Mail, Phone } from "lucide-react";
 import type { User } from "@/lib/types";
 import type { BoardData } from "@/components/features/board/state";
 import { Avatar } from "@/components/features/board/Avatar";
+import { debounce } from "@/lib/utils";
 
 export function TeamView() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const cancelledRef = useRef(false);
+
+  const refetch = useCallback(async () => {
+    try {
+      const res = await fetch("/api/projects?includeFiles=false");
+      if (!res.ok || cancelledRef.current) return;
+      const data = (await res.json()) as BoardData;
+      setUsers(data.users);
+    } catch {
+      /* ignore background refresh errors */
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await fetch("/api/projects?includeFiles=false");
-        if (!res.ok || cancelled) return;
-        const data = (await res.json()) as BoardData;
-        setUsers(data.users);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+    cancelledRef.current = false;
+    refetch().finally(() => {
+      if (!cancelledRef.current) setLoading(false);
+    });
+
+    const scheduleRefetch = debounce(() => void refetch(), 400);
+
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource("/api/events");
+      es.addEventListener("project.upsert", scheduleRefetch);
+      es.addEventListener("subitem.upsert", scheduleRefetch);
+    } catch {
+      /* SSE not available */
+    }
+
+    const poll = setInterval(() => void refetch(), 30_000);
+
+    return () => {
+      cancelledRef.current = true;
+      es?.close();
+      clearInterval(poll);
     };
-    void load();
-    return () => { cancelled = true; };
-  }, []);
+  }, [refetch]);
 
   if (loading) {
     return <div className="p-8 text-slate-500 text-sm">Loading team...</div>;

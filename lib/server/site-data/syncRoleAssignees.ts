@@ -1,12 +1,14 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { storage } from "@/lib/storage";
 import { initialsFromName } from "@/lib/utils";
 import type { GeoconRoleAssigneesFile } from "@/lib/types/roleAssigneeData";
 import { readAdminSiteConfig } from "./adminSiteConfigStore";
 
-let cached: GeoconRoleAssigneesFile | null | undefined;
+let cached: GeoconRoleAssigneesFile | null = null;
 
 export function invalidateRoleAssigneesCache(): void {
-  cached = undefined;
+  cached = null;
 }
 
 function isValidRoleAssignees(data: unknown): data is GeoconRoleAssigneesFile {
@@ -15,18 +17,22 @@ function isValidRoleAssignees(data: unknown): data is GeoconRoleAssigneesFile {
   return Array.isArray(d.projectDirectors) && Array.isArray(d.projectManagers);
 }
 
-/** Load PM/director roster from Postgres site_config (no local JSON files). */
+/** Admin Postgres override when set; otherwise bundled data/geoconRoleAssignees.json (demo default). */
 export async function loadRoleAssigneesJson(): Promise<GeoconRoleAssigneesFile | null> {
-  if (cached !== undefined) return cached;
-
   const admin = await readAdminSiteConfig();
   if (admin?.roleAssignees && isValidRoleAssignees(admin.roleAssignees)) {
-    cached = admin.roleAssignees;
-    return cached;
+    return admin.roleAssignees;
   }
-
-  cached = null;
-  return null;
+  if (cached) return cached;
+  try {
+    const p = path.join(process.cwd(), "data", "geoconRoleAssignees.json");
+    const raw = readFileSync(p, "utf8");
+    cached = JSON.parse(raw) as GeoconRoleAssigneesFile;
+    return cached;
+  } catch (e) {
+    console.warn("geoconRoleAssignees.json not loaded:", e);
+    return null;
+  }
 }
 
 /**

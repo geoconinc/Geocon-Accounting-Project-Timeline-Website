@@ -5,7 +5,13 @@ import { X } from "lucide-react";
 import type { ProjectGroup, ProjectStatus, User } from "@/lib/types";
 import { api } from "@/lib/client/boardApi";
 import { OFFICES, type Office } from "@/lib/domain/offices";
-import { useRoleRoster } from "@/components/providers/RoleRosterProvider";
+import {
+  directorsNotInEmployeeList,
+  directorOptionLabel,
+  pmOptionLabel,
+  rosterDirectorPickerUsers,
+  rosterPmPickerUsers
+} from "@/lib/domain/roleAssigneeRoster";
 
 const statusByGroup: Record<ProjectGroup, ProjectStatus> = {
   Current: "New",
@@ -13,26 +19,17 @@ const statusByGroup: Record<ProjectGroup, ProjectStatus> = {
   Completed: "Completed"
 };
 
-function pmOptionLabel(u: User, job?: string): string {
-  return job ? `${u.name} — ${u.email} — ${job}` : `${u.name} — ${u.email}`;
-}
-
-function directorOptionLabel(u: User, chart?: string): string {
-  return chart ? `${chart} — ${u.email}` : `${u.name} — ${u.email}`;
-}
-
 export function AddProjectDialog({
   group,
   open,
-  onClose
+  onClose,
+  users
 }: {
   group: ProjectGroup;
   open: boolean;
   onClose: () => void;
+  users: User[];
 }) {
-  const { roster, pmUsers, directorUsers, loading: rosterLoading, error: rosterError } =
-    useRoleRoster();
-
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [office, setOffice] = useState<Office | "">("");
@@ -41,30 +38,9 @@ export function AddProjectDialog({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const pmJobByEmail = useMemo(() => {
-    const m = new Map<string, string>();
-    if (!roster) return m;
-    for (const p of roster.projectManagers) {
-      const e = p.email?.trim().toLowerCase();
-      if (e) m.set(e, p.job);
-    }
-    return m;
-  }, [roster]);
-
-  const directorLabelByEmail = useMemo(() => {
-    const m = new Map<string, string>();
-    if (!roster) return m;
-    for (const d of roster.projectDirectors) {
-      const e = d.email?.trim().toLowerCase();
-      if (e) m.set(e, d.chartLabel);
-    }
-    return m;
-  }, [roster]);
-
-  const directorsNotInExport = useMemo(
-    () => roster?.projectDirectors.filter((d) => !d.inEmployeeList) ?? [],
-    [roster]
-  );
+  const pmUsers = useMemo(() => rosterPmPickerUsers(users), [users]);
+  const directorUsers = useMemo(() => rosterDirectorPickerUsers(users), [users]);
+  const directorsMissing = directorsNotInEmployeeList();
 
   useEffect(() => {
     if (open) {
@@ -109,8 +85,6 @@ export function AddProjectDialog({
     }
   }
 
-  const displayErr = err ?? rosterError;
-
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/40 grid place-items-center p-4" onClick={onClose}>
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -137,36 +111,30 @@ export function AddProjectDialog({
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-slate-600">Project manager</span>
-            <select value={projectManagerId} onChange={(e) => setProjectManagerId(e.target.value)} disabled={rosterLoading} className="border border-slate-300 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand bg-white disabled:opacity-50">
-              <option value="">{rosterLoading ? "Loading roster…" : "Select project manager…"}</option>
-              {pmUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {pmOptionLabel(u, pmJobByEmail.get(u.email.toLowerCase()))}
-                </option>
-              ))}
+            <select value={projectManagerId} onChange={(e) => setProjectManagerId(e.target.value)} className="border border-slate-300 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand bg-white">
+              <option value="">Select project manager…</option>
+              {pmUsers.map((u) => (<option key={u.id} value={u.id}>{pmOptionLabel(u)}</option>))}
             </select>
-            <span className="text-[10px] text-slate-400">From employee list: job title contains engineer, geologist, or scientist. They receive an email to set up the DAS 140 form when the project is created.</span>
+            {pmUsers.length === 0 && (
+              <span className="text-[10px] text-amber-700">No PMs matched yet — refresh the page after sign-in to load the roster from JSON.</span>
+            )}
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-slate-600">Project director</span>
-            <select value={projectDirectorId} onChange={(e) => setProjectDirectorId(e.target.value)} disabled={rosterLoading} className="border border-slate-300 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand bg-white disabled:opacity-50">
+            <select value={projectDirectorId} onChange={(e) => setProjectDirectorId(e.target.value)} className="border border-slate-300 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand bg-white">
               <option value="">— Optional —</option>
-              {directorUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {directorOptionLabel(u, directorLabelByEmail.get(u.email.toLowerCase()))}
-                </option>
-              ))}
+              {directorUsers.map((u) => (<option key={u.id} value={u.id}>{directorOptionLabel(u)}</option>))}
             </select>
           </label>
-          {directorsNotInExport.length > 0 && (
+          {directorsMissing.length > 0 && (
             <p className="text-[10px] text-amber-800 bg-amber-50 border border-amber-100 rounded px-2 py-1.5">
-              Not in the employee export (no email on file): {directorsNotInExport.map((d) => d.chartLabel).join(", ")}.
+              Not in the employee export (no email on file): {directorsMissing.map((d) => d.chartLabel).join(", ")}.
             </p>
           )}
-          {displayErr && <p className="text-xs text-red-600">{displayErr}</p>}
+          {err && <p className="text-xs text-red-600">{err}</p>}
           <div className="flex justify-end gap-2 mt-2">
             <button type="button" onClick={onClose} className="btn-ghost text-sm">Cancel</button>
-            <button type="button" onClick={submit} disabled={busy || !name.trim() || !projectManagerId || rosterLoading} className="btn-primary text-sm disabled:opacity-50">
+            <button type="button" onClick={submit} disabled={busy || !name.trim() || !projectManagerId} className="btn-primary text-sm disabled:opacity-50">
               {busy ? "Creating..." : "Create project"}
             </button>
           </div>

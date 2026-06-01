@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Project, ProjectStatus, Subitem, SubitemStatus, User } from "@/lib/types";
 import type { BoardData } from "@/components/features/board/state";
 import { projectColors, projectLabel, subColors, subLabel } from "@/components/features/board/StatusCell";
 import { Avatar } from "@/components/features/board/Avatar";
-import { formatRelativeTime } from "@/lib/utils";
+import { debounce, formatRelativeTime } from "@/lib/utils";
 import { differenceInCalendarDays, format, isValid, parse, parseISO } from "date-fns";
 import { AlertTriangle, CheckCircle2, Clock, FolderOpen } from "lucide-react";
 
@@ -27,31 +27,54 @@ export function DashboardView({ initialData }: { initialData?: BoardData }) {
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
 
+  const cancelledRef = useRef(false);
+
+  const refetch = useCallback(async () => {
+    try {
+      const res = await fetch("/api/projects?includeFiles=false");
+      if (cancelledRef.current) return;
+      if (!res.ok) return;
+      const data = (await res.json()) as BoardData;
+      setProjects(data.projects);
+      setSubitems(data.subitems);
+      setUsers(data.users);
+      setError(null);
+    } catch {
+      /* ignore background refresh errors */
+    }
+  }, []);
+
   useEffect(() => {
-    if (initialData) return;
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await fetch("/api/projects?includeFiles=false");
-        if (cancelled) return;
-        if (!res.ok) {
-          setError("Could not load dashboard data.");
-          return;
-        }
-        const data = (await res.json()) as BoardData;
-        setProjects(data.projects);
-        setSubitems(data.subitems);
-        setUsers(data.users);
-        setError(null);
-      } catch {
-        if (!cancelled) setError("Could not load dashboard data.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+    cancelledRef.current = false;
+
+    if (!initialData) {
+      refetch().finally(() => {
+        if (!cancelledRef.current) setLoading(false);
+      });
+    }
+
+    const scheduleRefetch = debounce(() => void refetch(), 400);
+
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource("/api/events");
+      es.addEventListener("project.upsert", scheduleRefetch);
+      es.addEventListener("project.delete", scheduleRefetch);
+      es.addEventListener("subitem.upsert", scheduleRefetch);
+      es.addEventListener("subitem.delete", scheduleRefetch);
+      es.addEventListener("subitem.reorder", scheduleRefetch);
+    } catch {
+      /* SSE not available */
+    }
+
+    const poll = setInterval(() => void refetch(), 30_000);
+
+    return () => {
+      cancelledRef.current = true;
+      es?.close();
+      clearInterval(poll);
     };
-    void load();
-    return () => { cancelled = true; };
-  }, [initialData]);
+  }, [initialData, refetch]);
 
   if (loading) {
     return <div className="p-8 text-slate-500 text-sm">Loading dashboard...</div>;

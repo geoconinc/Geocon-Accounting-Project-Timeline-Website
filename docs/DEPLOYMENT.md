@@ -6,7 +6,105 @@
 - Microsoft Entra app registrations (see [MICROSOFT_AUTH.md](./MICROSOFT_AUTH.md))
 - Database migrations applied: `DATABASE_URL="postgresql://..." npm run db:migrate`
 
-## Netlify (current)
+## Render (recommended for test / staging)
+
+The repo includes `render.yaml` for a **Web Service** (Node 20, SSR + API routes). Render runs `next start` as a persistent Node process — SSE and sessions work without serverless workarounds.
+
+### 1. Postgres
+
+**Option A — Render Postgres (simplest)**
+
+1. Render dashboard → **New** → **PostgreSQL**.
+2. Create the database in the same region as the web service.
+3. Copy the **Internal Database URL** (if web + DB are on Render) or **External Database URL** (if DB is elsewhere).
+
+**Option B — Azure Postgres (already set up)**
+
+1. Azure Portal → Postgres server → **Networking** → allow Render to connect.
+   - Easiest for testing: temporarily allow all IPs (`0.0.0.0`–`255.255.255.255`), then tighten later.
+   - Or use Render’s [outbound IP list](https://render.com/docs/static-outbound-ip-addresses) on paid plans.
+2. Use the Azure connection string as `DATABASE_URL` (must include `sslmode=require`).
+
+### 2. Run migrations (once, before first deploy)
+
+From your machine, pointing at the **production** database:
+
+```bash
+DATABASE_URL="postgresql://..." npm run db:migrate
+```
+
+Optional seed data:
+
+```bash
+DATABASE_URL="postgresql://..." npm run seed
+```
+
+### 3. Create the web service
+
+**Blueprint (uses `render.yaml`):**
+
+1. Push this repo to GitHub.
+2. Render → **New** → **Blueprint** → connect the repo → apply.
+
+**Or manual Web Service:**
+
+| Setting | Value |
+|---------|--------|
+| Environment | Node |
+| Build Command | `npm ci && npm run build` |
+| Start Command | `npm start` |
+| Health Check Path | `/login` |
+
+Do **not** set `PORT` — Render injects it automatically.
+
+### 4. Environment variables (Render → Environment)
+
+Set these **before the first build** (especially all `NEXT_PUBLIC_*` vars):
+
+| Variable | Value |
+|----------|--------|
+| `STORAGE_DRIVER` | `postgres` |
+| `DATABASE_URL` | Your Postgres connection string |
+| `NEXT_PUBLIC_MSAL_CLIENT_ID` | *(already set up)* |
+| `NEXT_PUBLIC_MSAL_TENANT_ID` | *(already set up)* |
+| `NEXT_PUBLIC_MSAL_REDIRECT_URI` | `https://YOUR-SERVICE.onrender.com` |
+| `APP_BASE_URL` | `https://YOUR-SERVICE.onrender.com` |
+| `ALLOWED_EMAIL_DOMAIN` | `geoconinc.com` |
+| `BOARD_ADMIN_EMAILS` | Your admin email(s), comma-separated |
+| `NEXT_PUBLIC_SUPER_ADMIN_EMAIL` | Email for `/settings/admin` |
+
+Add SharePoint / Graph vars if you want file uploads and email (see tables below).
+
+After Render assigns your URL, update **both**:
+
+- Render env: `NEXT_PUBLIC_MSAL_REDIRECT_URI` and `APP_BASE_URL`
+- Azure Entra → your login app → **Authentication** → SPA redirect URI: `https://YOUR-SERVICE.onrender.com`
+
+Then trigger **Manual Deploy** so the client bundle picks up the new `NEXT_PUBLIC_*` values.
+
+### 5. Deploy and verify
+
+1. Deploy completes → open `https://YOUR-SERVICE.onrender.com/login`.
+2. Sign in with `@geoconinc.com`.
+3. Confirm the board loads and you can edit a project.
+
+### 6. Optional: cron jobs (due-date emails)
+
+Render → **New** → **Cron Job**:
+
+- **Schedule:** `0 14 * * *` (daily 2pm UTC — adjust as needed)
+- **Command:**  
+  `curl -sS -X POST -H "X-Cron-Secret: $CRON_SHARED_SECRET" "$APP_BASE_URL/api/cron/due-dates"`
+
+Set `CRON_SHARED_SECRET` and `APP_BASE_URL` on both the web service and the cron job.
+
+### Render notes
+
+- **Free tier** spins down after ~15 minutes idle; first load may take 30–60s.
+- **Starter** ($7/mo) avoids spin-down for demos.
+- File uploads need SharePoint or Azure Blob configured; the board works without them.
+
+## Netlify
 
 The repo includes `netlify.toml` configured for Next.js via `@netlify/plugin-nextjs`.
 
@@ -99,7 +197,7 @@ Set all of these on your hosting platform:
 ## Production Checklist
 
 - [ ] Azure Postgres firewall allows app host IP (or "Allow Azure services")
-- [ ] Database migrations applied (`npm run db:migrate`)
+- Database migrations applied (`DATABASE_URL="..." npm run db:migrate`)
 - [ ] MSAL redirect URI matches production URL in Azure app registration
 - [ ] All required environment variables set on hosting platform
 - [ ] SharePoint site/library accessible by Graph app
@@ -111,7 +209,7 @@ Set all of these on your hosting platform:
 
 ## Azure Postgres Firewall
 
-If deploying to Netlify or any non-Azure host, you must add the host's outbound IPs to the Azure Postgres firewall rules:
+If deploying to Render, Netlify, or any non-Azure host, you must allow the host to reach Postgres:
 
 1. Azure Portal → your Postgres server → **Networking**
 2. Add firewall rules for the host's IP range
