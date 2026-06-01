@@ -1,0 +1,775 @@
+{
+  "source": "geocon_employee_list.XLSX",
+  "projectDirectors": [
+    {
+      "chartLabel": "David Evans",
+      "name": "Evans, Dave B.",
+      "email": "evans@geoconinc.com",
+      "job": "Senior Geologist 2",
+      "office": "San Diego",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Gerald Kasman (Gerry Kasman)",
+      "name": "Kasman, Gerry",
+      "email": "kasman@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "Los Angeles",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Harry Derkalousdian",
+      "name": "Derkalousdian, Harry",
+      "email": "derkalousdian@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Los Angeles",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Jeffrey Aguilar",
+      "name": "Aguilar, Jeff D.",
+      "email": "jaguilar@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "Los Angeles",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Jelisa Adams",
+      "name": "Adams  (Thomas), Jelisa T.",
+      "email": "jelisa@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Orange County",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Jeremy Zorne",
+      "name": "Zorne, Jeremy J.",
+      "email": "zorne@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Sacramento",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Joshua Ewert",
+      "name": "Ewert, Josh J.",
+      "email": "ewert@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "Sacramento",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Lisa Battiato",
+      "name": "Battiato, Lisa",
+      "email": "battiato@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "Murrieta",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Matthew Love",
+      "name": "Love, Matt R.",
+      "email": "mlove@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "San Diego",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Michael Cazeneuve",
+      "name": "Cazeneuve, Mike",
+      "email": "mikec@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Redlands",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Neal Berliner",
+      "name": "Berliner, Neal D.",
+      "email": "berliner@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Los Angeles",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Rebecca Silva",
+      "name": "Silva, Rebecca L.",
+      "email": "silva@geoconinc.com",
+      "job": "Senior Scientist",
+      "office": "Sacramento",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Richard Day",
+      "name": "Day, Rick W.",
+      "email": "day@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "Livermore",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Rodney Mikesell",
+      "name": "Mikesell, Rod C.",
+      "email": "mikesell@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "San Diego",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Scott Vacula",
+      "name": "Vacula, Scott H.",
+      "email": "vacula@geoconinc.com",
+      "job": "Manager of CMT Services",
+      "office": "San Diego",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Shane Rodacker",
+      "name": "Rodacker, Shane A.",
+      "email": "rodacker@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Livermore",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Shawn Weedon",
+      "name": "Weedon, Shawn F.",
+      "email": "weedon@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "San Diego",
+      "inEmployeeList": true
+    },
+    {
+      "chartLabel": "Troy Reist",
+      "name": "Reist, Troy K.",
+      "email": "reist@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "San Diego",
+      "inEmployeeList": true
+    }
+  ],
+  "projectManagers": [
+    {
+      "name": "Adams  (Thomas), Jelisa T.",
+      "email": "jelisa@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Orange County"
+    },
+    {
+      "name": "Adams, Rupert S.",
+      "email": "adams@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Aguilar  (Lopez), Itzel I.",
+      "email": "iaguilar@geoconinc.com",
+      "job": "Staff Scientist",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Aguilar, Jeff D.",
+      "email": "jaguilar@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Alvarado, Emilio",
+      "email": "alvarado@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Anderson, Sawyer",
+      "email": "sanderson@geoconinc.com",
+      "job": "Staff Engineer",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Arambulo, Israel",
+      "email": "Arambulo@geoconinc.com",
+      "job": "Staff Engineer",
+      "office": "Orange County"
+    },
+    {
+      "name": "Assumpcao Castex, Malu",
+      "email": "castex@geoconinc.com",
+      "job": "Staff Engineer",
+      "office": "San Diego"
+    },
+    {
+      "name": "Aviles, Rodrigo A.",
+      "email": "aviles@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Badiei, Matt",
+      "email": "badiei@geoconinc.com",
+      "job": "Project Scientist",
+      "office": "Orange County"
+    },
+    {
+      "name": "Barnes, Andy J.",
+      "email": "barnes@geoconinc.com",
+      "job": "Sr. Staff Scientist",
+      "office": "San Diego"
+    },
+    {
+      "name": "Bartel, Daniel",
+      "email": "bartel@geoconinc.com",
+      "job": "Staff Engineer",
+      "office": "Livermore"
+    },
+    {
+      "name": "Bates, Chris E.",
+      "email": "bates@geoconinc.com",
+      "job": "Sr. Staff Geologist",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Battiato, Lisa",
+      "email": "battiato@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "Murrieta"
+    },
+    {
+      "name": "Beadle, Luann J.",
+      "email": "beadle@geoconinc.com",
+      "job": "Sr. Project Scientist 2",
+      "office": "Livermore"
+    },
+    {
+      "name": "Berliner, Neal D.",
+      "email": "berliner@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Bernard, Matt K.",
+      "email": "bernard@geoconinc.com",
+      "job": "Project Scientist",
+      "office": "Livermore"
+    },
+    {
+      "name": "Bishop-Moser, Jake E.",
+      "email": "bishopmoser@geoconinc.com",
+      "job": "Sr. Project Engineer 2",
+      "office": "Livermore"
+    },
+    {
+      "name": "Brake, Jim F.",
+      "email": "brake@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Brito, Scott J.",
+      "email": "brito@geoconinc.com",
+      "job": "Sr. Staff Geologist",
+      "office": "San Diego"
+    },
+    {
+      "name": "Buckley II, Will C.",
+      "email": "wbuckley@geoconinc.com",
+      "job": "Project Geologist 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Cannon, Garry W.",
+      "email": "cannon@geoconinc.com",
+      "job": "Sr. Project Geologist 2",
+      "office": "San Diego"
+    },
+    {
+      "name": "Cazeneuve, Mike",
+      "email": "mikec@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Redlands"
+    },
+    {
+      "name": "Corley, Matthew J.",
+      "email": "mcorley@geoconinc.com",
+      "job": "Staff Engineer",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Day, Rick W.",
+      "email": "day@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "Livermore"
+    },
+    {
+      "name": "De La Cruz, Yasmeen R.",
+      "email": "cruz@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "DeSimone, Tom C.",
+      "email": "desimone@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Dennig, Cord T.",
+      "email": "dennig@geoconinc.com",
+      "job": "Sr. Project Scientist 2",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Derkalousdian, Harry",
+      "email": "derkalousdian@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Dixon, Sean M.",
+      "email": "dixon@geoconinc.com",
+      "job": "Sr. Project Geologist 1",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Dorawala, Karina A.",
+      "email": "dorawala@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "Murrieta"
+    },
+    {
+      "name": "Enciso, Alexandro",
+      "email": "enciso@geoconinc.com",
+      "job": "Project Engineer 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Ertwine, Mike C.",
+      "email": "ertwine@geoconinc.com",
+      "job": "Sr. Project Geologist 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Escobar, Adrian",
+      "email": "escobar@geoconinc.com",
+      "job": "Project Geologist 1",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Evans, Dave B.",
+      "email": "evans@geoconinc.com",
+      "job": "Senior Geologist 2",
+      "office": "San Diego"
+    },
+    {
+      "name": "Ewert, Josh J.",
+      "email": "ewert@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Fernandez  (Perez), Brenda P.",
+      "email": "fernandez@geoconinc.com",
+      "job": "Project Engineer 2",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Fordyce-Pitner, Lauren",
+      "email": "fordyce@geoconinc.com",
+      "job": "Staff Scientist",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Garcia, Nik A.",
+      "email": "ngarcia@geoconinc.com",
+      "job": "Project Engineer 2",
+      "office": "Murrieta"
+    },
+    {
+      "name": "Garcia, Raul R.",
+      "email": "garcia@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Geraci, Karen",
+      "email": "Geraci@geoconinc.com",
+      "job": "Sr. Project Engineer 1",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Gonzalez, Francisco J.",
+      "email": "gonzalez@geoconinc.com",
+      "job": "Project Engineer 2",
+      "office": "Livermore"
+    },
+    {
+      "name": "Graham II, Lance C.",
+      "email": "graham@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "Orange County"
+    },
+    {
+      "name": "Gregor, Arturo A.",
+      "email": "gregor@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "San Diego"
+    },
+    {
+      "name": "Guardado, Victor M.",
+      "email": "guardado@geoconinc.com",
+      "job": "Sr. Project Engineer 2",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Haase, Ken W.",
+      "email": "haase@geoconinc.com",
+      "job": "Sr. Project Geologist 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Harriott, Nathan",
+      "email": "harriott@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Hastings-Bethel, Nicole M.",
+      "email": "hastings@geoconinc.com",
+      "job": "Sr. Project Scientist 2",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Henderson, Tyler M.",
+      "email": "henderson@geoconinc.com",
+      "job": "Sr. Staff Geologist",
+      "office": "Rocklin"
+    },
+    {
+      "name": "Herbert, Lauren A.",
+      "email": "herbert@geoconinc.com",
+      "job": "Sr. Staff Engineer",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Hernandez, Angel G.",
+      "email": "AHernandez@geoconinc.com",
+      "job": "Staff Engineer",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Hicks, Joe",
+      "email": "hicks@geoconinc.com",
+      "job": "Sr. Project Engineer 1",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Juhrend, JJ E.",
+      "email": "juhrend@geoconinc.com",
+      "job": "Principal Engineer 2",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Kasman, Gerry",
+      "email": "kasman@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Kirkgard, Susan F.",
+      "email": "kirkgard@geoconinc.com",
+      "job": "Senior Geologist 2",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Knox, Adam H.",
+      "email": "knox@geoconinc.com",
+      "job": "Project Engineer 2",
+      "office": "Livermore"
+    },
+    {
+      "name": "Kulas, Josh J.",
+      "email": "kulas@geoconinc.com",
+      "job": "Sr. Staff Engineer",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Kuna, Brad R.",
+      "email": "kuna@geoconinc.com",
+      "job": "Sr. Project Engineer 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Lancaster, Wade P.",
+      "email": "wlancaster@geoconinc.com",
+      "job": "Staff Engineer",
+      "office": "San Diego"
+    },
+    {
+      "name": "Lopez Larios, Jesus E.",
+      "email": "LopezLarios@geoconinc.com",
+      "job": "Sr. Staff Engineer",
+      "office": "Rocklin"
+    },
+    {
+      "name": "Loutzenhiser, Ron E.",
+      "email": "loutzenhiser@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Love, John W.",
+      "email": "love@geoconinc.com",
+      "job": "Senior Geologist 2",
+      "office": "Livermore"
+    },
+    {
+      "name": "Love, Matt R.",
+      "email": "mlove@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Mann, Michael",
+      "email": "mann@geoconinc.com",
+      "job": "Sr. Staff Engineer",
+      "office": "Murrieta"
+    },
+    {
+      "name": "Marinello, Nick S.",
+      "email": "marinello@geoconinc.com",
+      "job": "Sr. Project Scientist 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Merritt, Chris G.",
+      "email": "merritt@geoconinc.com",
+      "job": "Project Geologist 2",
+      "office": "Livermore"
+    },
+    {
+      "name": "Mikesell, Cole E.",
+      "email": "cmikesell@geoconinc.com",
+      "job": "Sr. Staff Geologist",
+      "office": "San Diego"
+    },
+    {
+      "name": "Mikesell, Rod C.",
+      "email": "mikesell@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Muir, Jason",
+      "email": "muir@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Myers, Trevor",
+      "email": "myers@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Niles, Len",
+      "email": "niles@geoconinc.com",
+      "job": "Senior Geologist 2",
+      "office": "Livermore"
+    },
+    {
+      "name": "Ortega, Katie R.",
+      "email": "KOrtega@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Pagnillo, Joe P.",
+      "email": "pagnillo@geoconinc.com",
+      "job": "Sr. Project Geologist 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Peach, Jasmine N.",
+      "email": "peach@geoconinc.com",
+      "job": "Sr. Staff Geologist",
+      "office": "San Diego"
+    },
+    {
+      "name": "Perez, Nick",
+      "email": "nperez@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Ramirez, Manuel",
+      "email": "ramirez@geoconinc.com",
+      "job": "Staff Engineer",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Reblando, Gemma G.",
+      "email": "reblando@geoconinc.com",
+      "job": "Project Geologist 2",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Reist, Troy K.",
+      "email": "reist@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Rekani, Ashty F.",
+      "email": "rekani@geoconinc.com",
+      "job": "Project Geologist 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Rice, Nick K.",
+      "email": "rice@geoconinc.com",
+      "job": "Project Scientist",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Richards, Marci",
+      "email": "mrichards@geoconinc.com",
+      "job": "Senior Geologist 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Rodacker, Shane A.",
+      "email": "rodacker@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Livermore"
+    },
+    {
+      "name": "Rodriguez, Lily E.",
+      "email": "lrodriguez@geoconinc.com",
+      "job": "Project Engineer 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Rojas, Michael",
+      "email": "rojas@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Santa Maria, Daniel",
+      "email": "santamaria@geoconinc.com",
+      "job": "Staff Engineer",
+      "office": "Orange County"
+    },
+    {
+      "name": "Scoffie, Victor",
+      "email": "scoffie@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "San Diego"
+    },
+    {
+      "name": "Scott, Christina P.",
+      "email": "cscott@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Silva, Rebecca L.",
+      "email": "silva@geoconinc.com",
+      "job": "Senior Scientist",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Singh, Jinder",
+      "email": "singh@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "San Diego"
+    },
+    {
+      "name": "Sover, Andrew C.",
+      "email": "sover@geoconinc.com",
+      "job": "Project Engineer 1",
+      "office": "Orange County"
+    },
+    {
+      "name": "Sweeney, James R.",
+      "email": "sweeney@geoconinc.com",
+      "job": "Sr. Staff Engineer",
+      "office": "Rocklin"
+    },
+    {
+      "name": "Thomas, Dylan J.",
+      "email": "dthomas@geoconinc.com",
+      "job": "Sr. Project Geologist 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Tidwell, Matt E.",
+      "email": "tidwell@geoconinc.com",
+      "job": "Project Geologist 2",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Travers, Chris",
+      "email": "travers@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "Livermore"
+    },
+    {
+      "name": "Treyes, Celine B.",
+      "email": "treyes@geoconinc.com",
+      "job": "Staff Engineer",
+      "office": "Orange County"
+    },
+    {
+      "name": "Vaio, Alec",
+      "email": "vaio@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Vasquez, Victor H.",
+      "email": "vasquez@geoconinc.com",
+      "job": "Staff Engineer",
+      "office": "Livermore"
+    },
+    {
+      "name": "Verdin Moreno, Emmanuel",
+      "email": "verdin@geoconinc.com",
+      "job": "Staff Geologist",
+      "office": "San Diego"
+    },
+    {
+      "name": "Watari, Mike",
+      "email": "watari@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Rocklin"
+    },
+    {
+      "name": "Weedon, Shawn F.",
+      "email": "weedon@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "San Diego"
+    },
+    {
+      "name": "Weidman, Luke C.",
+      "email": "weidman@geoconinc.com",
+      "job": "Project Geologist 1",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Ybarra, Joey",
+      "email": "ybarra@geoconinc.com",
+      "job": "Sr. Project Geologist 2",
+      "office": "Sacramento"
+    },
+    {
+      "name": "Yeghikian, Sevada",
+      "email": "yeghikian@geoconinc.com",
+      "job": "Sr. Staff Engineer",
+      "office": "Los Angeles"
+    },
+    {
+      "name": "Zorne, Jeremy J.",
+      "email": "zorne@geoconinc.com",
+      "job": "Senior Engineer 1",
+      "office": "Sacramento"
+    }
+  ]
+}

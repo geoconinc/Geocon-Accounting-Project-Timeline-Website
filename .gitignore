@@ -3,8 +3,10 @@ node_modules
 out
 .env
 .env.local
-data/*.json
+data/db.json
 !data/.gitkeep
+!data/geoconRoleAssignees.json
+!data/officeAssigneeDirectory.json
 *.log
 .DS_Store
 .vercel

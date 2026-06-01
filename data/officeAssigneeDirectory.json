@@ -1,0 +1,50 @@
+{
+  "source": "geocon_employee_list.XLSX (active employees) — matrix display name → directory name + email",
+  "assignees": [
+    {
+      "displayName": "Lauren Mason",
+      "employeeListName": "Mason, Lauren",
+      "email": "LMason@geoconinc.com"
+    },
+    {
+      "displayName": "Christina Boeschen",
+      "employeeListName": "Boeschen, Christina M.",
+      "email": "boeschen@geoconinc.com"
+    },
+    {
+      "displayName": "Joanne Brightman",
+      "employeeListName": "Brightman, Joanne I.",
+      "email": "brightman@geoconinc.com"
+    },
+    {
+      "displayName": "Hilda Diaz",
+      "employeeListName": "Diaz, Hilda",
+      "email": "diaz@geoconinc.com"
+    },
+    {
+      "displayName": "Kelsey Filban",
+      "employeeListName": "Filban, Kelsey N.",
+      "email": "filban@geoconinc.com"
+    },
+    {
+      "displayName": "Amanda Fair",
+      "employeeListName": "Fair  (Kasman), Amanda",
+      "email": "afair@geoconinc.com"
+    },
+    {
+      "displayName": "Kailua Mizejewski",
+      "employeeListName": "Mizejewski, Kailua",
+      "email": "Mizejewski@geoconinc.com"
+    },
+    {
+      "displayName": "Jill Sader",
+      "employeeListName": "Sader, Jill",
+      "email": "sader@geoconinc.com"
+    },
+    {
+      "displayName": "Keiala Beck",
+      "employeeListName": "Beck, Keiala T.",
+      "email": "beck@geoconinc.com"
+    }
+  ]
+}

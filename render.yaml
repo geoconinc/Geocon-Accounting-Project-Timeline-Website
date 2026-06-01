@@ -10,7 +10,7 @@ services:
     runtime: node
     plan: starter
     region: oregon
-    buildCommand: npm ci && npm run build
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /login
     envVars:
@@ -18,6 +18,9 @@ services:
         value: "20"
       - key: NODE_ENV
         value: production
+        # NODE_ENV is for runtime only. Do not omit devDependencies at build time
+        # (TypeScript + Tailwind are required for `next build`). The buildCommand
+        # uses NPM_CONFIG_PRODUCTION=false so npm ci installs devDependencies.
       - key: STORAGE_DRIVER
         value: postgres
       - key: ALLOWED_EMAIL_DOMAIN

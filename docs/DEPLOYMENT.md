@@ -51,7 +51,7 @@ DATABASE_URL="postgresql://..." npm run seed
 | Setting | Value |
 |---------|--------|
 | Environment | Node |
-| Build Command | `npm ci && npm run build` |
+| Build Command | `NPM_CONFIG_PRODUCTION=false npm ci && npm run build` |
 | Start Command | `npm start` |
 | Health Check Path | `/login` |
 
