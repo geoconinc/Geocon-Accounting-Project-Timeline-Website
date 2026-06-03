@@ -7,7 +7,9 @@ const MIGRATIONS = [
   "0002_project_manager_director.sql",
   "0003_notification_prefs_global.sql",
   "0004_drop_notification_prefs.sql",
-  "0005_site_config.sql"
+  "0005_site_config.sql",
+  "0006_subitem_created_at.sql",
+  "0007_file_data.sql"
 ];
 
 async function main() {
