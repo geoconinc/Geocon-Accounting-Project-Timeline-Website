@@ -1,0 +1,23 @@
+#!/bin/sh
+# Bump package.json version by 0.1 on each push (0.1.0 → 0.2.0).
+# Set SKIP_VERSION_BUMP=1 to push without bumping.
+
+if [ "$SKIP_VERSION_BUMP" = "1" ]; then
+  exit 0
+fi
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+cd "$ROOT" || exit 0
+
+OLD="$(node -p "require('./package.json').version")"
+npm run version:bump --silent || exit 0
+NEW="$(node -p "require('./package.json').version")"
+
+if [ "$OLD" = "$NEW" ]; then
+  exit 0
+fi
+
+git add package.json package-lock.json VERSION
+git commit -m "chore: bump version to $NEW" --no-verify
+
+exit 0
