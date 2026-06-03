@@ -46,7 +46,8 @@ export const users = pgTable("users", {
   initials: text("initials").notNull(),
   phone: text("phone"),
   photoUrl: text("photo_url"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true })
 });
 
 export const sessions = pgTable("sessions", {

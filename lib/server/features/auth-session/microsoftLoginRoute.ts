@@ -46,6 +46,7 @@ export async function POST(req: Request) {
   });
 
   const session = await storage.createSession(user.id, 30);
+  await storage.updateUser(user.id, { lastLoginAt: new Date().toISOString() });
 
   // Fire-and-forget: sync roster users in background, don't block login response
   Promise.all([

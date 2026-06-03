@@ -5,6 +5,20 @@ import { isSuperAdminUser } from "@/lib/auth/superAdmin";
 
 export const dynamic = "force-dynamic";
 
+const ACTIVE_LOGIN_DAYS = 5;
+
+function hasAssignment(ongoingCount: number, completedCount: number): boolean {
+  return ongoingCount > 0 || completedCount > 0;
+}
+
+function loggedInWithinDays(lastLoginAt: string | null | undefined, days: number): boolean {
+  if (!lastLoginAt) return false;
+  const login = new Date(lastLoginAt).getTime();
+  if (Number.isNaN(login)) return false;
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  return login >= cutoff;
+}
+
 export async function GET() {
   const user = await authenticateRequest();
   if (user instanceof Response) return user;
@@ -19,14 +33,7 @@ export async function GET() {
     storage.listRecentActivity(200)
   ]);
 
-  const subsByProject = new Map<string, typeof allSubitems>();
-  for (const s of allSubitems) {
-    const arr = subsByProject.get(s.projectId) ?? [];
-    arr.push(s);
-    subsByProject.set(s.projectId, arr);
-  }
-
-  const employees = allUsers.map((u) => {
+  const allEmployees = allUsers.map((u) => {
     const ownedProjects = allProjects.filter(
       (p) => p.ownerId === u.id || p.projectManagerId === u.id || p.projectDirectorId === u.id
     );
@@ -46,9 +53,6 @@ export async function GET() {
       else ongoingProjects.add(proj.id);
     }
 
-    const userActivity = recentActivity.filter((a) => a.actorId === u.id);
-    const lastActive = userActivity.length > 0 ? userActivity[0].createdAt : u.createdAt;
-
     return {
       id: u.id,
       name: u.name,
@@ -56,16 +60,24 @@ export async function GET() {
       initials: u.initials,
       ongoingCount: ongoingProjects.size,
       completedCount: completedProjects.size,
-      lastActive
+      lastLoginAt: u.lastLoginAt ?? null
     };
   });
 
-  employees.sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime());
+  const employees = allEmployees
+    .filter((e) => hasAssignment(e.ongoingCount, e.completedCount))
+    .sort((a, b) => {
+      const aTime = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0;
+      const bTime = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0;
+      return bTime - aTime;
+    });
 
   const totalProjects = allProjects.length;
   const ongoingTotal = allProjects.filter((p) => p.status !== "Completed").length;
   const completedTotal = allProjects.filter((p) => p.status === "Completed").length;
-  const activeEmployees = employees.filter((e) => e.ongoingCount > 0 || e.completedCount > 0).length;
+  const activeEmployees = employees.filter((e) =>
+    loggedInWithinDays(e.lastLoginAt, ACTIVE_LOGIN_DAYS)
+  ).length;
 
   const activityWithNames = recentActivity.slice(0, 100).map((a) => {
     const actor = allUsers.find((u) => u.id === a.actorId);
@@ -78,7 +90,13 @@ export async function GET() {
   });
 
   return NextResponse.json({
-    stats: { totalProjects, ongoingTotal, completedTotal, activeEmployees, totalEmployees: allUsers.length },
+    stats: {
+      totalProjects,
+      ongoingTotal,
+      completedTotal,
+      activeEmployees,
+      totalEmployees: employees.length
+    },
     employees,
     auditLog: activityWithNames
   });

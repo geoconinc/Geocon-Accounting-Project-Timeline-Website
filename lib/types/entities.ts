@@ -8,6 +8,7 @@ export interface User {
   phone?: string;
   photoUrl?: string;
   createdAt: string;
+  lastLoginAt?: string | null;
 }
 
 export interface Session {

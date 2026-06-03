@@ -20,7 +20,16 @@ interface EmployeeSummary {
   initials: string;
   ongoingCount: number;
   completedCount: number;
-  lastActive: string;
+  lastLoginAt: string | null;
+}
+
+const ACTIVE_LOGIN_DAYS = 5;
+
+function loggedInWithinDays(lastLoginAt: string | null, days: number): boolean {
+  if (!lastLoginAt) return false;
+  const login = new Date(lastLoginAt).getTime();
+  if (Number.isNaN(login)) return false;
+  return login >= Date.now() - days * 24 * 60 * 60 * 1000;
 }
 
 interface AuditEntry extends ActivityEvent {
@@ -84,9 +93,9 @@ export function AdminDashboardView() {
       );
     }
     if (statusFilter === "active") {
-      list = list.filter((e) => e.ongoingCount > 0 || e.completedCount > 0);
+      list = list.filter((e) => loggedInWithinDays(e.lastLoginAt, ACTIVE_LOGIN_DAYS));
     } else if (statusFilter === "inactive") {
-      list = list.filter((e) => e.ongoingCount === 0 && e.completedCount === 0);
+      list = list.filter((e) => !loggedInWithinDays(e.lastLoginAt, ACTIVE_LOGIN_DAYS));
     }
     return list;
   }, [data, search, statusFilter]);
@@ -120,34 +129,10 @@ export function AdminDashboardView() {
     <div className="space-y-6">
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={<FolderOpen size={20} />}
-          value={stats.totalProjects}
-          label="Total Projects"
-          accent="text-brand"
-          bg="bg-brand/5"
-        />
-        <StatCard
-          icon={<Clock size={20} />}
-          value={stats.ongoingTotal}
-          label="Ongoing Projects"
-          accent="text-amber-600"
-          bg="bg-amber-50"
-        />
-        <StatCard
-          icon={<CheckCircle2 size={20} />}
-          value={stats.completedTotal}
-          label="Completed Projects"
-          accent="text-emerald-600"
-          bg="bg-emerald-50"
-        />
-        <StatCard
-          icon={<Users size={20} />}
-          value={stats.activeEmployees}
-          label="Active Employees"
-          accent="text-blue-600"
-          bg="bg-blue-50"
-        />
+        <StatCard icon={<FolderOpen size={18} />} value={stats.totalProjects} label="Total Projects" />
+        <StatCard icon={<Clock size={18} />} value={stats.ongoingTotal} label="Ongoing Projects" />
+        <StatCard icon={<CheckCircle2 size={18} />} value={stats.completedTotal} label="Completed Projects" />
+        <StatCard icon={<Users size={18} />} value={stats.activeEmployees} label="Active Employees" />
       </div>
 
       {/* Filter bar */}
@@ -180,8 +165,8 @@ export function AdminDashboardView() {
             className="border border-slate-200 rounded-md text-sm px-2 py-1.5 outline-none focus:ring-1 focus:ring-brand"
           >
             <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="active">Logged in (5 days)</option>
+            <option value="inactive">Not logged in (5 days)</option>
           </select>
         </div>
         <div className="flex items-center gap-2">
@@ -226,29 +211,29 @@ export function AdminDashboardView() {
 function StatCard({
   icon,
   value,
-  label,
-  accent,
-  bg
+  label
 }: {
   icon: React.ReactNode;
   value: number;
   label: string;
-  accent: string;
-  bg: string;
 }) {
   return (
-    <div className={`${bg} rounded-xl border border-slate-200 p-5 card-hover`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className={`${accent}`}>{icon}</span>
+    <div className="bg-white rounded-xl border border-slate-200 p-5 card-hover flex items-center gap-4">
+      <div className="w-10 h-10 rounded-lg bg-brand text-white grid place-items-center shrink-0">
+        {icon}
       </div>
-      <div className={`text-3xl font-bold ${accent}`}>{value.toLocaleString()}</div>
-      <div className="text-xs text-slate-500 mt-1">{label}</div>
+      <div className="min-w-0">
+        <div className="text-2xl font-semibold text-brand-dark leading-tight">
+          {value.toLocaleString()}
+        </div>
+        <div className="text-xs text-slate-500 mt-0.5">{label}</div>
+      </div>
     </div>
   );
 }
 
 function EmployeeCard({ employee: e }: { employee: EmployeeSummary }) {
-  const lastActiveStr = formatRelative(e.lastActive);
+  const lastLoginStr = e.lastLoginAt ? formatRelative(e.lastLoginAt) : "Never";
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-5 card-hover">
@@ -259,13 +244,13 @@ function EmployeeCard({ employee: e }: { employee: EmployeeSummary }) {
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <div className="text-center">
-            <div className="text-lg font-bold text-brand">{e.ongoingCount}</div>
+            <div className="text-lg font-bold text-brand-dark">{e.ongoingCount}</div>
             <div className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">
               Ongoing
             </div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-emerald-600">{e.completedCount}</div>
+            <div className="text-lg font-bold text-brand-dark">{e.completedCount}</div>
             <div className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">
               Completed
             </div>
@@ -273,7 +258,7 @@ function EmployeeCard({ employee: e }: { employee: EmployeeSummary }) {
         </div>
       </div>
       <div className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-400">
-        Last active: {lastActiveStr}
+        Last login: {lastLoginStr}
       </div>
     </div>
   );
@@ -340,9 +325,9 @@ function AuditLogPanel({ entries }: { entries: AuditEntry[] }) {
 function ActionBadge({ action, entityType }: { action: string; entityType: string }) {
   const label = `${action} ${entityType}`;
   const colors: Record<string, string> = {
-    create: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    update: "bg-blue-50 text-blue-700 border-blue-200",
-    delete: "bg-red-50 text-red-700 border-red-200"
+    create: "bg-slate-100 text-slate-700 border-slate-200",
+    update: "bg-slate-100 text-slate-700 border-slate-200",
+    delete: "bg-slate-100 text-slate-700 border-slate-200"
   };
   const cls = colors[action] ?? "bg-slate-50 text-slate-600 border-slate-200";
   return (

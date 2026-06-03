@@ -25,13 +25,17 @@ The repo includes `render.yaml` for a **Web Service** (Node 20, SSR + API routes
    - Or use Render’s [outbound IP list](https://render.com/docs/static-outbound-ip-addresses) on paid plans.
 2. Use the Azure connection string as `DATABASE_URL` (must include `sslmode=require`).
 
-### 2. Run migrations (once, before first deploy)
+### 2. Run migrations (once, before first deploy — and again after pulling schema changes)
 
 From your machine, pointing at the **production** database:
 
 ```bash
 DATABASE_URL="postgresql://..." npm run db:migrate
 ```
+
+The migrator tracks applied files in `schema_migrations` and skips ones already run. If you deploy code that expects a new column (e.g. `subitems.created_at`) and forget this step, the app will crash with `column "created_at" does not exist`.
+
+After deploying the one-week email cron, you **must** apply through at least `0006_subitem_created_at.sql`.
 
 Optional seed data:
 

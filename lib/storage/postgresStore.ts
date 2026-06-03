@@ -24,7 +24,8 @@ function mapUser(r: typeof users.$inferSelect): User {
     initials: r.initials,
     phone: r.phone ?? undefined,
     photoUrl: r.photoUrl ?? undefined,
-    createdAt: tsIso(r.createdAt)
+    createdAt: tsIso(r.createdAt),
+    lastLoginAt: r.lastLoginAt ? tsIso(r.lastLoginAt) : null
   };
 }
 
@@ -175,7 +176,8 @@ export const postgresStore: Storage = {
         ...(patch.name !== undefined ? { name: patch.name } : {}),
         ...(nextInitials !== undefined ? { initials: nextInitials } : {}),
         ...(patch.phone !== undefined ? { phone: patch.phone } : {}),
-        ...(patch.photoUrl !== undefined ? { photoUrl: patch.photoUrl } : {})
+        ...(patch.photoUrl !== undefined ? { photoUrl: patch.photoUrl } : {}),
+        ...(patch.lastLoginAt !== undefined ? { lastLoginAt: patch.lastLoginAt ? new Date(patch.lastLoginAt) : null } : {})
       })
       .where(eq(users.id, id))
       .returning();
