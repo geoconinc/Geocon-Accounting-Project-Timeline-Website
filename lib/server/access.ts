@@ -151,24 +151,24 @@ export async function findSubitem(subitemId: string): Promise<LocatedSubitem | n
   return { project, subitem };
 }
 
-export function canViewProject(user: User, project: Project, subitems: Subitem[]): boolean {
-  return (
-    hasFullBoardAccess(user) ||
-    isProjectLead(user, project) ||
-    subitems.some((subitem) => subitem.ownerId === user.id)
-  );
+export async function canViewProject(user: User, project: Project, subitems: Subitem[]): Promise<boolean> {
+  if (await hasFullBoardAccessAsync(user)) return true;
+  return isProjectLead(user, project) || subitems.some((subitem) => subitem.ownerId === user.id);
 }
 
-export function canManageProject(user: User, project: Project): boolean {
-  return hasFullBoardAccess(user) || isProjectLead(user, project);
+export async function canManageProject(user: User, project: Project): Promise<boolean> {
+  if (await hasFullBoardAccessAsync(user)) return true;
+  return isProjectLead(user, project);
 }
 
-export function canViewSubitem(user: User, project: Project, subitem: Subitem): boolean {
-  return hasFullBoardAccess(user) || isProjectLead(user, project) || subitem.ownerId === user.id;
+export async function canViewSubitem(user: User, project: Project, subitem: Subitem): Promise<boolean> {
+  if (await hasFullBoardAccessAsync(user)) return true;
+  return isProjectLead(user, project) || subitem.ownerId === user.id;
 }
 
-export function canManageSubitem(user: User, project: Project, subitem: Subitem): boolean {
-  return hasFullBoardAccess(user) || isProjectLead(user, project) || subitem.ownerId === user.id;
+export async function canManageSubitem(user: User, project: Project, subitem: Subitem): Promise<boolean> {
+  if (await hasFullBoardAccessAsync(user)) return true;
+  return isProjectLead(user, project) || subitem.ownerId === user.id;
 }
 
 export async function canAccessFileParent(
@@ -176,7 +176,7 @@ export async function canAccessFileParent(
   parentType: FileRef["parentType"],
   parentId: string
 ): Promise<boolean> {
-  if (hasFullBoardAccess(user)) return true;
+  if (await hasFullBoardAccessAsync(user)) return true;
 
   if (parentType === "project") {
     const project = await storage.getProject(parentId);
@@ -184,7 +184,8 @@ export async function canAccessFileParent(
   }
 
   const located = await findSubitem(parentId);
-  return Boolean(located && canViewSubitem(user, located.project, located.subitem));
+  if (!located) return false;
+  return isProjectLead(user, located.project) || located.subitem.ownerId === user.id;
 }
 
 export async function findFile(fileId: string): Promise<LocatedFile | null> {

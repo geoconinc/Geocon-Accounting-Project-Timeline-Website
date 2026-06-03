@@ -12,8 +12,15 @@ import {
   integer,
   date,
   jsonb,
-  pgEnum
+  pgEnum,
+  customType
 } from "drizzle-orm/pg-core";
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return "bytea";
+  }
+});
 
 export const projectStatusEnum = pgEnum("project_status", [
   "New",
@@ -85,16 +92,19 @@ export const subitems = pgTable("subitems", {
   dueDate: date("due_date"),
   dateCompleted: date("date_completed"),
   notes: text("notes"),
-  position: integer("position").notNull().default(0)
+  position: integer("position").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 });
 
 export const files = pgTable("files", {
   id: uuid("id").primaryKey().defaultRandom(),
   parentType: fileParentEnum("parent_type").notNull(),
   parentId: uuid("parent_id").notNull(),
-  blobPath: text("blob_path").notNull(),
+  blobPath: text("blob_path").notNull().default(""),
   filename: text("filename").notNull(),
   size: integer("size").notNull(),
+  contentType: text("content_type"),
+  data: bytea("data").notNull(),
   uploadedBy: uuid("uploaded_by").references(() => users.id, { onDelete: "set null" }),
   uploadedAt: timestamp("uploaded_at", { withTimezone: true }).notNull().defaultNow()
 });

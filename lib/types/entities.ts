@@ -20,8 +20,8 @@ export interface FileRef {
   id: string;
   parentType: "project" | "subitem";
   parentId: string;
-  blobPath: string;
   filename: string;
+  contentType: string | null;
   size: number;
   uploadedBy: string;
   uploadedAt: string;
@@ -62,6 +62,7 @@ export interface Subitem {
   dateCompleted: string | null;
   notes: string | null;
   position: number;
+  createdAt: string;
 }
 
 export interface ActivityEvent {

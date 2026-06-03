@@ -88,13 +88,16 @@ Then trigger **Manual Deploy** so the client bundle picks up the new `NEXT_PUBLI
 2. Sign in with `@geoconinc.com`.
 3. Confirm the board loads and you can edit a project.
 
-### 6. Optional: cron jobs (due-date emails)
+### 6. Cron job (one-week incomplete reminder)
 
-Render → **New** → **Cron Job**:
+1. Run migrations on production if you have not since adding `subitems.created_at`:
+   `DATABASE_URL="postgresql://..." npm run db:migrate`
+2. Generate a random string for `CRON_SHARED_SECRET` and set it on the web service.
+3. Render → **New** → **Cron Job**:
 
 - **Schedule:** `0 14 * * *` (daily 2pm UTC — adjust as needed)
 - **Command:**  
-  `curl -sS -X POST -H "X-Cron-Secret: $CRON_SHARED_SECRET" "$APP_BASE_URL/api/cron/due-dates"`
+  `curl -sS -X POST -H "X-Cron-Secret: $CRON_SHARED_SECRET" "$APP_BASE_URL/api/cron/incomplete-week"`
 
 Set `CRON_SHARED_SECRET` and `APP_BASE_URL` on both the web service and the cron job.
 
@@ -170,14 +173,28 @@ Set all of these on your hosting platform:
 | `AZURE_STORAGE_CONTAINER` | `geocon-files` | |
 | `AZURE_STORAGE_KEY` | `<access key>` | |
 
-### Email (Microsoft Graph)
+### Email (SMTP — recommended)
+
+See [EMAIL_NOTIFICATIONS.md](./EMAIL_NOTIFICATIONS.md) for all template types.
+
+| Variable | Example | Description |
+|----------|---------|-------------|
+| `EMAIL_DRIVER` | `smtp` | `smtp` or `graph` |
+| `SMTP_HOST` | `smtp.office365.com` | SMTP server |
+| `SMTP_PORT` | `587` | Usually 587 (STARTTLS) |
+| `SMTP_SECURE` | `false` | `true` for port 465 only |
+| `SMTP_USER` | `notifications@geoconinc.com` | SMTP login |
+| `SMTP_PASSWORD` | `<app password>` | Mailbox / app password |
+| `NOTIFY_FROM_ADDRESS` | `notifications@geoconinc.com` | From address |
+| `NOTIFY_FROM_NAME` | `Geocon Project Management` | Display name |
+
+**Graph email (optional fallback):**
 
 | Variable | Example | Description |
 |----------|---------|-------------|
 | `GRAPH_APP_TENANT_ID` | `0238ea43-...` | Tenant for Graph app |
 | `GRAPH_APP_CLIENT_ID` | `<notifier app id>` | Graph app registration |
 | `GRAPH_APP_CLIENT_SECRET` | `<secret>` | Graph app client secret |
-| `NOTIFY_FROM_ADDRESS` | `notifications@geoconinc.com` | Sender mailbox |
 
 ### Access Control
 
@@ -201,11 +218,12 @@ Set all of these on your hosting platform:
 - [ ] MSAL redirect URI matches production URL in Azure app registration
 - [ ] All required environment variables set on hosting platform
 - [ ] SharePoint site/library accessible by Graph app
-- [ ] Graph app has `Mail.Send` + `Sites.ReadWrite.All` with admin consent
-- [ ] `CRON_SHARED_SECRET` set and cron job configured to call `/api/cron/due-dates`
+- [ ] SMTP vars set (`EMAIL_DRIVER=smtp`, host, user, password) — see [EMAIL_NOTIFICATIONS.md](./EMAIL_NOTIFICATIONS.md)
+- [ ] (If using SharePoint) Graph app has `Sites.ReadWrite.All` with admin consent
+- [ ] `CRON_SHARED_SECRET` set and cron jobs for due-dates / das-followup (optional)
 - [ ] Test login flow end-to-end with a real `@geoconinc.com` account
-- [ ] Verify file upload and download works
-- [ ] Check email notifications are being sent
+- [ ] (If using SharePoint) Verify file upload and download works
+- [ ] Send a test notification from the board and confirm email delivery
 
 ## Azure Postgres Firewall
 

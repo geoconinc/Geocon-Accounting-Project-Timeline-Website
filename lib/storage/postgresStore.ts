@@ -68,7 +68,8 @@ function mapSubitem(r: typeof subitems.$inferSelect): Subitem {
     dueDate: dateOnly(r.dueDate),
     dateCompleted: dateOnly(r.dateCompleted),
     notes: r.notes,
-    position: r.position
+    position: r.position,
+    createdAt: tsIso(r.createdAt)
   };
 }
 
@@ -77,8 +78,8 @@ function mapFile(r: typeof files.$inferSelect): FileRef {
     id: r.id,
     parentType: r.parentType,
     parentId: r.parentId,
-    blobPath: r.blobPath,
     filename: r.filename,
+    contentType: r.contentType,
     size: r.size,
     uploadedBy: r.uploadedBy ?? "",
     uploadedAt: tsIso(r.uploadedAt)
@@ -444,18 +445,39 @@ export const postgresStore: Storage = {
         id: input.id ?? randomUUID(),
         parentType: input.parentType,
         parentId: input.parentId,
-        blobPath: input.blobPath,
         filename: input.filename,
+        contentType: input.contentType ?? null,
         size: input.size,
+        data: input.data,
         uploadedBy: input.uploadedBy || null
       })
       .returning();
     return mapFile(f);
   },
 
+  async getFileData(id) {
+    const db = getDb();
+    const rows = await db
+      .select({ data: files.data })
+      .from(files)
+      .where(eq(files.id, id))
+      .limit(1);
+    return rows[0]?.data ?? null;
+  },
+
   async deleteFile(id) {
     const db = getDb();
     await db.delete(files).where(eq(files.id, id));
+  },
+
+  async listRecentActivity(limit = 100) {
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(activity)
+      .orderBy(sql`${activity.createdAt} DESC`)
+      .limit(limit);
+    return rows.map(mapActivity);
   },
 
   async appendActivity(event) {

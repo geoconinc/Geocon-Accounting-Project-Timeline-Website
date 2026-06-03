@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 import { Plus, FileIcon } from "lucide-react";
 import type { FileRef } from "@/lib/types";
 import { api } from "@/lib/client/boardApi";
-import { encodeSharePointBlobRef } from "@/lib/fileStorage/sharepointBlobRef";
 
 export function FilesCell({
   parentType,
@@ -25,32 +24,7 @@ export function FilesCell({
     setBusy(true);
     try {
       for (const file of Array.from(fileList)) {
-        const prep = await api.requestUploadSas(parentType, parentId, file.name, file.size);
-        if (prep.provider === "sharepoint") {
-          if (file.size < 1) throw new Error("empty file");
-          const last = file.size - 1;
-          const put = await fetch(prep.uploadUrl, {
-            method: "PUT",
-            headers: {
-              "Content-Length": String(file.size),
-              "Content-Range": `bytes 0-${last}/${file.size}`
-            },
-            body: file
-          });
-          if (!put.ok) throw new Error(`upload failed (${put.status})`);
-          const item = (await put.json()) as { id?: string };
-          if (!item.id) throw new Error("upload response missing id");
-          const blobPath = encodeSharePointBlobRef(prep.driveId, item.id);
-          await api.recordFile({ parentType, parentId, blobPath, filename: file.name, size: file.size });
-          continue;
-        }
-        const put = await fetch(prep.uploadUrl, {
-          method: "PUT",
-          headers: { "x-ms-blob-type": "BlockBlob", "content-type": file.type || "application/octet-stream" },
-          body: file
-        });
-        if (!put.ok) throw new Error(`upload failed (${put.status})`);
-        await api.recordFile({ parentType, parentId, blobPath: prep.blobPath, filename: file.name, size: file.size });
+        await api.uploadFile(parentType, parentId, file);
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : "upload failed");
@@ -60,13 +34,8 @@ export function FilesCell({
     }
   }
 
-  async function openFile(id: string) {
-    try {
-      const { url } = await api.fileUrl(id);
-      window.open(url, "_blank", "noopener");
-    } catch {
-      setErr("Could not open file");
-    }
+  function openFile(id: string) {
+    window.open(api.fileDownloadUrl(id), "_blank", "noopener");
   }
 
   return (

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 import { notifyUser } from "@/lib/notifications/dispatch";
+import { buildDueTodayEmail } from "@/lib/notifications/templates/operational";
 
 // Hit daily by an Azure timer / WebJob with header X-Cron-Secret: $CRON_SHARED_SECRET.
 // Sends a notification to the assignee for any subitem whose due date is today
@@ -22,11 +23,19 @@ export async function POST(req: Request) {
       if (!s.dueDate || s.dueDate !== today) continue;
       if (s.status === "Completed" || s.status === "NA") continue;
       if (!s.ownerId) continue;
+      const assignee = await storage.getUserById(s.ownerId);
+      if (!assignee) continue;
+      const mail = buildDueTodayEmail({
+        recipientName: assignee.name,
+        subitemName: s.name,
+        projectCode: p.code,
+        projectName: p.name,
+        dueDate: s.dueDate
+      });
       await notifyUser({
         userId: s.ownerId,
         projectId: p.id,
-        subject: `Due today: ${s.name}`,
-        message: `Reminder: "${s.name}" on project ${p.code} ${p.name} is due today.`
+        ...mail
       });
       sent++;
     }

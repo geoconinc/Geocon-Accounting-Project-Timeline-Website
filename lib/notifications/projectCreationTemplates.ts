@@ -1,4 +1,5 @@
-import { escapeHtml } from "./dispatch";
+import { escapeHtml } from "./html";
+import { wrapEmailLayout } from "./layout";
 import { SUBITEM_ASSIGNMENT_SNIPPET } from "./subitemAssignmentSnippets";
 
 /** Shared merge fields for all new-project assignment emails. */
@@ -11,6 +12,19 @@ export interface ProjectCreationMailContext {
 
 function esc(s: string): string {
   return escapeHtml(s);
+}
+
+function taskListHtml(taskNames: string[]): string {
+  const bullets = taskNames
+    .map((t) => {
+      const hint = esc(SUBITEM_ASSIGNMENT_SNIPPET[t] ?? "Complete this item in the Geocon Project Timeline.");
+      return `<li style="margin-bottom:10px"><strong>${esc(t)}</strong><br/>
+        <span style="font-size:12px;color:#64748b">${hint}</span></li>`;
+    })
+    .join("");
+  return bullets
+    ? `<p><strong>Your assigned checklist items:</strong></p><ul style="margin:12px 0;padding-left:20px">${bullets}</ul>`
+    : "";
 }
 
 /** Project manager: DAS 140 responsibility + DAS Setup Sheet when that subitem is assigned to them. */
@@ -32,24 +46,22 @@ export function buildProjectManagerCreationEmail(
   const subject = `Action needed: DAS 140 for ${ctx.projectCode} — ${ctx.projectName}`;
   const message = `${ctx.creatorName} created project ${ctx.projectCode} (${ctx.projectName}) for office ${ctx.office} and assigned you as project manager. Please ensure the DAS 140 form is completed. ${hasSetup ? "You are also assigned the DAS Setup Sheet subitem." : ""}`;
 
-  const bullets = assignedSubitemNames
-    .map((t) => {
-      const hint = esc(SUBITEM_ASSIGNMENT_SNIPPET[t] ?? "Complete this item in the Geocon Project Timeline.");
-      return `<li><strong>${esc(t)}</strong><br/><small style="color:#64748b">${hint}</small></li>`;
-    })
-    .join("");
-  const listHtml = bullets
-    ? `<p><strong>Your assigned checklist items:</strong></p><ul>${bullets}</ul>`
-    : "";
-
-  const html = `<p>Hi ${pm},</p>
+  const body = `<p>Hi ${pm},</p>
 <p>${who} created project <strong>${c}</strong> — <strong>${n}</strong> (<strong>${o}</strong>) and assigned you as <strong>project manager</strong>.</p>
 <p><strong>DAS 140:</strong> Please ensure the <strong>DAS 140</strong> form is set up and completed for this project. If it is not done yet, you are the accountable contact.</p>
 ${setupHtml}
-${listHtml}
-<p>Open the Geocon Project Timeline to update statuses and attach files.</p>`;
+${taskListHtml(assignedSubitemNames)}
+<p>Update statuses and attach files in the timeline when each step is complete.</p>`;
 
-  return { subject, message, html };
+  return {
+    subject,
+    message,
+    html: wrapEmailLayout({
+      headline: "New project — Project Manager",
+      bodyHtml: body,
+      ctaLabel: "Open Project Timeline"
+    })
+  };
 }
 
 /** Accounting / payroll contacts: digest of checklist items they own on the new project. */
@@ -63,25 +75,28 @@ export function buildAssigneeDigestEmail(
   const o = esc(ctx.office);
   const who = esc(ctx.creatorName);
   const r = esc(recipientFirstNameOrName);
-  const bullets = taskNames
-    .map((t) => {
-      const hint = esc(SUBITEM_ASSIGNMENT_SNIPPET[t] ?? "Complete this item in the Geocon Project Timeline.");
-      return `<li><strong>${esc(t)}</strong><br/><small style="color:#64748b">${hint}</small></li>`;
-    })
-    .join("");
+
   const subject = `New project ${ctx.projectCode}: your tasks (${ctx.office})`;
   const message = `${ctx.creatorName} created ${ctx.projectCode} — ${ctx.projectName} (${ctx.office}). You are assigned: ${taskNames.join("; ")}. Please complete your items in the Geocon Project Timeline.`;
 
-  const html = `<p>Hi ${r},</p>
+  const body = `<p>Hi ${r},</p>
 <p>${who} created a new project in the Geocon Project Timeline:</p>
-<ul>
-<li><strong>Code:</strong> ${c}</li>
-<li><strong>Name:</strong> ${n}</li>
-<li><strong>Office:</strong> ${o}</li>
+<ul style="margin:12px 0;padding-left:20px;color:#475569">
+  <li><strong>Code:</strong> ${c}</li>
+  <li><strong>Name:</strong> ${n}</li>
+  <li><strong>Office:</strong> ${o}</li>
 </ul>
 <p><strong>You are assigned the following checklist items</strong> (complete them in the app when ready):</p>
-<ul>${bullets}</ul>
+${taskListHtml(taskNames)}
 <p>If you have questions, contact the project manager listed on the board.</p>`;
 
-  return { subject, message, html };
+  return {
+    subject,
+    message,
+    html: wrapEmailLayout({
+      headline: "New project — Your tasks",
+      bodyHtml: body,
+      ctaLabel: "Open checklist"
+    })
+  };
 }

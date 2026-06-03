@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, ChevronUp, Database, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Database, LayoutDashboard, Plus, Save, Settings, Trash2 } from "lucide-react";
 import type { OfficeAssigneeRow } from "@/lib/domain/officeAssigneeResolve";
 import type { GeoconRoleAssigneesFile } from "@/lib/types/roleAssigneeData";
+import { AdminDashboardView } from "./AdminDashboardView";
 
 interface DbStats {
   driver: string;
@@ -20,6 +21,7 @@ type PM = GeoconRoleAssigneesFile["projectManagers"][number];
 type Director = GeoconRoleAssigneesFile["projectDirectors"][number];
 
 export function AdminSettingsView() {
+  const [topTab, setTopTab] = useState<"dashboard" | "settings">("dashboard");
   const [officeAssignees, setOfficeAssignees] = useState<OfficeAssigneeRow[]>([]);
   const [projectManagers, setProjectManagers] = useState<PM[]>([]);
   const [projectDirectors, setProjectDirectors] = useState<Director[]>([]);
@@ -131,11 +133,15 @@ export function AdminSettingsView() {
     }
   }
 
-  if (loading) {
-    return <div className="p-8 text-slate-500 text-sm">Loading admin settings…</div>;
+  if (loading && topTab === "settings") {
+    return (
+      <div className="h-full w-full overflow-y-auto p-8 text-slate-500 text-sm">
+        Loading admin settings…
+      </div>
+    );
   }
 
-  const tabs = [
+  const settingsTabs = [
     { key: "pm" as const, label: "Project Managers", count: projectManagers.length },
     { key: "director" as const, label: "Project Directors", count: projectDirectors.length },
     { key: "office" as const, label: "Office Directory", count: officeAssignees.length },
@@ -143,7 +149,7 @@ export function AdminSettingsView() {
   ];
 
   return (
-    <div className="p-6 overflow-y-auto h-full max-w-5xl">
+    <div className="h-full w-full min-w-0 overflow-y-auto p-6 lg:p-8">
       <div className="mb-4 flex items-center gap-4">
         <Link
           href="/"
@@ -152,80 +158,110 @@ export function AdminSettingsView() {
           <ArrowLeft size={16} /> Board
         </Link>
       </div>
-      <h1 className="text-xl font-semibold text-brand-dark mb-1">Admin · site data</h1>
-      <p className="text-sm text-slate-500 mb-2">
-        Manage project managers, directors, and office directory. Changes here update the
-        dropdowns across the board.
+      <h1 className="text-xl font-semibold text-brand-dark mb-1">Admin Panel</h1>
+      <p className="text-sm text-slate-500 mb-4">
+        Overview of employee activity, project status, and site configuration.
       </p>
-      {meta.updatedAt && (
-        <p className="text-[11px] text-slate-400 mb-4">
-          Last saved {new Date(meta.updatedAt).toLocaleString()}
-          {meta.updatedByEmail ? ` by ${meta.updatedByEmail}` : ""}
-        </p>
-      )}
 
-      <DatabaseUsageCard stats={dbStats} loading={dbLoading} />
-
-      {err && <p className="text-sm text-red-600 mb-3">{err}</p>}
-      {ok && <p className="text-sm text-green-700 mb-3">{ok}</p>}
-
-      <div className="flex border-b border-slate-200 mb-4">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === t.key
-                ? "text-brand border-b-2 border-brand"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {t.label}
-            <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-600 rounded-full px-1.5 py-0.5">
-              {t.count}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {activeTab === "pm" && (
-        <ProjectManagersTable
-          managers={projectManagers}
-          onChange={setProjectManagers}
-        />
-      )}
-      {activeTab === "director" && (
-        <ProjectDirectorsTable
-          directors={projectDirectors}
-          onChange={setProjectDirectors}
-        />
-      )}
-      {activeTab === "office" && (
-        <OfficeDirectoryTable
-          rows={officeAssignees}
-          onChange={setOfficeAssignees}
-        />
-      )}
-      {activeTab === "admins" && (
-        <BoardAdminsTable
-          emails={boardAdminEmails}
-          onChange={setBoardAdminEmails}
-        />
-      )}
-
-      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-slate-200">
+      {/* Top-level tabs: Dashboard / Settings */}
+      <div className="flex border-b border-slate-200 mb-6">
         <button
-          type="button"
-          onClick={() => void save()}
-          disabled={saving}
-          className="btn-primary text-sm inline-flex items-center gap-2 disabled:opacity-50"
+          onClick={() => setTopTab("dashboard")}
+          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-colors ${
+            topTab === "dashboard"
+              ? "text-brand border-b-2 border-brand"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
         >
-          <Save size={16} /> {saving ? "Saving…" : "Save all changes"}
+          <LayoutDashboard size={16} /> Dashboard
         </button>
-        <button type="button" onClick={() => void load()} className="btn-ghost text-sm" disabled={saving}>
-          Reload
+        <button
+          onClick={() => setTopTab("settings")}
+          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-colors ${
+            topTab === "settings"
+              ? "text-brand border-b-2 border-brand"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <Settings size={16} /> Site Settings
         </button>
       </div>
+
+      {topTab === "dashboard" && <AdminDashboardView />}
+
+      {topTab === "settings" && (
+        <>
+          {meta.updatedAt && (
+            <p className="text-[11px] text-slate-400 mb-4">
+              Last saved {new Date(meta.updatedAt).toLocaleString()}
+              {meta.updatedByEmail ? ` by ${meta.updatedByEmail}` : ""}
+            </p>
+          )}
+
+          <DatabaseUsageCard stats={dbStats} loading={dbLoading} />
+
+          {err && <p className="text-sm text-red-600 mb-3">{err}</p>}
+          {ok && <p className="text-sm text-green-700 mb-3">{ok}</p>}
+
+          <div className="flex border-b border-slate-200 mb-4">
+            {settingsTabs.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === t.key
+                    ? "text-brand border-b-2 border-brand"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {t.label}
+                <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-600 rounded-full px-1.5 py-0.5">
+                  {t.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {activeTab === "pm" && (
+            <ProjectManagersTable
+              managers={projectManagers}
+              onChange={setProjectManagers}
+            />
+          )}
+          {activeTab === "director" && (
+            <ProjectDirectorsTable
+              directors={projectDirectors}
+              onChange={setProjectDirectors}
+            />
+          )}
+          {activeTab === "office" && (
+            <OfficeDirectoryTable
+              rows={officeAssignees}
+              onChange={setOfficeAssignees}
+            />
+          )}
+          {activeTab === "admins" && (
+            <BoardAdminsTable
+              emails={boardAdminEmails}
+              onChange={setBoardAdminEmails}
+            />
+          )}
+
+          <div className="flex items-center gap-3 mt-6 pt-4 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={() => void save()}
+              disabled={saving}
+              className="btn-primary text-sm inline-flex items-center gap-2 disabled:opacity-50"
+            >
+              <Save size={16} /> {saving ? "Saving…" : "Save all changes"}
+            </button>
+            <button type="button" onClick={() => void load()} className="btn-ghost text-sm" disabled={saving}>
+              Reload
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

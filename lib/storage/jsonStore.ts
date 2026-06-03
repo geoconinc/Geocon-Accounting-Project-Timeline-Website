@@ -7,6 +7,7 @@ import type { Storage } from "./index";
 import { initialsFromName } from "@/lib/utils";
 
 const DATA_DIR = path.join(process.cwd(), "data");
+const FILES_DIR = path.join(DATA_DIR, "files");
 
 interface DbShape {
   users: User[];
@@ -42,7 +43,13 @@ async function readDb(): Promise<DbShape> {
   const raw = await fs.readFile(FILE, "utf8");
   try {
     const parsed = JSON.parse(raw) as Partial<DbShape>;
-    return { ...empty, ...parsed };
+    const projects = parsed.projects ?? [];
+    const projectUpdated = new Map(projects.map((p) => [p.id, p.lastUpdatedAt]));
+    const subitems = (parsed.subitems ?? []).map((s) => ({
+      ...s,
+      createdAt: s.createdAt ?? projectUpdated.get(s.projectId) ?? nowIso()
+    }));
+    return { ...empty, ...parsed, subitems };
   } catch {
     return { ...empty };
   }
@@ -224,7 +231,8 @@ export const jsonStore: Storage = {
       const sub: Subitem = {
         ...input,
         id: input.id ?? randomUUID(),
-        position: count
+        position: count,
+        createdAt: nowIso()
       };
       db.subitems.push(sub);
       return sub;
@@ -271,20 +279,39 @@ export const jsonStore: Storage = {
     return db.files.filter((f) => f.parentType === parentType && f.parentId === parentId);
   },
   async addFile(input) {
+    const id = input.id ?? randomUUID();
+    await fs.mkdir(FILES_DIR, { recursive: true });
+    await fs.writeFile(path.join(FILES_DIR, id), input.data);
     return mutate((db) => {
+      const { data: _data, ...rest } = input;
       const file: FileRef = {
-        ...input,
-        id: input.id ?? randomUUID(),
+        ...rest,
+        id,
         uploadedAt: nowIso()
       };
       db.files.push(file);
       return file;
     });
   },
+  async getFileData(id) {
+    try {
+      return await fs.readFile(path.join(FILES_DIR, id));
+    } catch {
+      return null;
+    }
+  },
   async deleteFile(id) {
     await mutate((db) => {
       db.files = db.files.filter((f) => f.id !== id);
     });
+    await fs.unlink(path.join(FILES_DIR, id)).catch(() => {});
+  },
+
+  async listRecentActivity(limit = 100) {
+    const db = await readDb();
+    return [...db.activity]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
   },
 
   async appendActivity(event) {

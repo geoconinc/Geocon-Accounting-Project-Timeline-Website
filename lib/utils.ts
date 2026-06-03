@@ -22,6 +22,13 @@ export function debounce<T extends (...args: never[]) => void>(fn: T, delayMs: n
   }) as T;
 }
 
+/** Calendar date (YYYY-MM-DD) N UTC days before today. */
+export function isoDateDaysAgo(days: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
 export function formatRelativeTime(iso: string): string {
   const then = new Date(iso).getTime();
   const now = Date.now();

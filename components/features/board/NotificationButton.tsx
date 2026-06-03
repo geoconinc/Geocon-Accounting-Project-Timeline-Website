@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 import { MessageCirclePlus, X, Paperclip, Trash2 } from "lucide-react";
 import { usePopover } from "./Popover";
 import { api } from "@/lib/client/boardApi";
-import { encodeSharePointBlobRef } from "@/lib/fileStorage/sharepointBlobRef";
 import type { User } from "@/lib/types";
 
 export function NotificationButton({
@@ -28,47 +27,7 @@ export function NotificationButton({
     setBusy(true);
     try {
       for (const f of attachments) {
-        const prep = await api.requestUploadSas("project", projectId, f.name, f.size);
-        if (prep.provider === "sharepoint") {
-          if (f.size < 1) throw new Error("empty file");
-          const last = f.size - 1;
-          const put = await fetch(prep.uploadUrl, {
-            method: "PUT",
-            headers: {
-              "Content-Length": String(f.size),
-              "Content-Range": `bytes 0-${last}/${f.size}`
-            },
-            body: f
-          });
-          if (!put.ok) throw new Error(`upload failed (${put.status})`);
-          const item = (await put.json()) as { id?: string };
-          if (!item.id) throw new Error("upload response missing id");
-          const blobPath = encodeSharePointBlobRef(prep.driveId, item.id);
-          await api.recordFile({
-            parentType: "project",
-            parentId: projectId,
-            blobPath,
-            filename: f.name,
-            size: f.size
-          });
-        } else {
-          const putBlob = await fetch(prep.uploadUrl, {
-            method: "PUT",
-            headers: {
-              "x-ms-blob-type": "BlockBlob",
-              "content-type": f.type || "application/octet-stream"
-            },
-            body: f
-          });
-          if (!putBlob.ok) throw new Error(`upload failed (${putBlob.status})`);
-          await api.recordFile({
-            parentType: "project",
-            parentId: projectId,
-            blobPath: prep.blobPath,
-            filename: f.name,
-            size: f.size
-          });
-        }
+        await api.uploadFile("project", projectId, f);
       }
 
       const targets = ownerId ? [ownerId] : users.map((u) => u.id);

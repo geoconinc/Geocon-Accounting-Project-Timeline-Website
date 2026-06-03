@@ -67,6 +67,31 @@ body {
   animation: page-enter 0.2s ease-out both;
 }
 
+/* ── Navigation loading ── */
+@keyframes nav-progress {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(60%); }
+  100% { transform: translateX(100%); }
+}
+.nav-progress-bar {
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, var(--brand), var(--brand-accent));
+  animation: nav-progress 1s ease-in-out infinite;
+}
+
+@keyframes nav-spin {
+  to { transform: rotate(360deg); }
+}
+.nav-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: nav-spin 0.7s linear infinite;
+}
+
 /* ── Fade-in for cards / rows ── */
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(8px); }

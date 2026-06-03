@@ -1,6 +1,6 @@
 "use client";
 
-import type { Project, Subitem } from "@/lib/types";
+import type { FileRef, Project, Subitem } from "@/lib/types";
 
 async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -20,11 +20,6 @@ async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
   }
   return (await res.json()) as T;
 }
-
-/** Response from POST /api/files/sas (Azure Blob vs SharePoint upload session). */
-export type PrepareUploadResponse =
-  | { provider: "blob"; uploadUrl: string; blobPath: string }
-  | { provider: "sharepoint"; uploadUrl: string; driveId: string };
 
 export const api = {
   patchProject: (id: string, patch: Partial<Project>) =>
@@ -56,28 +51,31 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ orderedIds })
     }),
-  requestUploadSas: (
+
+  async uploadFile(
     parentType: "project" | "subitem",
     parentId: string,
-    filename: string,
-    fileSize: number
-  ) =>
-    jsonFetch<PrepareUploadResponse>(`/api/files/sas`, {
-      method: "POST",
-      body: JSON.stringify({ parentType, parentId, filename, fileSize })
-    }),
-  recordFile: (file: {
-    parentType: "project" | "subitem";
-    parentId: string;
-    blobPath: string;
-    filename: string;
-    size: number;
-  }) =>
-    jsonFetch<{ file: { id: string } }>(`/api/files`, {
-      method: "POST",
-      body: JSON.stringify(file)
-    }),
-  fileUrl: (id: string) => jsonFetch<{ url: string }>(`/api/files/${id}/url`),
+    file: File
+  ): Promise<FileRef> {
+    const form = new FormData();
+    form.append("parentType", parentType);
+    form.append("parentId", parentId);
+    form.append("file", file);
+    const res = await fetch("/api/files", { method: "POST", body: form });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const j = (await res.json()) as { message?: string; error?: string };
+        detail = j.message ?? j.error ?? "";
+      } catch { /* ignore */ }
+      throw new Error(detail || `Upload failed (${res.status})`);
+    }
+    const { file: ref } = (await res.json()) as { file: FileRef };
+    return ref;
+  },
+
+  fileDownloadUrl: (id: string) => `/api/files/${id}/url`,
+
   setMute: (projectId: string, mute: boolean) =>
     jsonFetch<{ ok: true }>(`/api/notification-prefs`, {
       method: "POST",

@@ -4,7 +4,7 @@ import { authenticateRequest } from "@/lib/server/routeAuth";
 import { bus } from "@/lib/events/bus";
 import { DEFAULT_SUBITEM_NAMES } from "@/lib/domain/projectDefaults";
 import { isOffice, subitemOwnerIdForOffice } from "@/lib/domain/offices";
-import { getBoardPayloadForUser } from "@/lib/server/access";
+import { getBoardPayloadForUser, hasFullBoardAccessAsync, forbidden } from "@/lib/server/access";
 import { notifyUser } from "@/lib/notifications/dispatch";
 import { syncRoleAssigneeUsersIntoStorage } from "@/lib/server/site-data/syncRoleAssignees";
 import { syncOfficeAssigneeUsersIntoStorage } from "@/lib/server/site-data/syncOfficeAssignees";
@@ -25,6 +25,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const user = await authenticateRequest();
   if (user instanceof Response) return user;
+  if (!(await hasFullBoardAccessAsync(user))) return forbidden();
   const body = (await req.json()) as Partial<Parameters<typeof storage.createProject>[0]>;
 
   await Promise.all([

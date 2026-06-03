@@ -9,7 +9,7 @@ Types in `lib/types/`:
 | `User` | id, email, name, initials, phone, photoUrl, createdAt | Team member |
 | `Session` | token, userId, expiresAt | Auth session (httpOnly cookie) |
 | `Project` | id, code, name, ownerId, status, group, startDate, timelineStart/End, office, projectManagerId, projectDirectorId, notes, etc. | Top-level project |
-| `Subitem` | id, projectId, name, ownerId, status, dueDate, dateCompleted, notes, position | Task within a project |
+| `Subitem` | id, projectId, name, ownerId, status, dueDate, dateCompleted, notes, position, createdAt | Task within a project |
 | `FileRef` | id, parentType, parentId, blobPath, filename, size, uploadedBy, uploadedAt | File attachment metadata |
 | `ActivityEvent` | id, actorId, entityType, entityId, action, payload, createdAt | Audit log entry |
 
@@ -36,7 +36,7 @@ Defined in `lib/db/schema.ts` using Drizzle ORM table builders:
 users           — id (uuid PK), email (unique), name, initials, phone, photo_url, created_at
 sessions        — token (text PK), user_id (FK users), expires_at
 projects        — id (uuid PK), code, name, owner_id, status, group, dates, office, PM/director IDs, notes, position
-subitems        — id (uuid PK), project_id (FK projects CASCADE), name, owner_id, status, due_date, date_completed, notes, position
+subitems        — id (uuid PK), project_id (FK projects CASCADE), name, owner_id, status, due_date, date_completed, notes, position, created_at
 files           — id (uuid PK), parent_type, parent_id, blob_path, filename, size, uploaded_by, uploaded_at
 activity        — id (uuid PK), actor_id, entity_type, entity_id, action, payload (jsonb), created_at
 site_config     — key (text PK), value (jsonb), updated_at, updated_by
@@ -55,6 +55,7 @@ SQL migration files in `lib/db/migrations/`, applied sequentially by `scripts/mi
 | `0003_notification_prefs_global.sql` | Notification preferences schema changes |
 | `0004_drop_notification_prefs.sql` | Remove notification_prefs table |
 | `0005_site_config.sql` | Create site_config key-value table |
+| `0006_subitem_created_at.sql` | Add `created_at` to subitems for one-week reminder cron |
 
 Run migrations: `DATABASE_URL="postgresql://..." npm run db:migrate`
 

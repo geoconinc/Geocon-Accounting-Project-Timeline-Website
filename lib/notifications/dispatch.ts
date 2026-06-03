@@ -1,6 +1,10 @@
 import { storage } from "@/lib/storage";
 import { bus } from "@/lib/events/bus";
+import { appBaseUrl, escapeHtml } from "./html";
+import { wrapEmailLayout } from "./layout";
 import { sendMail } from "./email";
+
+export { escapeHtml } from "./html";
 
 interface NotifyOpts {
   userId: string;
@@ -10,26 +14,13 @@ interface NotifyOpts {
   html?: string;
 }
 
-export function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-function appUrl(): string | null {
-  return process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_MSAL_REDIRECT_URI ?? null;
-}
-
 function defaultHtml(message: string): string {
-  const url = appUrl();
-  const link = url
-    ? `<p><a href="${escapeHtml(url)}">Open Geocon Project Timeline</a></p>`
-    : "";
-
-  return `<p>${escapeHtml(message)}</p>${link}`;
+  return wrapEmailLayout({
+    headline: "Notification",
+    bodyHtml: `<p style="white-space:pre-wrap">${escapeHtml(message)}</p>`,
+    ctaLabel: "Open Project Timeline",
+    ctaUrl: appBaseUrl()
+  });
 }
 
 export async function notifyUser(opts: NotifyOpts) {
@@ -47,9 +38,9 @@ export async function notifyUser(opts: NotifyOpts) {
     html: opts.html ?? defaultHtml(opts.message)
   }).then((result) => {
     if (!result.ok) {
-      console.warn(`Graph email not sent: ${result.reason ?? "unknown_error"}`);
+      console.warn(`Email not sent (${process.env.EMAIL_DRIVER ?? "auto"}): ${result.reason ?? "unknown_error"}`);
     }
   }).catch((error) => {
-    console.warn("Graph email failed", error);
+    console.warn("Email send failed", error);
   });
 }
