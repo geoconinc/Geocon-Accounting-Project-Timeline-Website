@@ -9,7 +9,7 @@ Internal project management application for Geocon's accounting team. Tracks pro
 - **Microsoft SSO** — MSAL popup login with server-side Graph `/me` verification and httpOnly session cookies.
 - **Project board** — Grouped by Current / Future / Completed with inline editing, drag-and-drop reordering, and live updates via SSE + polling fallback.
 - **Subitems** — Per-project task rows with owner assignment, status, due dates, file attachments, and notes.
-- **File uploads** — Direct-to-SharePoint uploads via Microsoft Graph upload sessions (Azure Blob fallback available).
+- **File uploads** — Attachments stored directly in PostgreSQL (`bytea`, 10 MB per-file limit) with access-controlled streaming downloads.
 - **Dashboard** — At-a-glance project health: status breakdown, completion percentage, overdue items, recent activity.
 - **Timeline** — Gantt-style 60-day view with project bars and date navigation.
 - **Email notifications** — Assignment and due-date reminders via Microsoft Graph `sendMail`.
@@ -44,9 +44,8 @@ Copy `.env.example` to `.env.local`. Key groups:
 | Group | Variables | Purpose |
 |-------|-----------|---------|
 | **Auth** | `NEXT_PUBLIC_MSAL_CLIENT_ID`, `NEXT_PUBLIC_MSAL_TENANT_ID`, `NEXT_PUBLIC_MSAL_REDIRECT_URI`, `ALLOWED_EMAIL_DOMAIN` | Microsoft login |
-| **Database** | `STORAGE_DRIVER=postgres`, `DATABASE_URL` | Azure Postgres connection |
-| **Files** | `FILE_STORAGE_DRIVER`, `SHAREPOINT_HOSTNAME`, `SHAREPOINT_SITE_PATH` | SharePoint file uploads |
-| **Email** | `GRAPH_APP_TENANT_ID`, `GRAPH_APP_CLIENT_ID`, `GRAPH_APP_CLIENT_SECRET`, `NOTIFY_FROM_ADDRESS` | Graph sendMail |
+| **Database** | `STORAGE_DRIVER=postgres`, `DATABASE_URL` | Azure Postgres connection (also stores file attachments) |
+| **Email** | `EMAIL_DRIVER`, `SMTP_*` or `GRAPH_APP_*`, `NOTIFY_FROM_ADDRESS` | SMTP or Graph sendMail |
 | **App** | `APP_BASE_URL`, `BOARD_ADMIN_EMAILS`, `NEXT_PUBLIC_SUPER_ADMIN_EMAIL`, `CRON_SHARED_SECRET` | Access control + cron |
 
 See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for Netlify/Azure setup and exact values.
@@ -70,13 +69,11 @@ components/             React UI
 
 lib/                    Shared application code
   auth/                 MSAL config, session management, super-admin check
-  blob/                 Azure Blob SAS helpers (legacy fallback)
   client/               Browser-side API wrappers (boardApi, roleAssigneesApi)
   config/               Shared config (allowed domain, local templates)
   db/                   Drizzle schema, migrations, client
   domain/               Business rules (offices, project defaults, role rosters)
   events/               In-process SSE pub/sub bus
-  fileStorage/          SharePoint attachment helpers + blob ref encoding
   graph/                Microsoft Graph app-only access token
   notifications/        Email dispatch, templates
   server/               Server-only code

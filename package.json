@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "render-build": "npm ci --include=dev && npm run build",
+    "render-build": "npm ci --include=dev && npx tsx scripts/migrate.ts && npm run build",
     "start": "next start",
     "lint": "next lint",
     "prepare": "node scripts/setup-git-hooks.js",
