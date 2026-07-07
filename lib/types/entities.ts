@@ -51,6 +51,8 @@ export interface Project {
   lastUpdatedAt: string;
   lastUpdatedBy: string | null;
   position: number;
+  /** GMS (proposal system) internal proposal ID — set by integration webhook. */
+  gmsProposalId?: string | null;
 }
 
 export interface Subitem {

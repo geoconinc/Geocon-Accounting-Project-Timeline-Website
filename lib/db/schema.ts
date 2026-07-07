@@ -79,7 +79,8 @@ export const projects = pgTable("projects", {
   notes: text("notes"),
   lastUpdatedAt: timestamp("last_updated_at", { withTimezone: true }).notNull().defaultNow(),
   lastUpdatedBy: uuid("last_updated_by").references(() => users.id, { onDelete: "set null" }),
-  position: integer("position").notNull().default(0)
+  position: integer("position").notNull().default(0),
+  gmsProposalId: text("gms_proposal_id")
 });
 
 export const subitems = pgTable("subitems", {

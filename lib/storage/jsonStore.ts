@@ -155,6 +155,13 @@ export const jsonStore: Storage = {
   async getProject(id) {
     return (await readDb()).projects.find((p) => p.id === id) ?? null;
   },
+  async getProjectByCode(code) {
+    const target = code.trim().toLowerCase();
+    return (await readDb()).projects.find((p) => p.code.trim().toLowerCase() === target) ?? null;
+  },
+  async getProjectByGmsProposalId(gmsProposalId) {
+    return (await readDb()).projects.find((p) => p.gmsProposalId === gmsProposalId) ?? null;
+  },
   async createProject(input) {
     return mutate((db) => {
       const groupCount = db.projects.filter((p) => p.group === input.group).length;
@@ -162,6 +169,7 @@ export const jsonStore: Storage = {
         ...input,
         projectManagerId: input.projectManagerId ?? null,
         projectDirectorId: input.projectDirectorId ?? null,
+        gmsProposalId: input.gmsProposalId ?? null,
         id: input.id ?? randomUUID(),
         position: groupCount,
         lastUpdatedAt: nowIso()

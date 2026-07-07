@@ -18,6 +18,8 @@ export interface Storage {
   // projects
   listProjects(): Promise<Project[]>;
   getProject(id: string): Promise<Project | null>;
+  getProjectByCode(code: string): Promise<Project | null>;
+  getProjectByGmsProposalId(gmsProposalId: string): Promise<Project | null>;
   createProject(input: Omit<Project, "id" | "lastUpdatedAt" | "position"> & { id?: string }): Promise<Project>;
   updateProject(id: string, patch: Partial<Project>, actorId: string | null): Promise<Project | null>;
   deleteProject(id: string): Promise<void>;

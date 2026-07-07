@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
 
-const PUBLIC_PATHS = ["/login", "/api/microsoft-login", "/api/verify-session", "/api/cron"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/microsoft-login",
+  "/api/verify-session",
+  "/api/cron",
+  "/api/integrations"
+];
 
 function addSecurityHeaders(res: NextResponse): NextResponse {
   res.headers.set("X-Content-Type-Options", "nosniff");

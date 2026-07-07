@@ -45,3 +45,5 @@ services:
         sync: false
       - key: CRON_SHARED_SECRET
         sync: false
+      - key: GMS_INTEGRATION_API_KEY
+        sync: false

@@ -55,7 +55,8 @@ function mapProject(r: typeof projects.$inferSelect): Project {
     notes: r.notes,
     lastUpdatedAt: tsIso(r.lastUpdatedAt),
     lastUpdatedBy: r.lastUpdatedBy,
-    position: r.position
+    position: r.position,
+    gmsProposalId: r.gmsProposalId
   };
 }
 
@@ -221,6 +222,26 @@ export const postgresStore: Storage = {
     return rows[0] ? mapProject(rows[0]) : null;
   },
 
+  async getProjectByCode(code) {
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(projects)
+      .where(sql`lower(${projects.code}) = ${code.trim().toLowerCase()}`)
+      .limit(1);
+    return rows[0] ? mapProject(rows[0]) : null;
+  },
+
+  async getProjectByGmsProposalId(gmsProposalId) {
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.gmsProposalId, gmsProposalId))
+      .limit(1);
+    return rows[0] ? mapProject(rows[0]) : null;
+  },
+
   async createProject(input) {
     const db = getDb();
     const [{ count }] = await db
@@ -249,6 +270,7 @@ export const postgresStore: Storage = {
         projectDirectorId: input.projectDirectorId ?? null,
         notes: input.notes,
         lastUpdatedBy: input.lastUpdatedBy ?? null,
+        gmsProposalId: input.gmsProposalId ?? null,
         position: count
       })
       .returning();
@@ -288,6 +310,7 @@ export const postgresStore: Storage = {
         ...(patch.projectManagerId !== undefined ? { projectManagerId: patch.projectManagerId } : {}),
         ...(patch.projectDirectorId !== undefined ? { projectDirectorId: patch.projectDirectorId } : {}),
         ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
+        ...(patch.gmsProposalId !== undefined ? { gmsProposalId: patch.gmsProposalId } : {}),
         ...(patch.position !== undefined ? { position: patch.position } : {}),
         lastUpdatedAt: new Date(),
         lastUpdatedBy: actorId
