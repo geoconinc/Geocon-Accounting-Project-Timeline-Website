@@ -70,7 +70,7 @@ export default function Sidebar({ user }: { user?: User | null }) {
         )}
       </nav>
       <div className="p-3 text-[10px] text-slate-400 border-t border-slate-200 text-center">
-        Geocon · v0.1
+        Geocon · v{process.env.NEXT_PUBLIC_APP_VERSION}
       </div>
     </aside>
   );

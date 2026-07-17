@@ -1,0 +1,67 @@
+name: Deploy to Azure App Service
+
+# Builds the Next.js app on GitHub's runners (never on the B1 instance), applies
+# database migrations, then ships a pre-built artifact to Azure App Service.
+#
+# One-time setup (see docs/DEPLOYMENT.md → "Azure App Service"):
+#   1. Set AZURE_WEBAPP_NAME below to your App Service name.
+#   2. Add the publish profile as the AZURE_WEBAPP_PUBLISH_PROFILE repo secret.
+#   3. Add the build-time + migration secrets listed under `env:` as repo secrets.
+#   4. Set all runtime env vars in App Service → Configuration → Application settings.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: geocon-project-timeline # <-- change to your App Service name
+  NODE_VERSION: "22.x"
+
+concurrency:
+  group: azure-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # NEXT_PUBLIC_* values are inlined into the client bundle at build time,
+      # so they must be present here (not just in App Service settings).
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_MSAL_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_MSAL_CLIENT_ID }}
+          NEXT_PUBLIC_MSAL_TENANT_ID: ${{ secrets.NEXT_PUBLIC_MSAL_TENANT_ID }}
+          NEXT_PUBLIC_MSAL_REDIRECT_URI: ${{ secrets.NEXT_PUBLIC_MSAL_REDIRECT_URI }}
+          NEXT_PUBLIC_SUPER_ADMIN_EMAIL: ${{ secrets.NEXT_PUBLIC_SUPER_ADMIN_EMAIL }}
+          NEXT_PUBLIC_ALLOWED_DOMAIN: ${{ secrets.NEXT_PUBLIC_ALLOWED_DOMAIN }}
+          NEXT_PUBLIC_DAS_FORMS_FOLDER: ${{ secrets.NEXT_PUBLIC_DAS_FORMS_FOLDER }}
+
+      # Idempotent: the migrator tracks applied files and skips ones already run.
+      - name: Apply database migrations
+        run: npx tsx scripts/migrate.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      # Slim node_modules to production-only before shipping.
+      - name: Prune dev dependencies
+        run: npm prune --omit=dev
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: .

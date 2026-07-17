@@ -133,7 +133,7 @@ export default function TopBar({ user }: { user: User }) {
               </button>
             </div>
             <p className="text-sm text-slate-500 mb-5">
-              You'll need to sign in with Microsoft again to access the project board.
+              You&apos;ll need to sign in with Microsoft again to access the project board.
             </p>
             <div className="flex justify-end gap-2">
               <button

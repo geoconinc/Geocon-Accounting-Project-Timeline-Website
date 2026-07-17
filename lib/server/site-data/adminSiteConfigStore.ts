@@ -14,7 +14,7 @@ export interface AdminSiteConfigFile {
 
 const CONFIG_KEY = "admin_site_config";
 
-function usePostgres(): boolean {
+function isPostgresDriver(): boolean {
   return (process.env.STORAGE_DRIVER ?? "json") === "postgres";
 }
 
@@ -24,7 +24,7 @@ async function pgDb() {
 }
 
 export async function readAdminSiteConfig(): Promise<AdminSiteConfigFile | null> {
-  if (usePostgres()) {
+  if (isPostgresDriver()) {
     const db = await pgDb();
     const rows = await db.execute<{
       value: unknown;
@@ -54,7 +54,7 @@ export async function writeAdminSiteConfig(
   patch: { officeAssignees: OfficeAssigneeRow[]; roleAssignees: GeoconRoleAssigneesFile | null },
   actorEmail: string
 ): Promise<void> {
-  if (usePostgres()) {
+  if (isPostgresDriver()) {
     const db = await pgDb();
     const value = { officeAssignees: patch.officeAssignees, roleAssignees: patch.roleAssignees };
     await db.execute(sql`
@@ -92,7 +92,7 @@ export function invalidateAdminEmailsCache(): void {
 export async function getStoredBoardAdminEmails(): Promise<string[]> {
   if (cachedAdminEmails) return cachedAdminEmails;
 
-  if (usePostgres()) {
+  if (isPostgresDriver()) {
     const db = await pgDb();
     const rows = await db.execute<{ value: unknown }>(
       sql`SELECT value FROM site_config WHERE key = ${ADMIN_EMAILS_KEY} LIMIT 1`
@@ -112,7 +112,7 @@ export async function setStoredBoardAdminEmails(
   emails: string[],
   actorEmail: string
 ): Promise<void> {
-  if (usePostgres()) {
+  if (isPostgresDriver()) {
     const db = await pgDb();
     const value = { emails };
     await db.execute(sql`

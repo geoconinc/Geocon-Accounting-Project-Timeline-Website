@@ -74,11 +74,5 @@ export const api = {
     return ref;
   },
 
-  fileDownloadUrl: (id: string) => `/api/files/${id}/url`,
-
-  setMute: (projectId: string, mute: boolean) =>
-    jsonFetch<{ ok: true }>(`/api/notification-prefs`, {
-      method: "POST",
-      body: JSON.stringify({ projectId, mute })
-    })
+  fileDownloadUrl: (id: string) => `/api/files/${id}/url`
 };
