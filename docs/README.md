@@ -9,6 +9,6 @@ Technical documentation for the Geocon Project Timeline application.
 | [Frontend](./FRONTEND.md) | Pages, components, state management, styling |
 | [Data & Storage](./DATA_AND_STORAGE.md) | Domain model, storage abstraction, Postgres schema, migrations, file storage |
 | [Microsoft Auth](./MICROSOFT_AUTH.md) | Azure app registration, MSAL setup, Graph app for email/SharePoint |
-| [Deployment](./DEPLOYMENT.md) | Netlify, Azure App Service, environment variables, production checklist |
+| [Deployment](./DEPLOYMENT.md) | Azure App Service deployment and production checklist (admin) |
 
 Start with [Architecture](./ARCHITECTURE.md) for an overview, then drill into specific areas as needed.

@@ -2,9 +2,9 @@
 
 The app sends HTML emails through **SMTP** (recommended) or **Microsoft Graph** (`Mail.Send`).
 
-## SMTP setup (Render / production)
+## SMTP setup (Azure App Service)
 
-Set these environment variables:
+Set these in App Service → **Configuration** → **Application settings**:
 
 | Variable | Example | Required |
 |----------|---------|----------|
@@ -16,9 +16,9 @@ Set these environment variables:
 | `SMTP_PASSWORD` | *(app password or mailbox password)* | Yes |
 | `NOTIFY_FROM_ADDRESS` | `notifications@geoconinc.com` | Yes (must match SMTP user for most providers) |
 | `NOTIFY_FROM_NAME` | `Geocon Project Management` | Optional |
-| `APP_BASE_URL` | `https://your-app.onrender.com` | Yes (CTA button in emails) |
+| `APP_BASE_URL` | `https://your-app.azurewebsites.net` | Yes (CTA button in emails) |
 
-After changing env vars, redeploy the web service.
+After changing Application settings, restart the App Service if values do not pick up immediately.
 
 ### Microsoft 365 / Outlook
 
@@ -54,7 +54,7 @@ Run **once per day**. The job finds subitems that were **created exactly 7 calen
 DATABASE_URL="postgresql://..." npm run db:migrate
 ```
 
-**Schedule** (Render → New → Cron Job, or any scheduler):
+**Schedule** (Azure Logic App, Container Apps Job, or any scheduler):
 
 | Setting | Value |
 |---------|--------|
@@ -65,7 +65,8 @@ DATABASE_URL="postgresql://..." npm run db:migrate
 curl -sS -X POST -H "X-Cron-Secret: $CRON_SHARED_SECRET" "$APP_BASE_URL/api/cron/incomplete-week"
 ```
 
-Set `CRON_SHARED_SECRET` and `APP_BASE_URL` on **both** the web service and the cron job. SMTP vars must be set on the web service (the cron job only triggers the HTTP endpoint).
+Set `CRON_SHARED_SECRET` on the App Service. SMTP vars must be set on the App
+Service (the scheduler only triggers the HTTP endpoint).
 
 **Manual test:**
 

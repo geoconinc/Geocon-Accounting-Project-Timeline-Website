@@ -2,7 +2,7 @@
 
 Internal project management application for Geocon's accounting team. Tracks projects, subitems (tasks), file attachments, assignments, and due-date notifications in a Monday.com-style board interface.
 
-**Stack:** Next.js 14 (App Router) · TypeScript · Tailwind CSS · Azure Postgres · SharePoint (file attachments) · Microsoft Graph (auth + email) · MSAL
+**Stack:** Next.js 14 (App Router) · TypeScript · Tailwind CSS · Azure Postgres (data + file attachments) · Microsoft Entra / MSAL (auth) · SMTP or Microsoft Graph (email)
 
 ## Features
 
@@ -12,7 +12,7 @@ Internal project management application for Geocon's accounting team. Tracks pro
 - **File uploads** — Attachments stored directly in PostgreSQL (`bytea`, 10 MB per-file limit) with access-controlled streaming downloads.
 - **Dashboard** — At-a-glance project health: status breakdown, completion percentage, overdue items, recent activity.
 - **Timeline** — Gantt-style 60-day view with project bars and date navigation.
-- **Email notifications** — Assignment and due-date reminders via Microsoft Graph `sendMail`.
+- **Email notifications** — Assignment and due-date reminders via SMTP (or Microsoft Graph `sendMail`).
 - **Role-based access** — Board admins see everything; project owners see their projects; subitem owners see their assigned items.
 - **Admin settings** — Super-admin page for managing office assignees and role rosters (stored in Postgres).
 
@@ -20,10 +20,12 @@ Internal project management application for Geocon's accounting team. Tracks pro
 
 ```bash
 npm install
-cp .env.example .env.local    # fill in your values
 npm run db:migrate             # apply Postgres schema
 npm run dev                    # http://localhost:3000
 ```
+
+> Configuration is managed privately by the administrator and is not documented in
+> this repository. Contact the maintainer if you need access to run the app.
 
 ## Scripts
 
@@ -36,19 +38,6 @@ npm run dev                    # http://localhost:3000
 | `npm run db:migrate` | Apply SQL migrations to Postgres |
 | `npm run db:generate` | Generate Drizzle migration files |
 | `npm run seed` | Seed local JSON storage (dev only) |
-
-## Environment Variables
-
-Copy `.env.example` to `.env.local`. Key groups:
-
-| Group | Variables | Purpose |
-|-------|-----------|---------|
-| **Auth** | `NEXT_PUBLIC_MSAL_CLIENT_ID`, `NEXT_PUBLIC_MSAL_TENANT_ID`, `NEXT_PUBLIC_MSAL_REDIRECT_URI`, `ALLOWED_EMAIL_DOMAIN` | Microsoft login |
-| **Database** | `STORAGE_DRIVER=postgres`, `DATABASE_URL` | Azure Postgres connection (also stores file attachments) |
-| **Email** | `EMAIL_DRIVER`, `SMTP_*` or `GRAPH_APP_*`, `NOTIFY_FROM_ADDRESS` | SMTP or Graph sendMail |
-| **App** | `APP_BASE_URL`, `BOARD_ADMIN_EMAILS`, `NEXT_PUBLIC_SUPER_ADMIN_EMAIL`, `CRON_SHARED_SECRET` | Access control + cron |
-
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for Netlify/Azure setup and exact values.
 
 ## Project Structure
 
@@ -96,7 +85,7 @@ docs/                   Technical documentation
 | [Frontend](docs/FRONTEND.md) | Pages, components, state management |
 | [Data & Storage](docs/DATA_AND_STORAGE.md) | Storage drivers, Drizzle schema, migrations |
 | [Microsoft Auth](docs/MICROSOFT_AUTH.md) | Azure app registration, MSAL setup, session flow |
-| [Deployment](docs/DEPLOYMENT.md) | Netlify, Azure, environment variables, production checklist |
+| [Deployment](docs/DEPLOYMENT.md) | Azure App Service deployment and production checklist (admin only) |
 
 ## License
 

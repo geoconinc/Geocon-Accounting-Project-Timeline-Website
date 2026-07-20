@@ -54,12 +54,14 @@ NEXT_PUBLIC_MSAL_REDIRECT_URI=http://localhost:3000   # production: https://your
 ALLOWED_EMAIL_DOMAIN=geoconinc.com                     # server-side domain enforcement
 ```
 
-## Graph App Registration (for email + SharePoint)
+## Graph App Registration (for email)
 
-A **separate** app registration is needed for server-side Graph operations (sending email, SharePoint file uploads). This uses **client credentials** (app-only), not delegated permissions.
+A **separate** app registration is needed only if you use Microsoft Graph for
+server-side email (`EMAIL_DRIVER=graph`). This uses **client credentials**
+(app-only), not delegated permissions. SMTP email does not need this app.
 
 1. Create a new app registration: `Geocon Timeline Notifier`
-2. Add **Application permissions**: `Mail.Send`, `Sites.ReadWrite.All`
+2. Add **Application permission**: `Mail.Send`
 3. Grant admin consent.
 4. Create a **client secret** under Certificates & secrets.
 
@@ -82,7 +84,7 @@ Optionally restrict `Mail.Send` to a specific mailbox via an [Exchange Applicati
 | Token verification + session | `lib/server/features/auth-session/microsoftLoginRoute.ts` |
 | Session cookie + lookup | `lib/auth/session.ts`, `lib/auth/constants.ts` |
 | Auth middleware | `middleware.ts` |
-| Graph app token (email/SharePoint) | `lib/graph/appAccessToken.ts` |
+| Graph app token (email) | `lib/graph/appAccessToken.ts` |
 
 ## Troubleshooting
 
