@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: geocon-project-timeline # <-- change to your App Service name
+  AZURE_WEBAPP_NAME: project-timeline
   NODE_VERSION: "22.x"
 
 concurrency:
