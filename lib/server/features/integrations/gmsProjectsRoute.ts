@@ -1,61 +1,19 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { storage } from "@/lib/storage";
 import { bus } from "@/lib/events/bus";
 import { mapGmsOfficeToTimeline } from "@/lib/domain/gmsOfficeMap";
+import {
+  buildGmsNotes,
+  dateOnly,
+  geoconEmail,
+  gmsProjectPayloadSchema,
+  type GmsProjectPayload
+} from "@/lib/domain/gmsProjectPayload";
 import { verifyGmsIntegrationKey } from "@/lib/server/integrations/verifyIntegrationKey";
 import { createProjectWithSubitems } from "@/lib/server/features/projects/createProjectWithSubitems";
 import { initialsFromName } from "@/lib/utils";
 
 const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN ?? "geoconinc.com").toLowerCase();
-
-const personSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email()
-});
-
-const gmsProjectPayloadSchema = z.object({
-  projectNumber: z.string().min(1),
-  projectName: z.string().min(1),
-  gmsProposalId: z.string().min(1).optional(),
-  proposalNumber: z.string().optional(),
-  clientName: z.string().optional(),
-  officeCode: z.string().min(1),
-  officeName: z.string().optional(),
-  company: z.string().optional(),
-  projectManager: personSchema,
-  projectDirector: personSchema,
-  feeEstimate: z.number().optional(),
-  wonDate: z.string().optional(),
-  dueDate: z.string().optional()
-});
-
-type GmsProjectPayload = z.infer<typeof gmsProjectPayloadSchema>;
-
-function geoconEmail(email: string): boolean {
-  return email.trim().toLowerCase().endsWith("@" + ALLOWED_DOMAIN);
-}
-
-function dateOnly(value: string | undefined): string | null {
-  if (!value) return null;
-  const trimmed = value.trim();
-  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.slice(0, 10);
-  const parsed = new Date(trimmed);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toISOString().slice(0, 10);
-}
-
-function buildGmsNotes(payload: GmsProjectPayload): string {
-  const lines: string[] = ["Imported from GMS."];
-  if (payload.proposalNumber) lines.push(`Proposal #: ${payload.proposalNumber}`);
-  if (payload.gmsProposalId) lines.push(`GMS proposal ID: ${payload.gmsProposalId}`);
-  if (payload.clientName) lines.push(`Client: ${payload.clientName}`);
-  if (payload.company) lines.push(`Company: ${payload.company}`);
-  if (payload.feeEstimate != null) {
-    lines.push(`Fee estimate: $${payload.feeEstimate.toLocaleString("en-US")}`);
-  }
-  return lines.join("\n");
-}
 
 async function ensureUserId(name: string, email: string): Promise<string | null> {
   const normalizedEmail = email.trim().toLowerCase();

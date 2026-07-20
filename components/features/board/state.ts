@@ -23,7 +23,10 @@ type Action =
   | { type: "deleteFile"; id: string }
   | { type: "addUser"; user: User };
 
-function reducer(state: BoardData, a: Action): BoardData {
+export type BoardAction = Action;
+
+/** Pure board state transitions — exported for unit tests. */
+export function boardReducer(state: BoardData, a: Action): BoardData {
   switch (a.type) {
     case "set":
       return a.data;
@@ -74,15 +77,18 @@ function reducer(state: BoardData, a: Action): BoardData {
       if (state.users.some((u) => u.id === a.user.id)) return state;
       return { ...state, users: [...state.users, a.user] };
     }
-    default:
+    default: {
+      const _exhaustive: never = a;
+      void _exhaustive;
       return state;
+    }
   }
 }
 
 const POLL_INTERVAL_MS = 30_000;
 
 export function useBoardState(initial: BoardData) {
-  const [state, dispatch] = useReducer(reducer, initial);
+  const [state, dispatch] = useReducer(boardReducer, initial);
   const dispatchRef = useRef(dispatch);
   dispatchRef.current = dispatch;
 
@@ -115,6 +121,10 @@ export function useBoardState(initial: BoardData) {
       });
       es.addEventListener("subitem.reorder", scheduleRefetch);
       es.addEventListener("file.added", scheduleRefetch);
+      es.addEventListener("file.deleted", (ev: MessageEvent) => {
+        const { id } = JSON.parse(ev.data) as { id: string };
+        dispatchRef.current({ type: "deleteFile", id });
+      });
       es.onerror = scheduleRefetch;
     } catch {
       // SSE not available (serverless) — polling only

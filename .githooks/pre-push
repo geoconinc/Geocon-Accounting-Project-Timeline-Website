@@ -1,0 +1,18 @@
+#!/bin/sh
+# Run the test suite before pushing. A failing test blocks the push (and thus
+# the deploy). Set SKIP_TESTS=1 to bypass in an emergency.
+
+if [ "$SKIP_TESTS" = "1" ]; then
+  exit 0
+fi
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+cd "$ROOT" || exit 0
+
+echo "Running tests before push..."
+npm test --silent || {
+  echo "Tests failed — push aborted. Fix tests or push with SKIP_TESTS=1 to override."
+  exit 1
+}
+
+exit 0

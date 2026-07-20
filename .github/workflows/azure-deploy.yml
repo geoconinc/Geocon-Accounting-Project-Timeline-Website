@@ -39,6 +39,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Gate the deploy on the unit test suite — a failure here stops the deploy.
+      - name: Run unit tests
+        run: npm test
+
+      # End-to-end smoke tests: build with placeholder auth + JSON storage, then
+      # drive the real app in a headless browser. A failure here stops the deploy.
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Build for E2E
+        run: npm run build:e2e
+
+      - name: Run E2E smoke tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
       # NEXT_PUBLIC_* values are inlined into the client bundle at build time,
       # so they must be present here (not just in App Service settings).
       - name: Build

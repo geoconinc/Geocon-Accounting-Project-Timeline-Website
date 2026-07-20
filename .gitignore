@@ -11,3 +11,10 @@ data/db.json
 .DS_Store
 .vercel
 tsconfig.tsbuildinfo
+
+# Playwright / E2E
+/playwright-report
+/test-results
+/playwright/.cache
+/e2e/.auth
+/e2e/.data

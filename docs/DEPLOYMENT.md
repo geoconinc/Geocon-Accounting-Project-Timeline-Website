@@ -114,7 +114,7 @@ Endpoints: `/api/cron/incomplete-week`, `/api/cron/due-dates`, `/api/cron/das-fo
 ### File Storage
 
 Attachments are stored **directly in PostgreSQL** (`files.data` bytea column,
-max 10 MB per file). No external storage account is required.
+max 25 MB per file). No external storage account is required.
 
 ### GMS integration (proposal system → project timeline)
 

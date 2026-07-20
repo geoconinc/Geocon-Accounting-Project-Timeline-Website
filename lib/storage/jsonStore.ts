@@ -6,7 +6,10 @@ import type { ActivityEvent, FileRef, Project, Session, Subitem, User } from "@/
 import type { Storage } from "./index";
 import { initialsFromName } from "@/lib/utils";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+// DATA_DIR can be overridden (e.g. for isolated E2E test data); defaults to ./data.
+const DATA_DIR = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR)
+  : path.join(process.cwd(), "data");
 const FILES_DIR = path.join(DATA_DIR, "files");
 
 interface DbShape {

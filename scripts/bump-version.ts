@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 /** Bump semver minor by 0.1 (0.1.0 → 0.2.0, 0.9.0 → 1.0.0). */
@@ -46,4 +47,8 @@ function main() {
   console.log(`Version: ${prev} → ${next}`);
 }
 
-main();
+// Only run when invoked directly (e.g. `tsx scripts/bump-version.ts`), not when
+// imported (e.g. by unit tests), so importing bumpByTenth has no side effects.
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  main();
+}

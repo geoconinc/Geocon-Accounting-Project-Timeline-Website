@@ -9,7 +9,7 @@ Internal project management application for Geocon's accounting team. Tracks pro
 - **Microsoft SSO** — MSAL popup login with server-side Graph `/me` verification and httpOnly session cookies.
 - **Project board** — Grouped by Current / Future / Completed with inline editing, drag-and-drop reordering, and live updates via SSE + polling fallback.
 - **Subitems** — Per-project task rows with owner assignment, status, due dates, file attachments, and notes.
-- **File uploads** — Attachments stored directly in PostgreSQL (`bytea`, 10 MB per-file limit) with access-controlled streaming downloads.
+- **File uploads** — Attachments stored directly in PostgreSQL (`bytea`, 25 MB per-file limit) with access-controlled streaming downloads.
 - **Dashboard** — At-a-glance project health: status breakdown, completion percentage, overdue items, recent activity.
 - **Timeline** — Gantt-style 60-day view with project bars and date navigation.
 - **Email notifications** — Assignment and due-date reminders via SMTP (or Microsoft Graph `sendMail`).

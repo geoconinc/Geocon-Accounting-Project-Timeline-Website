@@ -21,7 +21,8 @@ export function Group({
   onProjectUpdated,
   onProjectDeleted,
   onSubitemUpdated,
-  onSubitemDeleted
+  onSubitemDeleted,
+  onFileDeleted
 }: {
   name: ProjectGroup;
   projects: Project[];
@@ -32,6 +33,7 @@ export function Group({
   onProjectDeleted?: (id: string) => void;
   onSubitemUpdated?: (subitem: Subitem) => void;
   onSubitemDeleted?: (id: string) => void;
+  onFileDeleted?: (id: string) => void;
 }) {
   const [open, setOpen] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -94,6 +96,7 @@ export function Group({
                 onProjectDeleted={onProjectDeleted}
                 onSubitemUpdated={onSubitemUpdated}
                 onSubitemDeleted={onSubitemDeleted}
+                onFileDeleted={onFileDeleted}
               />
             ))
           )}

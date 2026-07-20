@@ -74,5 +74,8 @@ export const api = {
     return ref;
   },
 
+  deleteFile: (id: string) =>
+    jsonFetch<{ ok: true }>(`/api/files/${id}`, { method: "DELETE" }),
+
   fileDownloadUrl: (id: string) => `/api/files/${id}/url`
 };

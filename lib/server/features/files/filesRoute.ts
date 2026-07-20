@@ -4,8 +4,7 @@ import { authenticateRequest } from "@/lib/server/routeAuth";
 import { bus } from "@/lib/events/bus";
 import { canAccessFileParent, forbidden } from "@/lib/server/access";
 import { recordActivity } from "@/lib/server/activityLog";
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+import { fileTooLargeMessage, MAX_FILE_SIZE_BYTES } from "@/lib/config/fileUpload";
 
 export async function POST(req: Request) {
   const user = await authenticateRequest();
@@ -23,9 +22,9 @@ export async function POST(req: Request) {
     );
   }
 
-  if (fileEntry.size > MAX_FILE_SIZE) {
+  if (fileEntry.size > MAX_FILE_SIZE_BYTES) {
     return NextResponse.json(
-      { error: "file_too_large", message: `File exceeds ${MAX_FILE_SIZE / (1024 * 1024)} MB limit.` },
+      { error: "file_too_large", message: fileTooLargeMessage(fileEntry.name) },
       { status: 413 }
     );
   }

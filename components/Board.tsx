@@ -50,6 +50,10 @@ export default function Board({ initialData }: { initialData: BoardData }) {
     (id: string) => dispatch({ type: "deleteSubitem", id }),
     [dispatch]
   );
+  const onFileDeleted = useCallback(
+    (id: string) => dispatch({ type: "deleteFile", id }),
+    [dispatch]
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -66,6 +70,7 @@ export default function Board({ initialData }: { initialData: BoardData }) {
             onProjectDeleted={onProjectDeleted}
             onSubitemUpdated={onSubitemUpdated}
             onSubitemDeleted={onSubitemDeleted}
+            onFileDeleted={onFileDeleted}
           />
           <Group
             name="Future"
@@ -77,6 +82,7 @@ export default function Board({ initialData }: { initialData: BoardData }) {
             onProjectDeleted={onProjectDeleted}
             onSubitemUpdated={onSubitemUpdated}
             onSubitemDeleted={onSubitemDeleted}
+            onFileDeleted={onFileDeleted}
           />
           {!filters.hideCompleted && (
             <Group
@@ -89,6 +95,7 @@ export default function Board({ initialData }: { initialData: BoardData }) {
               onProjectDeleted={onProjectDeleted}
               onSubitemUpdated={onSubitemUpdated}
               onSubitemDeleted={onSubitemDeleted}
+              onFileDeleted={onFileDeleted}
             />
           )}
         </div>

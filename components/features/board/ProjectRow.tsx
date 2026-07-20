@@ -81,7 +81,8 @@ export function ProjectRow({
   onProjectUpdated,
   onProjectDeleted,
   onSubitemUpdated,
-  onSubitemDeleted
+  onSubitemDeleted,
+  onFileDeleted
 }: {
   project: Project;
   subitems: Subitem[];
@@ -91,6 +92,7 @@ export function ProjectRow({
   onProjectDeleted?: (id: string) => void;
   onSubitemUpdated?: (subitem: Subitem) => void;
   onSubitemDeleted?: (id: string) => void;
+  onFileDeleted?: (id: string) => void;
 }) {
   const [open, setOpen] = useState(project.group !== "Completed");
   const [orderedIds, setOrderedIds] = useState<string[]>([]);
@@ -344,6 +346,7 @@ export function ProjectRow({
                     files={filesBySubitemId.get(s.id) ?? []}
                     onSubitemUpdated={onSubitemUpdated}
                     onSubitemDeleted={onSubitemDeleted}
+                    onFileDeleted={onFileDeleted}
                   />
                 ))}
               </SortableContext>

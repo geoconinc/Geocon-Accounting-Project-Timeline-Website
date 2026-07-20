@@ -100,7 +100,9 @@ export default function TopBar({ user }: { user: User }) {
               </a>
             </div>
             <div className="p-3 pt-0">
-              <p className="text-[10px] text-slate-400">Geocon · v0.1</p>
+              <p className="text-[10px] text-slate-400">
+                Geocon · v{process.env.NEXT_PUBLIC_APP_VERSION}
+              </p>
             </div>
           </div>
         )}

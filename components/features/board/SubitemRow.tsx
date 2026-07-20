@@ -41,7 +41,8 @@ export function SubitemRow({
   projectId,
   files,
   onSubitemUpdated,
-  onSubitemDeleted
+  onSubitemDeleted,
+  onFileDeleted
 }: {
   subitem: Subitem;
   users: User[];
@@ -49,6 +50,7 @@ export function SubitemRow({
   files: FileRef[];
   onSubitemUpdated?: (subitem: Subitem) => void;
   onSubitemDeleted?: (id: string) => void;
+  onFileDeleted?: (id: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: subitem.id
@@ -129,7 +131,12 @@ export function SubitemRow({
         <TextCell value={subitem.notes} onChange={(v) => patch({ notes: v })} placeholder="Notes" />
       </div>
       <div className="cell !p-0">
-        <FilesCell parentType="subitem" parentId={subitem.id} files={files} />
+        <FilesCell
+          parentType="subitem"
+          parentId={subitem.id}
+          files={files}
+          onFileDeleted={onFileDeleted}
+        />
       </div>
     </div>
   );
