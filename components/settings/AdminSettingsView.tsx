@@ -158,7 +158,12 @@ export function AdminSettingsView() {
           <ArrowLeft size={16} /> Board
         </Link>
       </div>
-      <h1 className="text-xl font-semibold text-brand-dark mb-1">Admin Panel</h1>
+      <div className="mb-1 flex items-center gap-2">
+        <h1 className="text-xl font-semibold text-brand-dark">Admin Panel</h1>
+        <span className="text-[11px] font-medium text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">
+          v{process.env.NEXT_PUBLIC_APP_VERSION}
+        </span>
+      </div>
       <p className="text-sm text-slate-500 mb-4">
         Overview of employee activity, project status, and site configuration.
       </p>
@@ -282,6 +287,8 @@ function ProjectManagersTable({
     onChange(next);
   }
   function remove(i: number) {
+    const label = managers[i]?.name?.trim() || "this project manager";
+    if (!confirm(`Remove ${label} from the list?`)) return;
     onChange(managers.filter((_, j) => j !== i));
   }
   function moveUp(i: number) {
@@ -403,6 +410,8 @@ function ProjectDirectorsTable({
     onChange(next);
   }
   function remove(i: number) {
+    const label = directors[i]?.chartLabel?.trim() || directors[i]?.name?.trim() || "this project director";
+    if (!confirm(`Remove ${label} from the list?`)) return;
     onChange(directors.filter((_, j) => j !== i));
   }
   function moveUp(i: number) {
@@ -530,6 +539,8 @@ function OfficeDirectoryTable({
     onChange(next);
   }
   function remove(i: number) {
+    const label = rows[i]?.displayName?.trim() || "this row";
+    if (!confirm(`Remove ${label} from the office directory?`)) return;
     onChange(rows.filter((_, j) => j !== i));
   }
 
@@ -622,6 +633,8 @@ function BoardAdminsTable({
     onChange(next);
   }
   function remove(i: number) {
+    const label = emails[i]?.trim() || "this admin";
+    if (!confirm(`Remove ${label} from board admins?`)) return;
     onChange(emails.filter((_, j) => j !== i));
   }
 

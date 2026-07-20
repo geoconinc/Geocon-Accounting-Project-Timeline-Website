@@ -1,5 +1,6 @@
 import { storage } from "@/lib/storage";
 import { bus } from "@/lib/events/bus";
+import { recordActivity } from "@/lib/server/activityLog";
 import type { Project } from "@/lib/types";
 import { DEFAULT_SUBITEM_NAMES } from "@/lib/domain/projectDefaults";
 import { isOffice, subitemOwnerIdForOffice } from "@/lib/domain/offices";
@@ -60,6 +61,14 @@ export async function createProjectWithSubitems(
   );
 
   bus.publish({ type: "project.upsert", payload: { id: project.id } });
+
+  await recordActivity({
+    actorId,
+    entityType: "project",
+    entityId: project.id,
+    action: "create",
+    payload: { code: project.code, name: project.name, office: project.office }
+  });
 
   if (sendNotifications) {
     await sendProjectCreationNotifications(project, actorName);

@@ -6,6 +6,8 @@ import { notifyUser } from "@/lib/notifications/dispatch";
 import { buildSubitemAssignedEmail } from "@/lib/notifications/templates/operational";
 import { canManageSubitem, findSubitem, forbidden } from "@/lib/server/access";
 import { syncProjectStatusFromSubitems } from "@/lib/domain/projectStatusSync";
+import { recordActivity } from "@/lib/server/activityLog";
+import { parseJsonBody, badRequest } from "@/lib/server/http";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const user = await authenticateRequest();
@@ -15,7 +17,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (!before) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (!(await canManageSubitem(user, before.project, before.subitem))) return forbidden();
 
-  const patch = (await req.json()) as Record<string, unknown>;
+  const patch = await parseJsonBody<Record<string, unknown>>(req);
+  if (!patch) return badRequest();
   const updated = await storage.updateSubitem(params.id, patch);
   if (!updated) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
@@ -59,5 +62,18 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
   await storage.deleteSubitem(params.id);
   await syncProjectStatusFromSubitems(located.project.id, auth.id);
   bus.publish({ type: "subitem.delete", payload: { id: params.id, projectId: located.project.id } });
+
+  await recordActivity({
+    actorId: auth.id,
+    entityType: "subitem",
+    entityId: params.id,
+    action: "delete",
+    payload: {
+      name: located.subitem.name,
+      projectId: located.project.id,
+      projectCode: located.project.code
+    }
+  });
+
   return NextResponse.json({ ok: true });
 }

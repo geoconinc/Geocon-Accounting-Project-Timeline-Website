@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/server/routeAuth";
 import { getBoardPayloadForUser, hasFullBoardAccessAsync, forbidden } from "@/lib/server/access";
 import { createProjectWithSubitems } from "@/lib/server/features/projects/createProjectWithSubitems";
+import { parseJsonBody, badRequest } from "@/lib/server/http";
 import type { Project } from "@/lib/types";
 
 export async function GET(req: Request) {
@@ -16,9 +17,10 @@ export async function POST(req: Request) {
   const user = await authenticateRequest();
   if (user instanceof Response) return user;
   if (!(await hasFullBoardAccessAsync(user))) return forbidden();
-  const body = (await req.json()) as Partial<
-    Omit<Project, "id" | "lastUpdatedAt" | "position" | "lastUpdatedBy">
-  >;
+  const body = await parseJsonBody<
+    Partial<Omit<Project, "id" | "lastUpdatedAt" | "position" | "lastUpdatedBy">>
+  >(req);
+  if (!body) return badRequest();
 
   const project = await createProjectWithSubitems({
     project: {

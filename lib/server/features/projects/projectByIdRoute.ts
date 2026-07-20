@@ -9,6 +9,8 @@ import {
 } from "@/lib/notifications/templates/operational";
 import { canManageProject, forbidden } from "@/lib/server/access";
 import { deriveProjectActivityPatch } from "@/lib/domain/projectStatusSync";
+import { recordActivity } from "@/lib/server/activityLog";
+import { parseJsonBody, badRequest } from "@/lib/server/http";
 
 const PROJECT_STATUS_LABEL: Record<string, string> = {
   New: "New",
@@ -26,7 +28,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (!before) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (!(await canManageProject(user, before))) return forbidden();
 
-  const patch = (await req.json()) as Record<string, unknown>;
+  const patch = await parseJsonBody<Record<string, unknown>>(req);
+  if (!patch) return badRequest();
   if (
     before.office &&
     "office" in patch &&
@@ -102,5 +105,14 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
 
   await storage.deleteProject(params.id);
   bus.publish({ type: "project.delete", payload: { id: params.id } });
+
+  await recordActivity({
+    actorId: user.id,
+    entityType: "project",
+    entityId: params.id,
+    action: "delete",
+    payload: { code: project.code, name: project.name, office: project.office }
+  });
+
   return NextResponse.json({ ok: true });
 }

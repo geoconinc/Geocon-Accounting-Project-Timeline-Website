@@ -1,6 +1,7 @@
 #!/bin/sh
-# Bump package.json version by 0.1 on each push (0.1.0 → 0.2.0).
-# Set SKIP_VERSION_BUMP=1 to push without bumping.
+# Bump package.json version by 0.1 on each commit (0.1.0 → 0.2.0) and fold the
+# change into the commit being created, so every commit ships a new version.
+# Set SKIP_VERSION_BUMP=1 to commit without bumping.
 
 if [ "$SKIP_VERSION_BUMP" = "1" ]; then
   exit 0
@@ -18,6 +19,5 @@ if [ "$OLD" = "$NEW" ]; then
 fi
 
 git add package.json package-lock.json VERSION
-git commit -m "chore: bump version to $NEW" --no-verify
 
 exit 0

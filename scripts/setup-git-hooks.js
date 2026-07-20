@@ -8,10 +8,11 @@ const gitDir = path.join(root, ".git");
 if (!fs.existsSync(gitDir)) return;
 
 const hooksDir = path.join(root, ".githooks");
-const prePush = path.join(hooksDir, "pre-push");
 
-if (fs.existsSync(prePush)) {
-  fs.chmodSync(prePush, 0o755);
+if (fs.existsSync(hooksDir)) {
+  for (const entry of fs.readdirSync(hooksDir)) {
+    fs.chmodSync(path.join(hooksDir, entry), 0o755);
+  }
 }
 
 try {

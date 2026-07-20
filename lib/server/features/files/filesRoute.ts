@@ -3,6 +3,7 @@ import { storage } from "@/lib/storage";
 import { authenticateRequest } from "@/lib/server/routeAuth";
 import { bus } from "@/lib/events/bus";
 import { canAccessFileParent, forbidden } from "@/lib/server/access";
+import { recordActivity } from "@/lib/server/activityLog";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -47,6 +48,14 @@ export async function POST(req: Request) {
   bus.publish({
     type: "file.added",
     payload: { parentType, parentId }
+  });
+
+  await recordActivity({
+    actorId: user.id,
+    entityType: "file",
+    entityId: file.id,
+    action: "upload",
+    payload: { filename: file.filename, parentType, parentId, size: file.size }
   });
 
   return NextResponse.json({ file });
