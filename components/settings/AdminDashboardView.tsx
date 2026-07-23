@@ -327,7 +327,8 @@ function ActionBadge({ action, entityType }: { action: string; entityType: strin
   const colors: Record<string, string> = {
     create: "bg-slate-100 text-slate-700 border-slate-200",
     update: "bg-slate-100 text-slate-700 border-slate-200",
-    delete: "bg-slate-100 text-slate-700 border-slate-200"
+    delete: "bg-slate-100 text-slate-700 border-slate-200",
+    upload: "bg-slate-100 text-slate-700 border-slate-200"
   };
   const cls = colors[action] ?? "bg-slate-50 text-slate-600 border-slate-200";
   return (

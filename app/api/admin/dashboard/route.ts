@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 import { authenticateRequest } from "@/lib/server/routeAuth";
 import { isSuperAdminUser } from "@/lib/auth/superAdmin";
+import { resolveAuditEntityName } from "@/lib/server/auditDisplay";
 
 export const dynamic = "force-dynamic";
 
@@ -79,13 +80,21 @@ export async function GET() {
     loggedInWithinDays(e.lastLoginAt, ACTIVE_LOGIN_DAYS)
   ).length;
 
+  const projectNameById = new Map(allProjects.map((p) => [p.id, p.name]));
+  const projectCodeById = new Map(allProjects.map((p) => [p.id, p.code]));
+
   const activityWithNames = recentActivity.slice(0, 100).map((a) => {
     const actor = allUsers.find((u) => u.id === a.actorId);
-    const project = allProjects.find((p) => p.id === a.entityId);
     return {
       ...a,
-      actorName: actor?.name ?? "System",
-      entityName: project?.name ?? project?.code ?? a.entityId.slice(0, 8)
+      actorName: actor?.name ?? (a.actorId ? "Unknown" : "System"),
+      entityName: resolveAuditEntityName({
+        entityType: a.entityType,
+        entityId: a.entityId,
+        payload: a.payload ?? {},
+        projectNameById,
+        projectCodeById
+      })
     };
   });
 

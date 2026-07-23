@@ -197,8 +197,13 @@ export const jsonStore: Storage = {
     });
   },
   async deleteProject(id) {
+    const fileIds: string[] = [];
     await mutate((db) => {
       const subIds = new Set(db.subitems.filter((s) => s.projectId === id).map((s) => s.id));
+      for (const f of db.files) {
+        if (f.parentType === "project" && f.parentId === id) fileIds.push(f.id);
+        if (f.parentType === "subitem" && subIds.has(f.parentId)) fileIds.push(f.id);
+      }
       db.projects = db.projects.filter((p) => p.id !== id);
       db.subitems = db.subitems.filter((s) => s.projectId !== id);
       db.files = db.files.filter((f) => {
@@ -207,6 +212,9 @@ export const jsonStore: Storage = {
         return true;
       });
     });
+    await Promise.all(
+      fileIds.map((fileId) => fs.unlink(path.join(FILES_DIR, fileId)).catch(() => {}))
+    );
   },
 
   async listAllSubitems() {
@@ -257,14 +265,24 @@ export const jsonStore: Storage = {
       if (patch.status === "Completed" && !s.dateCompleted) {
         s.dateCompleted = new Date().toISOString().slice(0, 10);
       }
+      if (patch.status && patch.status !== "Completed") {
+        s.dateCompleted = null;
+      }
       return s;
     });
   },
   async deleteSubitem(id) {
+    const fileIds: string[] = [];
     await mutate((db) => {
+      for (const f of db.files) {
+        if (f.parentType === "subitem" && f.parentId === id) fileIds.push(f.id);
+      }
       db.subitems = db.subitems.filter((s) => s.id !== id);
       db.files = db.files.filter((f) => !(f.parentType === "subitem" && f.parentId === id));
     });
+    await Promise.all(
+      fileIds.map((fileId) => fs.unlink(path.join(FILES_DIR, fileId)).catch(() => {}))
+    );
   },
   async reorderSubitems(projectId, orderedIds) {
     await mutate((db) => {

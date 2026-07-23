@@ -1,4 +1,5 @@
 import { storage } from "@/lib/storage";
+import { recordActivity } from "@/lib/server/activityLog";
 import type { Project, Subitem } from "@/lib/types";
 
 /** Subitems marked N/A are excluded from completion checks (matches board UI). */
@@ -41,7 +42,24 @@ export async function syncProjectStatusFromSubitems(
   const patch = deriveProjectStatusPatch(project, subitems);
   if (!patch) return project;
 
-  return storage.updateProject(projectId, patch, actorId);
+  const updated = await storage.updateProject(projectId, patch, actorId);
+  if (updated) {
+    await recordActivity({
+      actorId,
+      entityType: "project",
+      entityId: updated.id,
+      action: "update",
+      payload: {
+        ...patch,
+        code: updated.code,
+        name: updated.name,
+        source: "subitem_status_sync",
+        previousStatus: project.status,
+        previousGroup: project.group
+      }
+    });
+  }
+  return updated;
 }
 
 /** Promote a New project to In Progress when project fields are edited directly. */

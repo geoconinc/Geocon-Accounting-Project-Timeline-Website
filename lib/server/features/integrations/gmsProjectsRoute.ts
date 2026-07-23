@@ -11,6 +11,7 @@ import {
 } from "@/lib/domain/gmsProjectPayload";
 import { verifyGmsIntegrationKey } from "@/lib/server/integrations/verifyIntegrationKey";
 import { createProjectWithSubitems } from "@/lib/server/features/projects/createProjectWithSubitems";
+import { recordActivity } from "@/lib/server/activityLog";
 import { initialsFromName } from "@/lib/utils";
 
 const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN ?? "geoconinc.com").toLowerCase();
@@ -82,26 +83,32 @@ export async function POST(req: Request) {
   const existing = await findExistingProject(payload);
 
   if (existing) {
-    const updated = await storage.updateProject(
-      existing.id,
-      {
-        code: payload.projectNumber.trim(),
-        name: payload.projectName.trim(),
-        office: office ?? existing.office,
-        projectManagerId: projectManagerId ?? existing.projectManagerId,
-        projectDirectorId: projectDirectorId ?? existing.projectDirectorId,
-        startDate: startDate ?? existing.startDate,
-        gmsProposalId: payload.gmsProposalId ?? existing.gmsProposalId ?? null,
-        notes
-      },
-      null
-    );
+    const gmsPatch = {
+      code: payload.projectNumber.trim(),
+      name: payload.projectName.trim(),
+      office: office ?? existing.office,
+      projectManagerId: projectManagerId ?? existing.projectManagerId,
+      projectDirectorId: projectDirectorId ?? existing.projectDirectorId,
+      startDate: startDate ?? existing.startDate,
+      gmsProposalId: payload.gmsProposalId ?? existing.gmsProposalId ?? null,
+      notes
+    };
+
+    const updated = await storage.updateProject(existing.id, gmsPatch, null);
 
     if (!updated) {
       return NextResponse.json({ error: "update_failed" }, { status: 500 });
     }
 
     bus.publish({ type: "project.upsert", payload: { id: updated.id } });
+
+    await recordActivity({
+      actorId: null,
+      entityType: "project",
+      entityId: updated.id,
+      action: "update",
+      payload: { ...gmsPatch, source: "gms" }
+    });
 
     return NextResponse.json({
       ok: true,

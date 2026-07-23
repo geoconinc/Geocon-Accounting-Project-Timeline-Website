@@ -85,7 +85,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
   }
 
-  await storage.appendActivity({
+  await recordActivity({
     actorId: user.id,
     entityType: "project",
     entityId: updated.id,

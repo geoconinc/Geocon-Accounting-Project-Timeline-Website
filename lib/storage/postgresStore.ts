@@ -400,6 +400,9 @@ export const postgresStore: Storage = {
     if (patch.status === "Completed" && !nextDateCompleted) {
       nextDateCompleted = new Date().toISOString().slice(0, 10);
     }
+    if (patch.status && patch.status !== "Completed") {
+      nextDateCompleted = null;
+    }
 
     const [s] = await db
       .update(subitems)
@@ -409,7 +412,9 @@ export const postgresStore: Storage = {
         ...(patch.ownerId !== undefined ? { ownerId: patch.ownerId } : {}),
         ...(patch.status !== undefined ? { status: patch.status } : {}),
         ...(patch.dueDate !== undefined ? { dueDate: patch.dueDate } : {}),
-        ...(patch.dateCompleted !== undefined || patch.status === "Completed"
+        ...(patch.dateCompleted !== undefined ||
+        patch.status === "Completed" ||
+        (patch.status !== undefined && patch.status !== "Completed")
           ? { dateCompleted: nextDateCompleted }
           : {}),
         ...(patch.notes !== undefined ? { notes: patch.notes } : {}),

@@ -49,5 +49,19 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (!body || !Array.isArray(body.orderedIds)) return badRequest("orderedIds must be an array.");
   await storage.reorderSubitems(params.id, body.orderedIds);
   bus.publish({ type: "subitem.reorder", payload: { projectId: params.id } });
+
+  await recordActivity({
+    actorId: user.id,
+    entityType: "project",
+    entityId: params.id,
+    action: "update",
+    payload: {
+      code: project.code,
+      name: project.name,
+      source: "subitem_reorder",
+      orderedIds: body.orderedIds
+    }
+  });
+
   return NextResponse.json({ ok: true });
 }

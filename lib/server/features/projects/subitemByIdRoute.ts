@@ -24,9 +24,25 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   await syncProjectStatusFromSubitems(updated.projectId, user.id);
 
+  // Keep the parent project's "last updated" in sync with checklist edits.
+  await storage.updateProject(updated.projectId, {}, user.id);
+
   bus.publish({
     type: "subitem.upsert",
     payload: { id: updated.id, projectId: updated.projectId }
+  });
+
+  await recordActivity({
+    actorId: user.id,
+    entityType: "subitem",
+    entityId: updated.id,
+    action: "update",
+    payload: {
+      name: updated.name,
+      projectId: updated.projectId,
+      projectCode: before.project.code,
+      patch
+    }
   });
 
   if (patch.ownerId && patch.ownerId !== before.subitem.ownerId && typeof patch.ownerId === "string") {
