@@ -412,9 +412,7 @@ export const postgresStore: Storage = {
         ...(patch.ownerId !== undefined ? { ownerId: patch.ownerId } : {}),
         ...(patch.status !== undefined ? { status: patch.status } : {}),
         ...(patch.dueDate !== undefined ? { dueDate: patch.dueDate } : {}),
-        ...(patch.dateCompleted !== undefined ||
-        patch.status === "Completed" ||
-        (patch.status !== undefined && patch.status !== "Completed")
+        ...(patch.dateCompleted !== undefined || patch.status !== undefined
           ? { dateCompleted: nextDateCompleted }
           : {}),
         ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
