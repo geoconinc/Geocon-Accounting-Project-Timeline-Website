@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, ChevronDown, ChevronUp, Database, LayoutDashboard, Plus, Save, Settings, Trash2 } from "lucide-react";
 import type { OfficeAssigneeRow } from "@/lib/domain/officeAssigneeResolve";
 import type { GeoconRoleAssigneesFile } from "@/lib/types/roleAssigneeData";
+import { formatAppVersion } from "@/lib/config/appVersion";
 import { AdminDashboardView } from "./AdminDashboardView";
 
 interface DbStats {
@@ -161,7 +162,7 @@ export function AdminSettingsView() {
       <div className="mb-1 flex items-center gap-2">
         <h1 className="text-xl font-semibold text-brand-dark">Admin Panel</h1>
         <span className="text-[11px] font-medium text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">
-          v{process.env.NEXT_PUBLIC_APP_VERSION}
+          {formatAppVersion()}
         </span>
       </div>
       <p className="text-sm text-slate-500 mb-4">

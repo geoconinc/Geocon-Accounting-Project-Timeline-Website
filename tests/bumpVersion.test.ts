@@ -1,5 +1,8 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, it, expect } from "vitest";
 import { bumpByTenth } from "@/scripts/bump-version";
+import { formatAppVersion, formatAppVersionLabel } from "@/lib/config/appVersion";
 
 describe("bumpByTenth", () => {
   it("increments the minor version", () => {
@@ -18,5 +21,26 @@ describe("bumpByTenth", () => {
   });
   it("throws on invalid input", () => {
     expect(() => bumpByTenth("not-a-version")).toThrow();
+  });
+});
+
+describe("version file consistency", () => {
+  it("package.json and VERSION agree", () => {
+    const root = process.cwd();
+    const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8")) as {
+      version: string;
+    };
+    const fileVersion = readFileSync(path.join(root, "VERSION"), "utf8").trim();
+    expect(fileVersion).toBe(pkg.version);
+  });
+});
+
+describe("UI version formatting", () => {
+  it("formats the package version the same way the website does", () => {
+    const pkg = JSON.parse(readFileSync(path.join(process.cwd(), "package.json"), "utf8")) as {
+      version: string;
+    };
+    expect(formatAppVersion(pkg.version)).toBe(`v${pkg.version}`);
+    expect(formatAppVersionLabel(pkg.version)).toBe(`Geocon · v${pkg.version}`);
   });
 });

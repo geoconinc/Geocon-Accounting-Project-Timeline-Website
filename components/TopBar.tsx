@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@/lib/types";
 import { LogOut, Mail, Settings, X } from "lucide-react";
+import { formatAppVersionLabel } from "@/lib/config/appVersion";
 
 export default function TopBar({ user }: { user: User }) {
   const router = useRouter();
@@ -101,7 +102,7 @@ export default function TopBar({ user }: { user: User }) {
             </div>
             <div className="p-3 pt-0">
               <p className="text-[10px] text-slate-400">
-                Geocon · v{process.env.NEXT_PUBLIC_APP_VERSION}
+                {formatAppVersionLabel()}
               </p>
             </div>
           </div>

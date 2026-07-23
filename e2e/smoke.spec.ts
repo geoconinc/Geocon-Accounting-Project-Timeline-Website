@@ -47,6 +47,11 @@ test.describe("authenticated smoke", () => {
     await expect(page).toHaveURL(/\/dashboard/);
   });
 
+  test("sidebar shows a Geocon version label", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByText(/Geocon · v\d+\.\d+/)).toBeVisible();
+  });
+
   test("verify-session API confirms the session", async ({ request }) => {
     const res = await request.get("/api/verify-session");
     expect(res.status()).toBe(200);

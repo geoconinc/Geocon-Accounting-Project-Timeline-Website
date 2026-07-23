@@ -1,6 +1,6 @@
 {
   "name": "geocon-project-timeline",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "private": true,
   "engines": {
     "node": "22.x"
@@ -21,7 +21,7 @@
     "test:e2e": "playwright test",
     "test:e2e:build": "npm run build:e2e && playwright test",
     "prepare": "node scripts/setup-git-hooks.js",
-    "version:bump": "tsx scripts/bump-version.ts",
+    "version:bump": "tsx scripts/bump-version-cli.ts",
     "seed": "tsx scripts/seed.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file=.env.local ./node_modules/.bin/tsx scripts/migrate.ts",

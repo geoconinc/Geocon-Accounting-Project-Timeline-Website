@@ -39,6 +39,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The version on the live site comes from package.json (bumped by the
+      # local pre-commit hook). Bake it into NEXT_PUBLIC_APP_VERSION so the
+      # client bundle always shows the commit being deployed.
+      - name: Resolve app version
+        id: app_version
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          FILE_VERSION="$(tr -d '[:space:]' < VERSION)"
+          echo "package.json version: $VERSION"
+          echo "VERSION file:         $FILE_VERSION"
+          if [ "$VERSION" != "$FILE_VERSION" ]; then
+            echo "::error::package.json ($VERSION) and VERSION ($FILE_VERSION) disagree"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "NEXT_PUBLIC_APP_VERSION=$VERSION" >> "$GITHUB_ENV"
+
       # Gate the deploy on the unit test suite — a failure here stops the deploy.
       - name: Run unit tests
         run: npm test
@@ -65,8 +82,11 @@ jobs:
       # NEXT_PUBLIC_* values are inlined into the client bundle at build time,
       # so they must be present here (not just in App Service settings).
       - name: Build
-        run: npm run build
+        run: |
+          echo "Building site as v${{ steps.app_version.outputs.version }}"
+          npm run build
         env:
+          NEXT_PUBLIC_APP_VERSION: ${{ steps.app_version.outputs.version }}
           NEXT_PUBLIC_MSAL_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_MSAL_CLIENT_ID }}
           NEXT_PUBLIC_MSAL_TENANT_ID: ${{ secrets.NEXT_PUBLIC_MSAL_TENANT_ID }}
           NEXT_PUBLIC_MSAL_REDIRECT_URI: ${{ secrets.NEXT_PUBLIC_MSAL_REDIRECT_URI }}

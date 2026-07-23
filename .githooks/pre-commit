@@ -1,23 +1,36 @@
 #!/bin/sh
-# Bump package.json version by 0.1 on each commit (0.1.0 → 0.2.0) and fold the
-# change into the commit being created, so every commit ships a new version.
+# Bump package.json / VERSION by 0.1 on every commit and fold those files into
+# the commit. CI reads package.json at build time and bakes the version into
+# the website (NEXT_PUBLIC_APP_VERSION), so the bump shows up after deploy.
 # Set SKIP_VERSION_BUMP=1 to commit without bumping.
 
 if [ "$SKIP_VERSION_BUMP" = "1" ]; then
+  echo "Skipping version bump (SKIP_VERSION_BUMP=1)."
   exit 0
 fi
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
 cd "$ROOT" || exit 0
 
-OLD="$(node -p "require('./package.json').version")"
-npm run version:bump --silent || exit 0
+OLD="$(node -p "require('./package.json').version" 2>/dev/null)" || {
+  echo "pre-commit: could not read package.json version" >&2
+  exit 1
+}
+
+echo "Bumping version (was $OLD)..."
+npm run version:bump || {
+  echo "pre-commit: version bump failed" >&2
+  exit 1
+}
+
 NEW="$(node -p "require('./package.json').version")"
 
 if [ "$OLD" = "$NEW" ]; then
-  exit 0
+  echo "pre-commit: version did not change ($OLD) — aborting commit" >&2
+  exit 1
 fi
 
 git add package.json package-lock.json VERSION
+echo "Version bumped: $OLD → $NEW (will appear on the site after this commit is pushed and deployed)"
 
 exit 0

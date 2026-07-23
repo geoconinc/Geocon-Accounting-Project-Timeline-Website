@@ -1,5 +1,4 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 /** Bump semver minor by 0.1 (0.1.0 → 0.2.0, 0.9.0 → 1.0.0). */
@@ -20,8 +19,8 @@ export function bumpByTenth(version: string): string {
   return `${major}.${minor}.${patch}`;
 }
 
-function main() {
-  const root = process.cwd();
+/** Apply a version bump to package.json, package-lock.json, and VERSION. */
+export function bumpVersionFiles(root = process.cwd()): { prev: string; next: string } {
   const pkgPath = path.join(root, "package.json");
   const lockPath = path.join(root, "package-lock.json");
   const versionPath = path.join(root, "VERSION");
@@ -44,11 +43,5 @@ function main() {
   }
 
   writeFileSync(versionPath, `${next}\n`);
-  console.log(`Version: ${prev} → ${next}`);
-}
-
-// Only run when invoked directly (e.g. `tsx scripts/bump-version.ts`), not when
-// imported (e.g. by unit tests), so importing bumpByTenth has no side effects.
-if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  main();
+  return { prev, next };
 }
