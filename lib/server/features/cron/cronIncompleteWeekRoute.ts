@@ -5,6 +5,7 @@ import {
   buildIncompleteWeekDigestEmail,
   type IncompleteWeekItem
 } from "@/lib/notifications/incompleteWeekTemplates";
+import { getEffectiveNotificationConfig, isCategoryEnabled } from "@/lib/notifications/emailConfig";
 import { isoDateDaysAgo } from "@/lib/utils";
 
 const SKIP_STATUSES = new Set(["Completed", "NA"]);
@@ -21,6 +22,12 @@ export async function POST(req: Request) {
   const secret = req.headers.get("x-cron-secret");
   if (!secret || secret !== process.env.CRON_SHARED_SECRET) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  // Master switch / per-event toggle managed from the admin panel. When off, do no work.
+  const config = await getEffectiveNotificationConfig();
+  if (!isCategoryEnabled(config, "incompleteWeek")) {
+    return NextResponse.json({ ok: true, skipped: "notifications_disabled", owners: 0, subitems: 0 });
   }
 
   const createdOn = isoDateDaysAgo(REMINDER_AFTER_DAYS);
@@ -58,7 +65,7 @@ export async function POST(req: Request) {
     const user = await storage.getUserById(ownerId);
     if (!user) continue;
 
-    const { subject, message, html } = buildIncompleteWeekDigestEmail(user.name, items);
+    const { subject, message, html } = await buildIncompleteWeekDigestEmail(user.name, items);
 
     await notifyUser({
       userId: ownerId,

@@ -48,7 +48,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (patch.ownerId && patch.ownerId !== before.subitem.ownerId && typeof patch.ownerId === "string") {
     const assignee = await storage.getUserById(patch.ownerId);
     if (assignee && before.project) {
-      const mail = buildSubitemAssignedEmail({
+      const mail = await buildSubitemAssignedEmail({
         recipientName: assignee.name,
         actorName: user.name,
         subitemName: updated.name,

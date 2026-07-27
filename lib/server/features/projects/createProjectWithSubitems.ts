@@ -102,7 +102,7 @@ async function sendProjectCreationNotifications(project: Project, creatorName: s
     const pmUser = await storage.getUserById(project.projectManagerId);
     if (pmUser) {
       const tasks = sortTasks(byUser.get(project.projectManagerId) ?? []);
-      const { subject, message, html } = buildProjectManagerCreationEmail(
+      const { subject, message, html } = await buildProjectManagerCreationEmail(
         mailCtx,
         pmUser.name,
         tasks
@@ -123,7 +123,7 @@ async function sendProjectCreationNotifications(project: Project, creatorName: s
     if (tasks.length === 0) continue;
     const assignee = await storage.getUserById(userId);
     if (!assignee) continue;
-    const { subject, message, html } = buildAssigneeDigestEmail(
+    const { subject, message, html } = await buildAssigneeDigestEmail(
       mailCtx,
       assignee.name,
       sortTasks(tasks)

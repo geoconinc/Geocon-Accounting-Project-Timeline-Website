@@ -3,7 +3,7 @@ import { bus } from "@/lib/events/bus";
 import { appBaseUrl, escapeHtml } from "./html";
 import { wrapEmailLayout } from "./layout";
 import { sendMail } from "./email";
-import { getEffectiveEmailConfig, isCategoryEnabled } from "./emailConfig";
+import { getEffectiveNotificationConfig, isCategoryEnabled } from "./emailConfig";
 import type { NotificationCategory } from "./emailConfigTypes";
 
 export { escapeHtml } from "./html";
@@ -37,20 +37,17 @@ export async function notifyUser(opts: NotifyOpts) {
     payload: { userId: opts.userId, message: opts.message, projectId: opts.projectId }
   });
 
-  const config = await getEffectiveEmailConfig();
+  const config = await getEffectiveNotificationConfig();
   if (!isCategoryEnabled(config, opts.category)) return;
 
-  await sendMail(
-    {
-      to: [target.email],
-      subject: opts.subject,
-      html: opts.html ?? defaultHtml(opts.message)
-    },
-    config
-  )
+  await sendMail({
+    to: [target.email],
+    subject: opts.subject,
+    html: opts.html ?? defaultHtml(opts.message)
+  })
     .then((result) => {
       if (!result.ok) {
-        console.warn(`Email not sent (${config.driver}): ${result.reason ?? "unknown_error"}`);
+        console.warn(`Email not sent (${process.env.EMAIL_DRIVER ?? "auto"}): ${result.reason ?? "unknown_error"}`);
       }
     })
     .catch((error) => {

@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   }
 
   const project = (await storage.getProject(projectId))!;
-  const mail = buildManualProjectUpdateEmail({
+  const mail = await buildManualProjectUpdateEmail({
     recipientName: recipient.name,
     actorName: auth.name,
     projectCode: project.code,

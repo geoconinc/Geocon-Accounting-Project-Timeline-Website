@@ -1,65 +1,29 @@
-import { escapeHtml, firstNameFromDisplayName } from "./html";
-import { wrapEmailLayout } from "./layout";
+import { firstNameFromDisplayName } from "./html";
+import { renderEmailTemplate, type RenderedEmail } from "./templateEngine";
+import { buildDigestTableHtml, buildDigestPlain, itemLabel, type DigestItem } from "./digestTable";
 
-export interface DasFollowupItem {
-  projectCode: string;
-  projectName: string;
-  subitemName: string;
-  status: string;
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  Missing: "Missing",
-  NotStarted: "Not Started",
-  InProgress: "In Progress"
-};
+export type DasFollowupItem = DigestItem;
 
 export function buildDasFollowupDigestEmail(
   recipientName: string,
-  items: DasFollowupItem[],
-  _appBaseUrl?: string | null
-): { subject: string; message: string; html: string } {
+  items: DasFollowupItem[]
+): Promise<RenderedEmail> {
   const count = items.length;
-  const subject = `Weekly reminder: ${count} incomplete DAS item${count === 1 ? "" : "s"}`;
-  const message = `You have ${count} incomplete DAS item${count === 1 ? "" : "s"} that still need${count === 1 ? "s" : ""} attention. Please update them in the Geocon Project Timeline.`;
-
-  const esc = escapeHtml;
-  const rows = items
-    .map(
-      (it) =>
-        `<tr>
-          <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-family:monospace;font-size:13px">${esc(it.projectCode)}</td>
-          <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px">${esc(it.projectName)}</td>
-          <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px">${esc(it.subitemName)}</td>
-          <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:600;color:#0A5D6B">${esc(STATUS_LABEL[it.status] ?? it.status)}</td>
-        </tr>`
-    )
-    .join("");
-
-  const hi = esc(firstNameFromDisplayName(recipientName));
-  const body = `<p>Hi ${hi},</p>
-<p>This is your <strong>weekly reminder</strong> that you have <strong>${count}</strong> incomplete DAS item${count === 1 ? "" : "s"} assigned to you:</p>
-<table style="border-collapse:collapse;width:100%;margin:16px 0;font-size:13px">
-  <thead>
-    <tr style="background:#f1f5f9">
-      <th style="padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;border-bottom:2px solid #e2e8f0">Code</th>
-      <th style="padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;border-bottom:2px solid #e2e8f0">Project</th>
-      <th style="padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;border-bottom:2px solid #e2e8f0">Item</th>
-      <th style="padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;border-bottom:2px solid #e2e8f0">Status</th>
-    </tr>
-  </thead>
-  <tbody>${rows}</tbody>
-</table>
-<p style="font-size:13px;color:#64748b">Please complete these items or update their status in the app.</p>`;
-
-  return {
-    subject,
-    message,
-    html: wrapEmailLayout({
+  return renderEmailTemplate(
+    "dasFollowup",
+    {
       headline: "Weekly DAS reminder",
-      bodyHtml: body,
       ctaLabel: "Open Project Timeline",
       footerNote: "Geocon Project Management · Weekly automated reminder"
-    })
-  };
+    },
+    {
+      text: {
+        firstName: firstNameFromDisplayName(recipientName),
+        itemCount: String(count),
+        itemLabel: itemLabel(count)
+      },
+      html: { itemTable: buildDigestTableHtml(items) },
+      plain: { itemTable: buildDigestPlain(items) }
+    }
+  );
 }

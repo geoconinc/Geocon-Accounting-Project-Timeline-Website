@@ -1,172 +1,143 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
 vi.mock("@/lib/server/site-data/emailConfigStore", () => ({
-  readStoredEmailConfig: vi.fn()
+  readStoredNotificationConfig: vi.fn()
 }));
 
-import { readStoredEmailConfig } from "@/lib/server/site-data/emailConfigStore";
-import { getEffectiveEmailConfig, isCategoryEnabled } from "@/lib/notifications/emailConfig";
-import { encryptSecret } from "@/lib/server/crypto/secretBox";
-import type { StoredEmailConfig } from "@/lib/server/site-data/emailConfigStore";
+import { readStoredNotificationConfig } from "@/lib/server/site-data/emailConfigStore";
+import {
+  getEffectiveNotificationConfig,
+  isCategoryEnabled,
+  type ResolvedNotificationConfig
+} from "@/lib/notifications/emailConfig";
+import { renderEmailTemplate } from "@/lib/notifications/templateEngine";
+import { defaultEventToggles, defaultTemplates } from "@/lib/notifications/emailConfigTypes";
 
-const mockRead = vi.mocked(readStoredEmailConfig);
-
-const EMAIL_ENV_KEYS = [
-  "EMAIL_DRIVER",
-  "SMTP_HOST",
-  "SMTP_PORT",
-  "SMTP_SECURE",
-  "SMTP_USER",
-  "SMTP_PASSWORD",
-  "NOTIFY_FROM_ADDRESS",
-  "NOTIFY_FROM_NAME",
-  "GRAPH_APP_TENANT_ID",
-  "GRAPH_APP_CLIENT_ID",
-  "GRAPH_APP_CLIENT_SECRET",
-  "CONFIG_ENCRYPTION_KEY"
-] as const;
-
-const original: Record<string, string | undefined> = {};
+const mockRead = vi.mocked(readStoredNotificationConfig);
 
 beforeEach(() => {
-  for (const k of EMAIL_ENV_KEYS) {
-    original[k] = process.env[k];
-    delete process.env[k];
-  }
   mockRead.mockReset();
   mockRead.mockResolvedValue(null);
 });
 
-afterEach(() => {
-  for (const k of EMAIL_ENV_KEYS) {
-    if (original[k] === undefined) delete process.env[k];
-    else process.env[k] = original[k];
-  }
-});
-
-describe("getEffectiveEmailConfig — environment fallback", () => {
-  it("uses SMTP env vars and picks the smtp driver when auto and SMTP is ready", async () => {
-    process.env.SMTP_HOST = "smtp.example.com";
-    process.env.SMTP_USER = "user";
-    process.env.SMTP_PASSWORD = "pass";
-    process.env.NOTIFY_FROM_ADDRESS = "from@example.com";
-
-    const cfg = await getEffectiveEmailConfig();
-    expect(cfg.driver).toBe("smtp");
-    expect(cfg.smtpHost).toBe("smtp.example.com");
-    expect(cfg.smtpPassword).toBe("pass");
-    expect(cfg.smtpPort).toBe(587);
-    expect(cfg.fromName).toBe("Geocon Project Management");
-  });
-
-  it("falls back to the graph driver when SMTP is not fully configured", async () => {
-    process.env.SMTP_HOST = "smtp.example.com"; // missing user/password
-    const cfg = await getEffectiveEmailConfig();
-    expect(cfg.driver).toBe("graph");
-  });
-
-  it("respects an explicit EMAIL_DRIVER even when SMTP is ready", async () => {
-    process.env.SMTP_HOST = "smtp.example.com";
-    process.env.SMTP_USER = "user";
-    process.env.SMTP_PASSWORD = "pass";
-    process.env.EMAIL_DRIVER = "graph";
-    const cfg = await getEffectiveEmailConfig();
-    expect(cfg.driver).toBe("graph");
-  });
-});
-
-describe("getEffectiveEmailConfig — stored config overrides", () => {
-  it("prefers stored non-secret values over env", async () => {
-    process.env.SMTP_HOST = "env-host";
-    process.env.NOTIFY_FROM_NAME = "Env Name";
-    mockRead.mockResolvedValue({
-      smtpHost: "db-host",
-      smtpUser: "db-user",
-      fromName: "DB Name",
-      smtpPort: 2525,
-      smtpSecure: true
-    } satisfies StoredEmailConfig);
-
-    const cfg = await getEffectiveEmailConfig();
-    expect(cfg.smtpHost).toBe("db-host");
-    expect(cfg.fromName).toBe("DB Name");
-    expect(cfg.smtpPort).toBe(2525);
-    expect(cfg.smtpSecure).toBe(true);
-  });
-
-  it("decrypts a stored SMTP password", async () => {
-    process.env.CONFIG_ENCRYPTION_KEY = "test-key";
-    mockRead.mockResolvedValue({
-      smtpHost: "db-host",
-      smtpUser: "db-user",
-      smtpPasswordEnc: encryptSecret("db-secret")
-    });
-
-    const cfg = await getEffectiveEmailConfig();
-    expect(cfg.smtpPassword).toBe("db-secret");
-    expect(cfg.driver).toBe("smtp");
-  });
-
-  it("honours an explicit stored driver", async () => {
-    mockRead.mockResolvedValue({ driver: "graph" });
-    const cfg = await getEffectiveEmailConfig();
-    expect(cfg.driver).toBe("graph");
+describe("getEffectiveNotificationConfig", () => {
+  it("returns all-enabled toggles and default templates when nothing is stored", async () => {
+    const cfg = await getEffectiveNotificationConfig();
+    expect(cfg.emailEnabled).toBe(true);
+    expect(cfg.eventToggles.projectCreated).toBe(true);
+    expect(cfg.templates.subitemAssigned.subject).toBe(defaultTemplates().subitemAssigned.subject);
   });
 
   it("defaults emailEnabled to true and respects an explicit false", async () => {
-    expect((await getEffectiveEmailConfig()).emailEnabled).toBe(true);
+    expect((await getEffectiveNotificationConfig()).emailEnabled).toBe(true);
     mockRead.mockResolvedValue({ emailEnabled: false });
-    expect((await getEffectiveEmailConfig()).emailEnabled).toBe(false);
+    expect((await getEffectiveNotificationConfig()).emailEnabled).toBe(false);
   });
 
   it("merges stored event toggles over the all-enabled defaults", async () => {
     mockRead.mockResolvedValue({ eventToggles: { manualMessage: false } });
-    const cfg = await getEffectiveEmailConfig();
+    const cfg = await getEffectiveNotificationConfig();
     expect(cfg.eventToggles.manualMessage).toBe(false);
     expect(cfg.eventToggles.projectCreated).toBe(true);
+  });
+
+  it("overrides only the provided template fields and keeps defaults otherwise", async () => {
+    mockRead.mockResolvedValue({
+      templates: { subitemAssigned: { subject: "Custom: {{subitemName}}" } }
+    });
+    const cfg = await getEffectiveNotificationConfig();
+    expect(cfg.templates.subitemAssigned.subject).toBe("Custom: {{subitemName}}");
+    expect(cfg.templates.subitemAssigned.body).toBe(defaultTemplates().subitemAssigned.body);
+  });
+
+  it("ignores blank template overrides and falls back to the default", async () => {
+    mockRead.mockResolvedValue({
+      templates: { subitemAssigned: { subject: "   ", body: "" } }
+    });
+    const cfg = await getEffectiveNotificationConfig();
+    expect(cfg.templates.subitemAssigned.subject).toBe(defaultTemplates().subitemAssigned.subject);
+    expect(cfg.templates.subitemAssigned.body).toBe(defaultTemplates().subitemAssigned.body);
   });
 });
 
 describe("isCategoryEnabled", () => {
-  const base = {
-    driver: "smtp" as const,
-    smtpHost: null,
-    smtpPort: 587,
-    smtpSecure: false,
-    smtpUser: null,
-    smtpPassword: null,
-    fromAddress: null,
-    fromName: "x",
-    graphTenantId: null,
-    graphClientId: null,
-    graphClientSecret: null
-  };
+  function cfg(overrides: Partial<ResolvedNotificationConfig> = {}): ResolvedNotificationConfig {
+    return {
+      emailEnabled: true,
+      eventToggles: defaultEventToggles(),
+      templates: defaultTemplates(),
+      ...overrides
+    };
+  }
 
   it("is false when email is globally disabled", () => {
-    const cfg = {
-      ...base,
-      emailEnabled: false,
-      eventToggles: { manualMessage: true } as never
-    };
-    expect(isCategoryEnabled(cfg as never, "manualMessage")).toBe(false);
+    expect(isCategoryEnabled(cfg({ emailEnabled: false }), "manualMessage")).toBe(false);
   });
 
   it("is false when the specific category is disabled", () => {
-    const cfg = {
-      ...base,
-      emailEnabled: true,
-      eventToggles: { manualMessage: false } as never
-    };
-    expect(isCategoryEnabled(cfg as never, "manualMessage")).toBe(false);
+    expect(
+      isCategoryEnabled(cfg({ eventToggles: { ...defaultEventToggles(), manualMessage: false } }), "manualMessage")
+    ).toBe(false);
   });
 
   it("is true for an enabled category and for an undefined category", () => {
-    const cfg = {
-      ...base,
-      emailEnabled: true,
-      eventToggles: { manualMessage: true } as never
-    };
-    expect(isCategoryEnabled(cfg as never, "manualMessage")).toBe(true);
-    expect(isCategoryEnabled(cfg as never, undefined)).toBe(true);
+    expect(isCategoryEnabled(cfg(), "manualMessage")).toBe(true);
+    expect(isCategoryEnabled(cfg(), undefined)).toBe(true);
+  });
+});
+
+describe("renderEmailTemplate", () => {
+  it("substitutes tokens, leaving the subject raw and escaping the body", async () => {
+    const mail = await renderEmailTemplate(
+      "subitemAssigned",
+      { headline: "Task", ctaLabel: "Open" },
+      {
+        text: {
+          firstName: "Jane",
+          actorName: "A&B",
+          subitemName: "<x>",
+          projectCode: "P-1",
+          projectName: "Proj"
+        }
+      }
+    );
+    expect(mail.subject).toContain("P-1");
+    expect(mail.subject).toContain("<x>");
+    expect(mail.html).toContain("&lt;x&gt;");
+    expect(mail.html).toContain("A&amp;B");
+    expect(mail.message).toContain("Jane");
+  });
+
+  it("applies a stored subject override", async () => {
+    mockRead.mockResolvedValue({
+      templates: { subitemAssigned: { subject: "Hey {{firstName}}" } }
+    });
+    const mail = await renderEmailTemplate(
+      "subitemAssigned",
+      { headline: "T", ctaLabel: "O" },
+      { text: { firstName: "Jane" } }
+    );
+    expect(mail.subject).toBe("Hey Jane");
+  });
+
+  it("expands HTML tokens verbatim in the body but plain text in the in-app message", async () => {
+    const mail = await renderEmailTemplate(
+      "assigneeDigest",
+      { headline: "T", ctaLabel: "O" },
+      {
+        text: {
+          firstName: "Jane",
+          creatorName: "C",
+          projectCode: "P",
+          projectName: "N",
+          office: "SD"
+        },
+        html: { taskList: "<ul><li>Item</li></ul>" },
+        plain: { taskList: "Item" }
+      }
+    );
+    expect(mail.html).toContain("<ul><li>Item</li></ul>");
+    expect(mail.message).toContain("Item");
+    expect(mail.message).not.toContain("<ul>");
   });
 });

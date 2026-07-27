@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { FolderOpen, Edit3, Copy } from "lucide-react";
-import { localPathToFileUrl } from "@/lib/config/localTemplates";
+import { getProjectFoldersRoot } from "@/lib/config/localTemplates";
+import { openLocalFolderPath } from "@/lib/client/openLocalFolder";
 
 export function SharePointCell({
   url,
@@ -14,6 +15,11 @@ export function SharePointCell({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(url ?? "");
   const [copied, setCopied] = useState(false);
+  const [openHint, setOpenHint] = useState(false);
+  const projectRoot = getProjectFoldersRoot();
+  const placeholder = projectRoot
+    ? `${projectRoot.replace(/[/\\]+$/, "")}\\ProjectName`
+    : "S:\\WPJOB\\G3000\\ProjectName";
 
   function commit() {
     const trimmed = draft.trim();
@@ -21,10 +27,17 @@ export function SharePointCell({
     setEditing(false);
   }
 
-  function openFolder() {
+  async function openFolder() {
     if (!url) return;
-    const fileUrl = localPathToFileUrl(url);
-    window.open(fileUrl, "_blank", "noopener,noreferrer");
+    const result = await openLocalFolderPath(url);
+    if (result === "copied" || result === "prompted") {
+      setCopied(true);
+      setOpenHint(true);
+      window.setTimeout(() => {
+        setCopied(false);
+        setOpenHint(false);
+      }, 2500);
+    }
   }
 
   async function copyPath() {
@@ -53,7 +66,7 @@ export function SharePointCell({
               setEditing(false);
             }
           }}
-          placeholder="F:\GeoconFiles\ProjectName"
+          placeholder={placeholder}
           className="flex-1 bg-white text-[11px] outline-none border border-brand rounded px-1.5 py-0.5 font-mono"
         />
       </div>
@@ -74,15 +87,19 @@ export function SharePointCell({
   return (
     <div className="w-full h-full flex items-center gap-1 px-1.5 group">
       <button
-        onClick={openFolder}
+        onClick={() => void openFolder()}
         className="flex-1 min-w-0 flex items-center gap-1.5 text-[11px] text-brand hover:text-brand-dark hover:underline"
-        title={url}
+        title={
+          openHint
+            ? "Path copied — paste into File Explorer (Ctrl+L, Ctrl+V, Enter)"
+            : url
+        }
       >
         <FolderOpen size={11} className="shrink-0" />
-        <span className="truncate">Open folder</span>
+        <span className="truncate">{openHint ? "Path copied!" : "Open folder"}</span>
       </button>
       <button
-        onClick={copyPath}
+        onClick={() => void copyPath()}
         className="text-slate-300 hover:text-brand opacity-0 group-hover:opacity-100"
         title={copied ? "Copied!" : "Copy path"}
       >

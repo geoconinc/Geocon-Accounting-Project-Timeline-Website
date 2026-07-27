@@ -17,6 +17,13 @@ export function getDasFormsFolder(): string {
   return raw ?? "";
 }
 
+/** Root folder for project working directories (e.g. S:\\WPJOB\\G3000). */
+export function getProjectFoldersRoot(): string {
+  const raw =
+    typeof process !== "undefined" ? process.env.NEXT_PUBLIC_PROJECT_FOLDERS_ROOT?.trim() : "";
+  return raw ?? "";
+}
+
 /** Append a subfolder named after the template category (sanitized). */
 export function joinTemplateFolderPath(base: string, category: string): string {
   const b = base.trim().replace(/[/\\]+$/, "");

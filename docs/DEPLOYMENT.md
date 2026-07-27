@@ -66,6 +66,7 @@ already built.
    | `NEXT_PUBLIC_SUPER_ADMIN_EMAIL` | Email allowed into `/settings/admin` |
    | `NEXT_PUBLIC_ALLOWED_DOMAIN` | `geoconinc.com` (optional, login page) |
    | `NEXT_PUBLIC_DAS_FORMS_FOLDER` | DAS forms network path (optional) |
+   | `NEXT_PUBLIC_PROJECT_FOLDERS_ROOT` | Project folders root, e.g. `S:\WPJOB\G3000` (optional) |
    | `DATABASE_URL` | Production Postgres URL (for migrations) |
 
 ## 5. Deploy
@@ -162,6 +163,7 @@ See [EMAIL_NOTIFICATIONS.md](./EMAIL_NOTIFICATIONS.md) for all template types.
 |----------|---------|-------------|
 | `NEXT_PUBLIC_ALLOWED_DOMAIN` | `geoconinc.com` | Displayed on login page |
 | `NEXT_PUBLIC_DAS_FORMS_FOLDER` | *(none)* | Local network path for DAS forms |
+| `NEXT_PUBLIC_PROJECT_FOLDERS_ROOT` | *(none)* | Root for project working folders (e.g. `S:\WPJOB\G3000`) |
 
 ## Production Checklist
 

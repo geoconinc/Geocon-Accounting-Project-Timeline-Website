@@ -52,7 +52,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (patch.ownerId && patch.ownerId !== before.ownerId && typeof patch.ownerId === "string") {
     const assignee = await storage.getUserById(patch.ownerId);
     if (assignee) {
-      const mail = buildProjectOwnerAssignedEmail({
+      const mail = await buildProjectOwnerAssignedEmail({
         recipientName: assignee.name,
         actorName: user.name,
         projectCode: updated.code,
@@ -71,7 +71,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (owner) {
       const status =
         PROJECT_STATUS_LABEL[String(mergedPatch.status)] ?? String(mergedPatch.status);
-      const mail = buildProjectStatusChangedEmail({
+      const mail = await buildProjectStatusChangedEmail({
         recipientName: owner.name,
         actorName: user.name,
         projectCode: updated.code,

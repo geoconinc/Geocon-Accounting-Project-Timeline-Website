@@ -1,30 +1,41 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Copy, ExternalLink, FolderOpen, Search, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Copy, FolderOpen, Search, X } from "lucide-react";
 import { DEFAULT_SUBITEM_NAMES } from "@/lib/domain/projectDefaults";
 import {
   getDasFormsFolder,
   getLocalTemplatesBase,
-  joinTemplateFolderPath,
-  localPathToFileUrl
+  getProjectFoldersRoot,
+  joinTemplateFolderPath
 } from "@/lib/config/localTemplates";
+import { openLocalFolderPath } from "@/lib/client/openLocalFolder";
 import type { Project } from "@/lib/types";
 import type { BoardData } from "@/components/features/board/state";
 import { debounce } from "@/lib/utils";
 
 const TEMPLATE_CATEGORIES = DEFAULT_SUBITEM_NAMES;
 
+type FolderFeedback = "copied" | "prompted" | null;
+
 export function DocumentsView() {
   const dasRoot = getDasFormsFolder();
+  const projectRoot = getProjectFoldersRoot();
   const base = getLocalTemplatesBase();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const configured = Boolean(dasRoot || base);
+  const [folderFeedback, setFolderFeedback] = useState<FolderFeedback>(null);
+  const configured = Boolean(dasRoot || projectRoot || base);
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [search, setSearch] = useState("");
   const cancelledRef = useRef(false);
+
+  const showFolderFeedback = useCallback((result: "copied" | "prompted" | "failed") => {
+    if (result === "failed") return;
+    setFolderFeedback(result);
+    window.setTimeout(() => setFolderFeedback(null), 5000);
+  }, []);
 
   const refetch = useCallback(async () => {
     try {
@@ -32,7 +43,9 @@ export function DocumentsView() {
       if (!res.ok || cancelledRef.current) return;
       const data = (await res.json()) as BoardData;
       setProjects(data.projects);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   useEffect(() => {
@@ -45,7 +58,9 @@ export function DocumentsView() {
       es = new EventSource("/api/events");
       es.addEventListener("project.upsert", scheduleRefetch);
       es.addEventListener("project.delete", scheduleRefetch);
-    } catch { /* SSE not available */ }
+    } catch {
+      /* SSE not available */
+    }
 
     const poll = setInterval(() => void refetch(), 30_000);
     return () => {
@@ -76,6 +91,29 @@ export function DocumentsView() {
         </div>
       </div>
 
+      {folderFeedback ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-950 px-4 py-3 text-sm mb-4">
+          {folderFeedback === "copied" ? (
+            <>
+              <p className="font-medium">Folder path copied</p>
+              <p className="mt-1 text-emerald-900/90">
+                Open File Explorer, click the address bar (or press{" "}
+                <kbd className="text-xs bg-white/80 px-1 py-0.5 rounded border border-emerald-200">
+                  Ctrl+L
+                </kbd>
+                ), paste (
+                <kbd className="text-xs bg-white/80 px-1 py-0.5 rounded border border-emerald-200">
+                  Ctrl+V
+                </kbd>
+                ), then press Enter.
+              </p>
+            </>
+          ) : (
+            <p className="font-medium">Use the path from the dialog to open the folder in File Explorer.</p>
+          )}
+        </div>
+      ) : null}
+
       {!configured ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 text-amber-950 px-4 py-3 text-sm mb-6">
           <p className="font-medium">Configure a folder path</p>
@@ -84,11 +122,11 @@ export function DocumentsView() {
             <code className="text-xs bg-white/80 px-1 py-0.5 rounded border border-amber-200">
               NEXT_PUBLIC_DAS_FORMS_FOLDER
             </code>{" "}
-            to the Accounting shared folder (DAS 140, DAS 142, setup sheet), or set{" "}
+            and/or{" "}
             <code className="text-xs bg-white/80 px-1 py-0.5 rounded border border-amber-200">
-              NEXT_PUBLIC_LOCAL_TEMPLATES_BASE
-            </code>{" "}
-            for per–checklist-item subfolders. Restart the dev server after changing env.
+              NEXT_PUBLIC_PROJECT_FOLDERS_ROOT
+            </code>
+            , then redeploy (these are baked in at build time).
           </p>
         </div>
       ) : null}
@@ -99,13 +137,15 @@ export function DocumentsView() {
             DAS 140, DAS 142 &amp; setup forms library:{" "}
             <span className="font-mono text-slate-700">{dasRoot}</span>
           </p>
-          <DasFolderCard
+          <FolderCard
+            title="DAS 140 / DAS 142 / setup sheet"
             path={dasRoot}
             copied={copiedKey === "__das__"}
             onCopied={() => {
               setCopiedKey("__das__");
               window.setTimeout(() => setCopiedKey(null), 2000);
             }}
+            onOpenResult={showFolderFeedback}
           />
           <p className="mt-4 text-[11px] text-slate-400 max-w-2xl">
             Includes setup sheet (e.g. &quot;1 DAS 140 and 142 Setup Sheet&quot;), instructions, PDF
@@ -120,39 +160,65 @@ export function DocumentsView() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {TEMPLATE_CATEGORIES.map((cat) => (
-              <LocalTemplateCard
+              <FolderCard
                 key={cat}
                 title={cat}
-                fullPath={joinTemplateFolderPath(base, cat)}
+                path={joinTemplateFolderPath(base, cat)}
                 copied={copiedKey === cat}
                 onCopied={() => {
                   setCopiedKey(cat);
                   window.setTimeout(() => setCopiedKey(null), 2000);
                 }}
+                onOpenResult={showFolderFeedback}
               />
             ))}
           </div>
         </>
       ) : null}
 
-      {/* Project folder paths */}
       <div className="mt-8">
         <h2 className="text-lg font-semibold text-brand-dark mb-1">Project Folders</h2>
         <p className="text-sm text-slate-500 mb-4">
-          Click &quot;Open folder&quot; to open the project&apos;s directory on your computer.
-          Folder paths are set on each project row in the Board view.
+          Click &quot;Open folder&quot; to copy the path for File Explorer. Per-project paths are set
+          on each project row in the Board view (&quot;Project Folder&quot; column).
         </p>
+
+        {projectRoot ? (
+          <div className="mb-4">
+            <FolderCard
+              title="Project folders root"
+              path={projectRoot}
+              copied={copiedKey === "__projects_root__"}
+              onCopied={() => {
+                setCopiedKey("__projects_root__");
+                window.setTimeout(() => setCopiedKey(null), 2000);
+              }}
+              onOpenResult={showFolderFeedback}
+            />
+          </div>
+        ) : null}
 
         {projectsWithFolder.length === 0 ? (
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
             No projects have a folder path set yet. Add one from the Board view&apos;s
-            &quot;Project Folder&quot; column.
+            &quot;Project Folder&quot; column
+            {projectRoot ? (
+              <>
+                {" "}
+                (typically under{" "}
+                <span className="font-mono text-xs text-slate-600">{projectRoot}</span>)
+              </>
+            ) : null}
+            .
           </div>
         ) : (
           <>
             {projectsWithFolder.length > 5 && (
               <div className="relative max-w-md mb-4">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search
+                  size={14}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -171,16 +237,21 @@ export function DocumentsView() {
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {filtered.map((p) => (
-                <ProjectFolderCard
+                <FolderCard
                   key={p.id}
-                  code={p.code}
-                  name={p.name}
+                  title={
+                    <>
+                      <span className="text-brand font-mono mr-1.5">{p.code}</span>
+                      {p.name}
+                    </>
+                  }
                   path={p.sharepointUrl!}
                   copied={copiedKey === p.id}
                   onCopied={() => {
                     setCopiedKey(p.id);
                     window.setTimeout(() => setCopiedKey(null), 2000);
                   }}
+                  onOpenResult={showFolderFeedback}
                 />
               ))}
             </div>
@@ -190,203 +261,74 @@ export function DocumentsView() {
 
       {configured ? (
         <p className="mt-6 text-[11px] text-slate-400 max-w-2xl">
-          Browsers often block opening <code className="text-[10px]">file://</code> links from web
-          pages. If &quot;Open folder&quot; does nothing, use &quot;Copy path&quot; and paste it into
-          the File Explorer address bar (Windows) or Finder&apos;s Go → Go to Folder (macOS).
+          Browsers block opening local folders directly from a website. &quot;Open folder&quot;
+          copies the path so you can paste it into File Explorer&apos;s address bar.
         </p>
       ) : null}
     </div>
   );
 }
 
-function ProjectFolderCard({
-  code,
-  name,
-  path,
-  copied,
-  onCopied
-}: {
-  code: string;
-  name: string;
-  path: string;
-  copied: boolean;
-  onCopied: () => void;
-}) {
-  const fileUrl = localPathToFileUrl(path);
-
-  async function copyPath() {
-    try {
-      await navigator.clipboard.writeText(path);
-      onCopied();
-    } catch {
-      window.prompt("Copy this path:", path);
-    }
-  }
-
-  function openFolder() {
-    if (!fileUrl) return;
-    window.open(fileUrl, "_blank", "noopener,noreferrer");
-  }
-
-  return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col gap-2">
-      <div>
-        <h3 className="text-sm font-semibold text-slate-800">
-          <span className="text-brand font-mono mr-1.5">{code}</span>
-          {name}
-        </h3>
-        <p className="text-[11px] text-slate-500 font-mono break-all mt-1">{path}</p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={openFolder}
-          className="btn-primary text-xs inline-flex items-center gap-1.5"
-        >
-          <FolderOpen size={14} />
-          Open folder
-        </button>
-        <button
-          type="button"
-          onClick={copyPath}
-          className="btn-ghost text-xs border border-slate-200 inline-flex items-center gap-1.5"
-        >
-          <Copy size={14} />
-          {copied ? "Copied!" : "Copy path"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function DasFolderCard({
-  path,
-  copied,
-  onCopied
-}: {
-  path: string;
-  copied: boolean;
-  onCopied: () => void;
-}) {
-  const fileUrl = path ? localPathToFileUrl(path) : "";
-
-  async function copyPath() {
-    try {
-      await navigator.clipboard.writeText(path);
-      onCopied();
-    } catch {
-      window.prompt("Copy this path:", path);
-    }
-  }
-
-  function openFolder() {
-    if (!fileUrl) return;
-    window.open(fileUrl, "_blank", "noopener,noreferrer");
-  }
-
-  return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col gap-3 max-w-xl">
-      <div>
-        <h2 className="text-sm font-semibold text-slate-800">DAS 140 / DAS 142 / setup sheet</h2>
-        <p className="text-[11px] text-slate-500 font-mono break-all mt-1">{path}</p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={openFolder}
-          className="btn-primary text-xs inline-flex items-center gap-1.5"
-        >
-          <FolderOpen size={14} />
-          Open folder
-        </button>
-        <button
-          type="button"
-          onClick={copyPath}
-          className="btn-ghost text-xs border border-slate-200 inline-flex items-center gap-1.5"
-        >
-          <Copy size={14} />
-          {copied ? "Copied!" : "Copy path"}
-        </button>
-        {fileUrl ? (
-          <a
-            href={fileUrl}
-            className="text-xs text-brand hover:underline inline-flex items-center gap-1 px-2 py-1"
-          >
-            <ExternalLink size={12} />
-            file link
-          </a>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function LocalTemplateCard({
+function FolderCard({
   title,
-  fullPath,
+  path,
   copied,
-  onCopied
+  onCopied,
+  onOpenResult
 }: {
-  title: string;
-  fullPath: string;
+  title: ReactNode;
+  path: string;
   copied: boolean;
   onCopied: () => void;
+  onOpenResult: (result: "copied" | "prompted" | "failed") => void;
 }) {
-  const fileUrl = fullPath ? localPathToFileUrl(fullPath) : "";
+  const [opening, setOpening] = useState(false);
 
   async function copyPath() {
-    if (!fullPath) return;
     try {
-      await navigator.clipboard.writeText(fullPath);
+      await navigator.clipboard.writeText(path);
       onCopied();
     } catch {
-      window.prompt("Copy this path:", fullPath);
+      window.prompt("Copy this path:", path);
     }
   }
 
-  function openFolder() {
-    if (!fileUrl) return;
-    window.open(fileUrl, "_blank", "noopener,noreferrer");
+  async function openFolder() {
+    setOpening(true);
+    try {
+      const result = await openLocalFolderPath(path);
+      onOpenResult(result);
+      if (result === "copied") onCopied();
+    } finally {
+      setOpening(false);
+    }
   }
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col gap-3">
+    <div className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col gap-2 max-w-xl">
       <div>
-        <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
-        {fullPath ? (
-          <p className="text-[11px] text-slate-500 font-mono break-all mt-1">{fullPath}</p>
-        ) : (
-          <p className="text-[11px] text-slate-400 mt-1">No path configured.</p>
-        )}
+        <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
+        <p className="text-[11px] text-slate-500 font-mono break-all mt-1">{path}</p>
       </div>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          disabled={!fullPath}
-          onClick={openFolder}
-          className="btn-primary text-xs disabled:opacity-40 inline-flex items-center gap-1.5"
+          onClick={() => void openFolder()}
+          disabled={opening || !path}
+          className="btn-primary text-xs inline-flex items-center gap-1.5 disabled:opacity-40"
         >
           <FolderOpen size={14} />
-          Open folder
+          {opening ? "Copying…" : "Open folder"}
         </button>
         <button
           type="button"
-          disabled={!fullPath}
-          onClick={copyPath}
+          onClick={() => void copyPath()}
+          disabled={!path}
           className="btn-ghost text-xs border border-slate-200 inline-flex items-center gap-1.5 disabled:opacity-40"
         >
           <Copy size={14} />
           {copied ? "Copied!" : "Copy path"}
         </button>
-        {fileUrl ? (
-          <a
-            href={fileUrl}
-            className="text-xs text-brand hover:underline inline-flex items-center gap-1 px-2 py-1"
-          >
-            <ExternalLink size={12} />
-            file link
-          </a>
-        ) : null}
       </div>
     </div>
   );

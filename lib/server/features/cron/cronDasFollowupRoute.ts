@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 import { notifyUser } from "@/lib/notifications/dispatch";
 import { buildDasFollowupDigestEmail, type DasFollowupItem } from "@/lib/notifications/dasFollowupTemplates";
+import { getEffectiveNotificationConfig, isCategoryEnabled } from "@/lib/notifications/emailConfig";
 
 const DAS_NAMES = new Set([
   "DAS Setup Sheet",
@@ -24,8 +25,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const appBaseUrl =
-    process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_MSAL_REDIRECT_URI ?? null;
+  // Master switch / per-event toggle managed from the admin panel. When off, do no work.
+  const config = await getEffectiveNotificationConfig();
+  if (!isCategoryEnabled(config, "dasFollowup")) {
+    return NextResponse.json({ ok: true, skipped: "notifications_disabled", owners: 0, subitems: 0 });
+  }
 
   const [projects, allSubitems] = await Promise.all([
     storage.listProjects(),
@@ -61,10 +65,9 @@ export async function POST(req: Request) {
     const user = await storage.getUserById(ownerId);
     if (!user) continue;
 
-    const { subject, message, html } = buildDasFollowupDigestEmail(
+    const { subject, message, html } = await buildDasFollowupDigestEmail(
       user.name,
-      items,
-      appBaseUrl
+      items
     );
 
     await notifyUser({

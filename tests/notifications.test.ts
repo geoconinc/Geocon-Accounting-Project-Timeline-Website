@@ -60,8 +60,8 @@ describe("wrapEmailLayout", () => {
 });
 
 describe("operational email templates", () => {
-  it("buildDueTodayEmail escapes user-controlled fields", () => {
-    const mail = buildDueTodayEmail({
+  it("buildDueTodayEmail escapes user-controlled fields", async () => {
+    const mail = await buildDueTodayEmail({
       recipientName: "Jane",
       subitemName: "<b>Task</b>",
       projectCode: "A-1",
@@ -74,8 +74,8 @@ describe("operational email templates", () => {
     expect(mail.message).toContain("due today");
   });
 
-  it("buildProjectOwnerAssignedEmail includes actor and project", () => {
-    const mail = buildProjectOwnerAssignedEmail({
+  it("buildProjectOwnerAssignedEmail includes actor and project", async () => {
+    const mail = await buildProjectOwnerAssignedEmail({
       recipientName: "Bob",
       actorName: "Alice",
       projectCode: "B-2",
@@ -86,8 +86,8 @@ describe("operational email templates", () => {
     expect(mail.message).toContain("owner");
   });
 
-  it("buildProjectStatusChangedEmail includes the new status", () => {
-    const mail = buildProjectStatusChangedEmail({
+  it("buildProjectStatusChangedEmail includes the new status", async () => {
+    const mail = await buildProjectStatusChangedEmail({
       recipientName: "Bob",
       actorName: "Alice",
       projectCode: "C-3",
@@ -98,8 +98,8 @@ describe("operational email templates", () => {
     expect(mail.html).toContain("Completed");
   });
 
-  it("buildSubitemAssignedEmail names the checklist item", () => {
-    const mail = buildSubitemAssignedEmail({
+  it("buildSubitemAssignedEmail names the checklist item", async () => {
+    const mail = await buildSubitemAssignedEmail({
       recipientName: "Bob",
       actorName: "Alice",
       subitemName: "Training Fund",
@@ -110,8 +110,8 @@ describe("operational email templates", () => {
     expect(mail.html).toContain("Training Fund");
   });
 
-  it("buildManualProjectUpdateEmail escapes the message body", () => {
-    const mail = buildManualProjectUpdateEmail({
+  it("buildManualProjectUpdateEmail escapes the message body", async () => {
+    const mail = await buildManualProjectUpdateEmail({
       recipientName: "Bob",
       actorName: "Alice",
       projectCode: "E-5",
@@ -131,30 +131,30 @@ describe("project creation / digest templates", () => {
     creatorName: "Creator"
   };
 
-  it("buildProjectManagerCreationEmail mentions DAS Setup Sheet when assigned", () => {
-    const withSetup = buildProjectManagerCreationEmail(ctx, "Pat", ["DAS Setup Sheet"]);
+  it("buildProjectManagerCreationEmail mentions DAS Setup Sheet when assigned", async () => {
+    const withSetup = await buildProjectManagerCreationEmail(ctx, "Pat", ["DAS Setup Sheet"]);
     expect(withSetup.html).toContain("DAS Setup Sheet");
     expect(withSetup.message).toContain("DAS Setup Sheet");
 
-    const without = buildProjectManagerCreationEmail(ctx, "Pat", []);
+    const without = await buildProjectManagerCreationEmail(ctx, "Pat", []);
     expect(without.message).not.toContain("DAS Setup Sheet subitem");
   });
 
-  it("buildAssigneeDigestEmail lists assigned tasks", () => {
-    const mail = buildAssigneeDigestEmail(ctx, "Sam", ["Training Fund", "Section 3 Forms"]);
+  it("buildAssigneeDigestEmail lists assigned tasks", async () => {
+    const mail = await buildAssigneeDigestEmail(ctx, "Sam", ["Training Fund", "Section 3 Forms"]);
     expect(mail.subject).toContain("F-6");
     expect(mail.message).toContain("Training Fund");
     expect(mail.html).toContain("Section 3 Forms");
   });
 
-  it("buildDasFollowupDigestEmail pluralizes correctly", () => {
-    const one = buildDasFollowupDigestEmail("Jane Doe", [
+  it("buildDasFollowupDigestEmail pluralizes correctly", async () => {
+    const one = await buildDasFollowupDigestEmail("Jane Doe", [
       { projectCode: "A", projectName: "P", subitemName: "DAS 140", status: "Missing" }
     ]);
     expect(one.subject).toContain("1 incomplete DAS item");
     expect(one.subject).not.toContain("items");
 
-    const many = buildDasFollowupDigestEmail("Jane Doe", [
+    const many = await buildDasFollowupDigestEmail("Jane Doe", [
       { projectCode: "A", projectName: "P", subitemName: "DAS 140", status: "NotStarted" },
       { projectCode: "B", projectName: "Q", subitemName: "DAS 142", status: "InProgress" }
     ]);
@@ -163,8 +163,8 @@ describe("project creation / digest templates", () => {
     expect(many.html).toContain("In Progress");
   });
 
-  it("buildIncompleteWeekDigestEmail builds a subject with the count", () => {
-    const mail = buildIncompleteWeekDigestEmail("Jane", [
+  it("buildIncompleteWeekDigestEmail builds a subject with the count", async () => {
+    const mail = await buildIncompleteWeekDigestEmail("Jane", [
       { projectCode: "A", projectName: "P", subitemName: "Task", status: "Missing" }
     ]);
     expect(mail.subject.toLowerCase()).toContain("incomplete");

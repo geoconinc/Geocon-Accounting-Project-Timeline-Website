@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 import { notifyUser } from "@/lib/notifications/dispatch";
 import { buildDueTodayEmail } from "@/lib/notifications/templates/operational";
+import { getEffectiveNotificationConfig, isCategoryEnabled } from "@/lib/notifications/emailConfig";
 
 // Hit daily by an Azure timer / WebJob with header X-Cron-Secret: $CRON_SHARED_SECRET.
 // Sends a notification to the assignee for any subitem whose due date is today
@@ -11,6 +12,13 @@ export async function POST(req: Request) {
   const secret = req.headers.get("x-cron-secret");
   if (!secret || secret !== process.env.CRON_SHARED_SECRET) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  // Master switch / per-event toggle managed from the admin panel. When off, skip the
+  // whole scan so the cron job does no work instead of silently dropping each email.
+  const config = await getEffectiveNotificationConfig();
+  if (!isCategoryEnabled(config, "dueDateReminder")) {
+    return NextResponse.json({ ok: true, skipped: "notifications_disabled", sent: 0 });
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -25,7 +33,7 @@ export async function POST(req: Request) {
       if (!s.ownerId) continue;
       const assignee = await storage.getUserById(s.ownerId);
       if (!assignee) continue;
-      const mail = buildDueTodayEmail({
+      const mail = await buildDueTodayEmail({
         recipientName: assignee.name,
         subitemName: s.name,
         projectCode: p.code,
