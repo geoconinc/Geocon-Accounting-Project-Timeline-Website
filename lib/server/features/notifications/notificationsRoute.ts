@@ -43,6 +43,7 @@ export async function POST(req: Request) {
   await notifyUser({
     userId,
     projectId,
+    category: "manualMessage",
     subject: mail.subject,
     message: mail.message,
     html: mail.html

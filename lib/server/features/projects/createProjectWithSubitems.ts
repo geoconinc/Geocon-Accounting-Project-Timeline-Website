@@ -110,6 +110,7 @@ async function sendProjectCreationNotifications(project: Project, creatorName: s
       await notifyUser({
         userId: project.projectManagerId,
         projectId: project.id,
+        category: "projectCreated",
         subject,
         message,
         html
@@ -130,6 +131,7 @@ async function sendProjectCreationNotifications(project: Project, creatorName: s
     await notifyUser({
       userId,
       projectId: project.id,
+      category: "projectCreated",
       subject,
       message,
       html

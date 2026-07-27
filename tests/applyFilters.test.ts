@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyFilters, DEFAULT_FILTERS, type BoardFilters } from "@/components/features/board/Toolbar";
+import { applyFilters, DEFAULT_FILTERS, type BoardFilters } from "@/lib/domain/boardFilters";
 import type { ProjectStatus } from "@/lib/types";
 
 type TestProject = {

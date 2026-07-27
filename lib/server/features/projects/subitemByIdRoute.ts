@@ -58,6 +58,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       await notifyUser({
         userId: patch.ownerId,
         projectId: updated.projectId,
+        category: "subitemAssigned",
         ...mail
       });
     }

@@ -1,9 +1,9 @@
 import { defineConfig } from "vitest/config";
-import react from "@vitejs/plugin-react";
 import path from "node:path";
 
+// No React plugin needed: the unit suite imports only pure TS modules (no JSX/.tsx),
+// which keeps the test toolchain independent of the @vitejs/plugin-react + Vite pairing.
 export default defineConfig({
-  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, ".")

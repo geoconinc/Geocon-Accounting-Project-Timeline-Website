@@ -35,6 +35,7 @@ export async function POST(req: Request) {
       await notifyUser({
         userId: s.ownerId,
         projectId: p.id,
+        category: "dueDateReminder",
         ...mail
       });
       sent++;

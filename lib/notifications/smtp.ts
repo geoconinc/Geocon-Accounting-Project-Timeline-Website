@@ -1,27 +1,20 @@
 import nodemailer from "nodemailer";
+import type { ResolvedEmailConfig } from "./emailConfig";
 
-export async function sendMailSmtp(opts: {
-  to: string[];
-  subject: string;
-  html: string;
-}): Promise<{ ok: boolean; reason?: string }> {
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASSWORD;
-  const from = process.env.NOTIFY_FROM_ADDRESS;
-  const fromName = process.env.NOTIFY_FROM_NAME ?? "Geocon Project Management";
+export async function sendMailSmtp(
+  opts: { to: string[]; subject: string; html: string },
+  config: ResolvedEmailConfig
+): Promise<{ ok: boolean; reason?: string }> {
+  const { smtpHost: host, smtpUser: user, smtpPassword: pass, fromAddress: from, fromName } = config;
 
   if (!host) return { ok: false, reason: "no_smtp_host" };
   if (!from) return { ok: false, reason: "no_from_address" };
   if (!user || !pass) return { ok: false, reason: "no_smtp_credentials" };
 
-  const port = Number(process.env.SMTP_PORT ?? "587");
-  const secure = process.env.SMTP_SECURE === "true";
-
   const transport = nodemailer.createTransport({
     host,
-    port,
-    secure,
+    port: config.smtpPort,
+    secure: config.smtpSecure,
     auth: { user, pass }
   });
 

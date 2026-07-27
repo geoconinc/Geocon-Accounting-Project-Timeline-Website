@@ -1,25 +1,20 @@
 import { getGraphAppAccessToken } from "@/lib/graph/appAccessToken";
+import { getEffectiveEmailConfig, type ResolvedEmailConfig } from "./emailConfig";
 import { sendMailSmtp } from "./smtp";
 
 export type MailSendResult = { ok: boolean; reason?: string };
 
-function emailDriver(): "smtp" | "graph" {
-  const explicit = process.env.EMAIL_DRIVER?.toLowerCase();
-  if (explicit === "smtp" || explicit === "graph") return explicit;
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
-    return "smtp";
-  }
-  return "graph";
-}
-
-async function sendMailGraph(opts: {
-  to: string[];
-  subject: string;
-  html: string;
-}): Promise<MailSendResult> {
-  const from = process.env.NOTIFY_FROM_ADDRESS;
+async function sendMailGraph(
+  opts: { to: string[]; subject: string; html: string },
+  config: ResolvedEmailConfig
+): Promise<MailSendResult> {
+  const from = config.fromAddress;
   if (!from) return { ok: false, reason: "no_from_address" };
-  const token = await getGraphAppAccessToken();
+  const token = await getGraphAppAccessToken({
+    tenantId: config.graphTenantId,
+    clientId: config.graphClientId,
+    clientSecret: config.graphClientSecret
+  });
   if (!token) return { ok: false, reason: "no_graph_token" };
 
   const res = await fetch(
@@ -47,14 +42,17 @@ async function sendMailGraph(opts: {
   return { ok: true };
 }
 
-/** Sends HTML email via SMTP (preferred when configured) or Microsoft Graph. */
-export async function sendMail(opts: {
-  to: string[];
-  subject: string;
-  html: string;
-}): Promise<MailSendResult> {
-  if (emailDriver() === "smtp") {
-    return sendMailSmtp(opts);
+/**
+ * Sends HTML email via SMTP (preferred when configured) or Microsoft Graph. Resolves the
+ * effective config from the admin panel/env unless one is supplied by the caller.
+ */
+export async function sendMail(
+  opts: { to: string[]; subject: string; html: string },
+  config?: ResolvedEmailConfig
+): Promise<MailSendResult> {
+  const resolved = config ?? (await getEffectiveEmailConfig());
+  if (resolved.driver === "smtp") {
+    return sendMailSmtp(opts, resolved);
   }
-  return sendMailGraph(opts);
+  return sendMailGraph(opts, resolved);
 }

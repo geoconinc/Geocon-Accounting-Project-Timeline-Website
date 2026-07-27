@@ -1,16 +1,35 @@
 #!/bin/sh
-# Bump package.json / VERSION by 0.1 on every commit and fold those files into
-# the commit. CI reads package.json at build time and bakes the version into
-# the website (NEXT_PUBLIC_APP_VERSION), so the bump shows up after deploy.
-# Set SKIP_VERSION_BUMP=1 to commit without bumping.
+# Pre-commit gate + version bump. Runs before every commit:
+#   1. Type-check (tsc --noEmit) and the unit test suite (vitest). A failure aborts
+#      the commit so broken code never lands. Set SKIP_TESTS=1 to bypass the gate.
+#   2. Bump package.json / VERSION by 0.1 and fold those files into the commit. CI
+#      reads package.json at build time and bakes the version into the website
+#      (NEXT_PUBLIC_APP_VERSION), so the bump shows up after deploy. Set
+#      SKIP_VERSION_BUMP=1 to commit without bumping.
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+cd "$ROOT" || exit 0
+
+if [ "$SKIP_TESTS" = "1" ]; then
+  echo "Skipping type-check and tests (SKIP_TESTS=1)."
+else
+  echo "Type-checking (tsc --noEmit)..."
+  npm run typecheck --silent || {
+    echo "pre-commit: type-check failed — commit aborted. Fix the errors or commit with SKIP_TESTS=1." >&2
+    exit 1
+  }
+
+  echo "Running unit tests (vitest)..."
+  npm test --silent || {
+    echo "pre-commit: tests failed — commit aborted. Fix the tests or commit with SKIP_TESTS=1." >&2
+    exit 1
+  }
+fi
 
 if [ "$SKIP_VERSION_BUMP" = "1" ]; then
   echo "Skipping version bump (SKIP_VERSION_BUMP=1)."
   exit 0
 fi
-
-ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
-cd "$ROOT" || exit 0
 
 OLD="$(node -p "require('./package.json').version" 2>/dev/null)" || {
   echo "pre-commit: could not read package.json version" >&2

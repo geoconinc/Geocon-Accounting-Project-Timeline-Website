@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { DEFAULT_FILTERS, type BoardFilters } from "@/components/features/board/Toolbar";
+import { DEFAULT_FILTERS, type BoardFilters } from "@/lib/domain/boardFilters";
 import { DEFAULT_SUBITEM_NAMES, CPR_SUBITEM_NAME } from "@/lib/domain/projectDefaults";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
 

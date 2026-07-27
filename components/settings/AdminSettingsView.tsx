@@ -6,6 +6,12 @@ import { ArrowLeft, ChevronDown, ChevronUp, Database, LayoutDashboard, Plus, Sav
 import type { OfficeAssigneeRow } from "@/lib/domain/officeAssigneeResolve";
 import type { GeoconRoleAssigneesFile } from "@/lib/types/roleAssigneeData";
 import { formatAppVersion } from "@/lib/config/appVersion";
+import {
+  NOTIFICATION_CATEGORIES,
+  type EmailConfigAdminView,
+  type EmailDriver,
+  type NotificationCategory
+} from "@/lib/notifications/emailConfigTypes";
 import { AdminDashboardView } from "./AdminDashboardView";
 
 interface DbStats {
@@ -37,9 +43,18 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
   const [ok, setOk] = useState<string | null>(null);
 
   const [boardAdminEmails, setBoardAdminEmails] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<"pm" | "director" | "office" | "admins">("pm");
+  const [activeTab, setActiveTab] = useState<
+    "pm" | "director" | "office" | "admins" | "email" | "notifications"
+  >("pm");
   const [dbStats, setDbStats] = useState<DbStats | null>(null);
   const [dbLoading, setDbLoading] = useState(true);
+
+  const [emailForm, setEmailForm] = useState<EmailConfigAdminView | null>(null);
+  const [smtpPasswordInput, setSmtpPasswordInput] = useState("");
+  const [graphSecretInput, setGraphSecretInput] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailErr, setEmailErr] = useState<string | null>(null);
+  const [emailOk, setEmailOk] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,6 +103,78 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const loadEmail = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/email-config");
+      if (!res.ok) return;
+      const data = (await res.json()) as EmailConfigAdminView;
+      setEmailForm(data);
+    } catch {
+      /* ignore: email settings are optional and fall back to env */
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadEmail();
+  }, [loadEmail]);
+
+  function patchEmail(patch: Partial<EmailConfigAdminView>) {
+    setEmailForm((prev) => (prev ? { ...prev, ...patch } : prev));
+  }
+
+  function toggleCategory(key: NotificationCategory, value: boolean) {
+    setEmailForm((prev) =>
+      prev ? { ...prev, eventToggles: { ...prev.eventToggles, [key]: value } } : prev
+    );
+  }
+
+  async function saveEmail() {
+    if (!emailForm) return;
+    setEmailErr(null);
+    setEmailOk(null);
+    setEmailSaving(true);
+    try {
+      const body: Record<string, unknown> = {
+        driver: emailForm.driver,
+        smtpHost: emailForm.smtpHost,
+        smtpPort: emailForm.smtpPort,
+        smtpSecure: emailForm.smtpSecure,
+        smtpUser: emailForm.smtpUser,
+        fromAddress: emailForm.fromAddress,
+        fromName: emailForm.fromName,
+        graphTenantId: emailForm.graphTenantId,
+        graphClientId: emailForm.graphClientId,
+        emailEnabled: emailForm.emailEnabled,
+        eventToggles: emailForm.eventToggles
+      };
+      if (smtpPasswordInput) body.smtpPassword = smtpPasswordInput;
+      if (graphSecretInput) body.graphClientSecret = graphSecretInput;
+
+      const res = await fetch("/api/admin/email-config", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (res.status === 403) {
+        setEmailErr("You do not have permission to save email settings.");
+        return;
+      }
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(j.error ?? `Save failed (${res.status})`);
+      }
+      const updated = (await res.json()) as EmailConfigAdminView;
+      setEmailForm(updated);
+      setSmtpPasswordInput("");
+      setGraphSecretInput("");
+      setEmailOk("Email settings saved.");
+    } catch (e) {
+      setEmailErr(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setEmailSaving(false);
+    }
+  }
 
   async function save() {
     setErr(null);
@@ -142,12 +229,16 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
     );
   }
 
-  const settingsTabs = [
-    { key: "pm" as const, label: "Project Managers", count: projectManagers.length },
-    { key: "director" as const, label: "Project Directors", count: projectDirectors.length },
-    { key: "office" as const, label: "Office Directory", count: officeAssignees.length },
-    { key: "admins" as const, label: "Board Admins", count: boardAdminEmails.length }
+  const settingsTabs: { key: typeof activeTab; label: string; count?: number }[] = [
+    { key: "pm", label: "Project Managers", count: projectManagers.length },
+    { key: "director", label: "Project Directors", count: projectDirectors.length },
+    { key: "office", label: "Office Directory", count: officeAssignees.length },
+    { key: "admins", label: "Board Admins", count: boardAdminEmails.length },
+    { key: "email", label: "Email" },
+    { key: "notifications", label: "Notifications" }
   ];
+
+  const isEmailTab = activeTab === "email" || activeTab === "notifications";
 
   return (
     <div className="h-full w-full min-w-0 overflow-y-auto p-6 lg:p-8">
@@ -223,9 +314,11 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
                 }`}
               >
                 {t.label}
-                <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-600 rounded-full px-1.5 py-0.5">
-                  {t.count}
-                </span>
+                {typeof t.count === "number" && (
+                  <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-600 rounded-full px-1.5 py-0.5">
+                    {t.count}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -254,20 +347,49 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
               onChange={setBoardAdminEmails}
             />
           )}
+          {activeTab === "email" && (
+            <EmailSettingsTab
+              form={emailForm}
+              onPatch={patchEmail}
+              smtpPasswordInput={smtpPasswordInput}
+              onSmtpPasswordInput={setSmtpPasswordInput}
+              graphSecretInput={graphSecretInput}
+              onGraphSecretInput={setGraphSecretInput}
+              saving={emailSaving}
+              err={emailErr}
+              ok={emailOk}
+              onSave={() => void saveEmail()}
+              onReload={() => void loadEmail()}
+            />
+          )}
+          {activeTab === "notifications" && (
+            <NotificationTogglesTab
+              form={emailForm}
+              onPatch={patchEmail}
+              onToggle={toggleCategory}
+              saving={emailSaving}
+              err={emailErr}
+              ok={emailOk}
+              onSave={() => void saveEmail()}
+              onReload={() => void loadEmail()}
+            />
+          )}
 
-          <div className="flex items-center gap-3 mt-6 pt-4 border-t border-slate-200">
-            <button
-              type="button"
-              onClick={() => void save()}
-              disabled={saving}
-              className="btn-primary text-sm inline-flex items-center gap-2 disabled:opacity-50"
-            >
-              <Save size={16} /> {saving ? "Saving…" : "Save all changes"}
-            </button>
-            <button type="button" onClick={() => void load()} className="btn-ghost text-sm" disabled={saving}>
-              Reload
-            </button>
-          </div>
+          {!isEmailTab && (
+            <div className="flex items-center gap-3 mt-6 pt-4 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => void save()}
+                disabled={saving}
+                className="btn-primary text-sm inline-flex items-center gap-2 disabled:opacity-50"
+              >
+                <Save size={16} /> {saving ? "Saving…" : "Save all changes"}
+              </button>
+              <button type="button" onClick={() => void load()} className="btn-ghost text-sm" disabled={saving}>
+                Reload
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>
@@ -694,6 +816,295 @@ function BoardAdminsTable({
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+interface EmailTabShared {
+  saving: boolean;
+  err: string | null;
+  ok: string | null;
+  onSave: () => void;
+  onReload: () => void;
+}
+
+function EmailSaveBar({ saving, err, ok, onSave, onReload }: EmailTabShared) {
+  return (
+    <>
+      {err && <p className="text-sm text-red-600 mt-4">{err}</p>}
+      {ok && <p className="text-sm text-green-700 mt-4">{ok}</p>}
+      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-slate-200">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving}
+          className="btn-primary text-sm inline-flex items-center gap-2 disabled:opacity-50"
+        >
+          <Save size={16} /> {saving ? "Saving…" : "Save email settings"}
+        </button>
+        <button type="button" onClick={onReload} className="btn-ghost text-sm" disabled={saving}>
+          Reload
+        </button>
+      </div>
+    </>
+  );
+}
+
+function LabeledInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  mono = false
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+  mono?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium text-slate-600">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`mt-1 w-full border border-slate-200 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-brand outline-none ${
+          mono ? "font-mono" : ""
+        }`}
+      />
+    </label>
+  );
+}
+
+function ToggleRow({
+  label,
+  description,
+  checked,
+  onChange
+}: {
+  label: string;
+  description?: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="flex items-start justify-between gap-4 py-2.5 cursor-pointer">
+      <span className="min-w-0">
+        <span className="text-sm font-medium text-slate-800 block">{label}</span>
+        {description && <span className="text-xs text-slate-500">{description}</span>}
+      </span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`shrink-0 mt-0.5 relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+          checked ? "bg-brand" : "bg-slate-300"
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+            checked ? "translate-x-4" : "translate-x-0.5"
+          }`}
+        />
+      </button>
+    </label>
+  );
+}
+
+function EmailSettingsTab({
+  form,
+  onPatch,
+  smtpPasswordInput,
+  onSmtpPasswordInput,
+  graphSecretInput,
+  onGraphSecretInput,
+  saving,
+  err,
+  ok,
+  onSave,
+  onReload
+}: EmailTabShared & {
+  form: EmailConfigAdminView | null;
+  onPatch: (patch: Partial<EmailConfigAdminView>) => void;
+  smtpPasswordInput: string;
+  onSmtpPasswordInput: (value: string) => void;
+  graphSecretInput: string;
+  onGraphSecretInput: (value: string) => void;
+}) {
+  if (!form) return <p className="text-sm text-slate-500">Loading email settings…</p>;
+
+  return (
+    <div className="max-w-2xl">
+      <p className="text-xs text-slate-500 mb-4">
+        These override the server environment variables at runtime, so you can change email
+        delivery without a redeploy. Leave a field blank to fall back to the deployed value.
+      </p>
+
+      {!form.encryptionAvailable && (
+        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          Secret encryption is not configured. Set the <code className="font-mono">CONFIG_ENCRYPTION_KEY</code>{" "}
+          environment variable before saving the SMTP password or Graph secret.
+        </div>
+      )}
+
+      <div className="space-y-5">
+        <label className="block max-w-xs">
+          <span className="text-xs font-medium text-slate-600">Delivery method</span>
+          <select
+            value={form.driver}
+            onChange={(e) => onPatch({ driver: e.target.value as EmailDriver })}
+            className="mt-1 w-full border border-slate-200 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-brand outline-none bg-white"
+          >
+            <option value="auto">Auto (SMTP if configured, else Microsoft Graph)</option>
+            <option value="smtp">SMTP</option>
+            <option value="graph">Microsoft Graph</option>
+          </select>
+        </label>
+
+        <fieldset className="border border-slate-200 rounded-lg p-4">
+          <legend className="text-xs font-semibold text-slate-700 px-1">Sender</legend>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <LabeledInput
+              label="From name"
+              value={form.fromName}
+              onChange={(v) => onPatch({ fromName: v })}
+              placeholder="Geocon Project Management"
+            />
+            <LabeledInput
+              label="From address"
+              value={form.fromAddress}
+              onChange={(v) => onPatch({ fromAddress: v })}
+              placeholder="noreply@geoconinc.com"
+              mono
+            />
+          </div>
+        </fieldset>
+
+        <fieldset className="border border-slate-200 rounded-lg p-4">
+          <legend className="text-xs font-semibold text-slate-700 px-1">SMTP</legend>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <LabeledInput
+              label="Host"
+              value={form.smtpHost}
+              onChange={(v) => onPatch({ smtpHost: v })}
+              placeholder="smtp.office365.com"
+              mono
+            />
+            <LabeledInput
+              label="Port"
+              type="number"
+              value={String(form.smtpPort)}
+              onChange={(v) => onPatch({ smtpPort: Number(v) || 0 })}
+              placeholder="587"
+            />
+            <LabeledInput
+              label="Username"
+              value={form.smtpUser}
+              onChange={(v) => onPatch({ smtpUser: v })}
+              placeholder="smtp user"
+              mono
+            />
+            <LabeledInput
+              label={`Password ${form.smtpPasswordSet ? "(set — leave blank to keep)" : ""}`}
+              type="password"
+              value={smtpPasswordInput}
+              onChange={onSmtpPasswordInput}
+              placeholder={form.smtpPasswordSet ? "••••••••" : "SMTP password"}
+              mono
+            />
+          </div>
+          <div className="mt-3">
+            <ToggleRow
+              label="Use TLS on connect (port 465)"
+              description="Leave off for STARTTLS on port 587."
+              checked={form.smtpSecure}
+              onChange={(v) => onPatch({ smtpSecure: v })}
+            />
+          </div>
+        </fieldset>
+
+        <fieldset className="border border-slate-200 rounded-lg p-4">
+          <legend className="text-xs font-semibold text-slate-700 px-1">Microsoft Graph</legend>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <LabeledInput
+              label="Tenant ID"
+              value={form.graphTenantId}
+              onChange={(v) => onPatch({ graphTenantId: v })}
+              mono
+            />
+            <LabeledInput
+              label="Client ID"
+              value={form.graphClientId}
+              onChange={(v) => onPatch({ graphClientId: v })}
+              mono
+            />
+            <LabeledInput
+              label={`Client secret ${form.graphClientSecretSet ? "(set — leave blank to keep)" : ""}`}
+              type="password"
+              value={graphSecretInput}
+              onChange={onGraphSecretInput}
+              placeholder={form.graphClientSecretSet ? "••••••••" : "Graph client secret"}
+              mono
+            />
+          </div>
+        </fieldset>
+      </div>
+
+      <EmailSaveBar saving={saving} err={err} ok={ok} onSave={onSave} onReload={onReload} />
+    </div>
+  );
+}
+
+function NotificationTogglesTab({
+  form,
+  onPatch,
+  onToggle,
+  saving,
+  err,
+  ok,
+  onSave,
+  onReload
+}: EmailTabShared & {
+  form: EmailConfigAdminView | null;
+  onPatch: (patch: Partial<EmailConfigAdminView>) => void;
+  onToggle: (key: NotificationCategory, value: boolean) => void;
+}) {
+  if (!form) return <p className="text-sm text-slate-500">Loading notification settings…</p>;
+
+  return (
+    <div className="max-w-2xl">
+      <div className="rounded-lg border border-slate-200 p-4 mb-4">
+        <ToggleRow
+          label="Email notifications"
+          description="Master switch. When off, no emails are sent (in-app notifications still work)."
+          checked={form.emailEnabled}
+          onChange={(v) => onPatch({ emailEnabled: v })}
+        />
+      </div>
+
+      <div
+        className={`rounded-lg border border-slate-200 divide-y divide-slate-100 px-4 ${
+          form.emailEnabled ? "" : "opacity-50 pointer-events-none"
+        }`}
+      >
+        {NOTIFICATION_CATEGORIES.map((c) => (
+          <ToggleRow
+            key={c.key}
+            label={c.label}
+            description={c.description}
+            checked={form.eventToggles[c.key] !== false}
+            onChange={(v) => onToggle(c.key, v)}
+          />
+        ))}
+      </div>
+
+      <EmailSaveBar saving={saving} err={err} ok={ok} onSave={onSave} onReload={onReload} />
     </div>
   );
 }

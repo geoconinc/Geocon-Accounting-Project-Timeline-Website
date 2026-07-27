@@ -69,6 +69,7 @@ export async function POST(req: Request) {
 
     await notifyUser({
       userId: ownerId,
+      category: "dasFollowup",
       subject,
       message,
       html

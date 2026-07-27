@@ -1,0 +1,37 @@
+---
+description: Production-grade app — safe deploys, backward compatibility, migrations
+alwaysApply: true
+---
+
+# Official production app standards
+
+This is a live Geocon production app. Treat every change as if hundreds of people may be using the site while you push.
+
+## Continuous deploy safety
+
+- Users must keep working during and after a deploy (no forced logout, no broken board mid-edit when avoidable).
+- Prefer additive, backward-compatible API/UI changes. Old clients and in-flight sessions must still work until the new build is fully live.
+- Do not require coordinated downtime for routine feature work.
+- CI gates (tests) must pass before deploy; never ship knowingly breaking changes.
+
+## Backward compatibility
+
+- Do not remove or rename API fields, DB columns, env vars, or event types without a migration path and a deprecation window.
+- New code must tolerate older data shapes (missing optional fields, nulls, legacy enum values).
+- Client and server must not assume every row was written by the latest schema.
+
+## Database migrations
+
+- Every schema change ships as an idempotent migration under `lib/db/migrations/` and is applied by the deploy pipeline.
+- Prefer expand → migrate → contract:
+  1. Add new columns/tables (nullable or with defaults)
+  2. Dual-write / backfill if needed
+  3. Only later remove old columns after data is safe
+- Never drop/rename columns or change types in a way that breaks the currently running app before the new code is deployed.
+- Migrations must be safe to re-run (tracked + skip already-applied).
+
+## Product quality bar
+
+- Official app UX: clear errors, confirm destructive actions, no half-broken flows.
+- Persist correctly; audit meaningful mutations when applicable.
+- Prefer fixing forward with migrations over one-off manual DB edits.

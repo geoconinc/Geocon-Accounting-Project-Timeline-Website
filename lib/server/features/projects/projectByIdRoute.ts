@@ -61,6 +61,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       await notifyUser({
         userId: patch.ownerId,
         projectId: updated.id,
+        category: "ownerAssigned",
         ...mail
       });
     }
@@ -80,6 +81,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       await notifyUser({
         userId: updated.ownerId,
         projectId: updated.id,
+        category: "statusChanged",
         ...mail
       });
     }
