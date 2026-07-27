@@ -73,7 +73,7 @@ function renderPlain(
  */
 export async function renderEmailTemplate(
   key: EmailTemplateKey,
-  layout: { headline: string; ctaLabel: string; footerNote?: string },
+  layout: { headline: string; ctaLabel: string; footerNote?: string; ctaUrl?: string | null },
   tokens: TemplateTokens
 ): Promise<RenderedEmail> {
   const config = await getEffectiveNotificationConfig();
@@ -89,6 +89,7 @@ export async function renderEmailTemplate(
       headline: layout.headline,
       bodyHtml: renderBodyHtml(template.body, text, html),
       ctaLabel: layout.ctaLabel,
+      ctaUrl: layout.ctaUrl,
       footerNote: layout.footerNote
     })
   };

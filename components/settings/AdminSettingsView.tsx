@@ -155,6 +155,8 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           emailEnabled: notifForm.emailEnabled,
+          testMode: notifForm.testMode,
+          testRecipients: notifForm.testRecipients,
           eventToggles: notifForm.eventToggles,
           templates: notifForm.templates
         })
@@ -1031,6 +1033,40 @@ function NotificationTogglesTab({
           checked={form.emailEnabled}
           onChange={(v) => onPatch({ emailEnabled: v })}
         />
+      </div>
+
+      <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 mb-4">
+        <ToggleRow
+          label="Test mode (safe for going live)"
+          description="Emails are still generated and sent, but every one is redirected to the test recipients below instead of real employees. The intended recipient is shown in the subject."
+          checked={form.testMode}
+          onChange={(v) => onPatch({ testMode: v })}
+        />
+        <label className="block mt-3">
+          <span className="text-xs font-medium text-slate-600">Test recipients</span>
+          <input
+            type="text"
+            value={form.testRecipients.join(", ")}
+            onChange={(e) =>
+              onPatch({
+                testRecipients: e.target.value
+                  .split(",")
+                  .map((r) => r.trim())
+                  .filter((r) => r.length > 0)
+              })
+            }
+            placeholder="you@geoconinc.com, colleague@geoconinc.com"
+            className="mt-1 w-full border border-slate-200 rounded px-2 py-1.5 text-sm font-mono focus:ring-1 focus:ring-brand outline-none"
+          />
+          <span className="text-[11px] text-slate-400">
+            Comma-separated. Defaults to the app owner if left blank.
+          </span>
+        </label>
+        {form.testMode && (
+          <p className="mt-3 text-xs font-medium text-amber-800">
+            Test mode is ON — no real employees will receive emails, even ones triggered by GMS.
+          </p>
+        )}
       </div>
 
       <div className={form.emailEnabled ? "" : "opacity-50 pointer-events-none"}>

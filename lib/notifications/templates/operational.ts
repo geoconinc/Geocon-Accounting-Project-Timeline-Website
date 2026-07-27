@@ -1,4 +1,4 @@
-import { firstNameFromDisplayName } from "../html";
+import { boardUrl, firstNameFromDisplayName } from "../html";
 import { renderEmailTemplate, type RenderedEmail } from "../templateEngine";
 
 export type EmailPayload = RenderedEmail;
@@ -10,10 +10,11 @@ export function buildDueTodayEmail(opts: {
   projectCode: string;
   projectName: string;
   dueDate: string;
+  projectId?: string;
 }): Promise<EmailPayload> {
   return renderEmailTemplate(
     "dueDateReminder",
-    { headline: "Due today", ctaLabel: "Open Project Timeline" },
+    { headline: "Due today", ctaLabel: "Open Project Timeline", ctaUrl: boardUrl(opts.projectId) },
     {
       text: {
         firstName: firstNameFromDisplayName(opts.recipientName),
@@ -32,10 +33,11 @@ export function buildProjectOwnerAssignedEmail(opts: {
   actorName: string;
   projectCode: string;
   projectName: string;
+  projectId?: string;
 }): Promise<EmailPayload> {
   return renderEmailTemplate(
     "ownerAssigned",
-    { headline: "Project assignment", ctaLabel: "View project" },
+    { headline: "Project assignment", ctaLabel: "View project", ctaUrl: boardUrl(opts.projectId) },
     {
       text: {
         firstName: firstNameFromDisplayName(opts.recipientName),
@@ -54,10 +56,11 @@ export function buildProjectStatusChangedEmail(opts: {
   projectCode: string;
   projectName: string;
   newStatus: string;
+  projectId?: string;
 }): Promise<EmailPayload> {
   return renderEmailTemplate(
     "statusChanged",
-    { headline: "Status update", ctaLabel: "Open Project Timeline" },
+    { headline: "Status update", ctaLabel: "Open Project Timeline", ctaUrl: boardUrl(opts.projectId) },
     {
       text: {
         firstName: firstNameFromDisplayName(opts.recipientName),
@@ -77,10 +80,11 @@ export function buildSubitemAssignedEmail(opts: {
   subitemName: string;
   projectCode: string;
   projectName: string;
+  projectId?: string;
 }): Promise<EmailPayload> {
   return renderEmailTemplate(
     "subitemAssigned",
-    { headline: "Task assignment", ctaLabel: "Open checklist" },
+    { headline: "Task assignment", ctaLabel: "Open checklist", ctaUrl: boardUrl(opts.projectId) },
     {
       text: {
         firstName: firstNameFromDisplayName(opts.recipientName),
@@ -100,10 +104,11 @@ export function buildManualProjectUpdateEmail(opts: {
   projectCode: string;
   projectName: string;
   messageBody: string;
+  projectId?: string;
 }): Promise<EmailPayload> {
   return renderEmailTemplate(
     "manualMessage",
-    { headline: "Project message", ctaLabel: "Open Project Timeline" },
+    { headline: "Project message", ctaLabel: "Open Project Timeline", ctaUrl: boardUrl(opts.projectId) },
     {
       text: {
         firstName: firstNameFromDisplayName(opts.recipientName),

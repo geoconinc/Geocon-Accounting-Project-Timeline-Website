@@ -8,9 +8,9 @@ import {
   getDasFormsFolder,
   getLocalTemplatesBase,
   getProjectFoldersRoot,
-  joinTemplateFolderPath
+  joinTemplateFolderPath,
+  localPathToFileUrl
 } from "@/lib/config/localTemplates";
-import { openLocalFolderPath } from "@/lib/client/openLocalFolder";
 import type { Project } from "@/lib/types";
 import type { BoardData } from "@/components/features/board/state";
 import { debounce } from "@/lib/utils";
@@ -282,7 +282,7 @@ function FolderCard({
   onCopied: () => void;
   onOpenResult: (result: "copied" | "prompted" | "failed") => void;
 }) {
-  const [opening, setOpening] = useState(false);
+  const fileUrl = localPathToFileUrl(path);
 
   async function copyPath() {
     try {
@@ -293,14 +293,17 @@ function FolderCard({
     }
   }
 
-  async function openFolder() {
-    setOpening(true);
+  // The anchor's file:// href is what actually opens Explorer where the browser allows it
+  // (managed Edge/Chrome with the site in the Trusted/Intranet zone). We also copy the path
+  // so there's a working fallback when the browser blocks local navigation from https.
+  async function handleOpen() {
     try {
-      const result = await openLocalFolderPath(path);
-      onOpenResult(result);
-      if (result === "copied") onCopied();
-    } finally {
-      setOpening(false);
+      await navigator.clipboard.writeText(path);
+      onOpenResult("copied");
+      onCopied();
+    } catch {
+      onOpenResult("prompted");
+      window.prompt("Copy this path and paste it into File Explorer:", path);
     }
   }
 
@@ -311,15 +314,19 @@ function FolderCard({
         <p className="text-[11px] text-slate-500 font-mono break-all mt-1">{path}</p>
       </div>
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => void openFolder()}
-          disabled={opening || !path}
-          className="btn-primary text-xs inline-flex items-center gap-1.5 disabled:opacity-40"
+        <a
+          href={fileUrl || undefined}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => void handleOpen()}
+          aria-disabled={!path}
+          className={`btn-primary text-xs inline-flex items-center gap-1.5 ${
+            path ? "" : "pointer-events-none opacity-40"
+          }`}
         >
           <FolderOpen size={14} />
-          {opening ? "Copying…" : "Open folder"}
-        </button>
+          Open folder
+        </a>
         <button
           type="button"
           onClick={() => void copyPath()}

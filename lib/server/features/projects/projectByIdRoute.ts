@@ -56,7 +56,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         recipientName: assignee.name,
         actorName: user.name,
         projectCode: updated.code,
-        projectName: updated.name
+        projectName: updated.name,
+        projectId: updated.id
       });
       await notifyUser({
         userId: patch.ownerId,
@@ -76,7 +77,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         actorName: user.name,
         projectCode: updated.code,
         projectName: updated.name,
-        newStatus: status
+        newStatus: status,
+        projectId: updated.id
       });
       await notifyUser({
         userId: updated.ownerId,

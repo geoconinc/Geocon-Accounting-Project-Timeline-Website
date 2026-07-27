@@ -1,3 +1,4 @@
+import { OWNER_EMAIL } from "@/lib/auth/superAdmin";
 import {
   readStoredNotificationConfig,
   type StoredNotificationConfig
@@ -16,8 +17,23 @@ import {
 
 export interface ResolvedNotificationConfig {
   emailEnabled: boolean;
+  testMode: boolean;
+  testRecipients: string[];
   eventToggles: Record<NotificationCategory, boolean>;
   templates: Record<EmailTemplateKey, EmailTemplate>;
+}
+
+/**
+ * Cleans a stored recipient list to lowercased, non-empty, de-duplicated addresses.
+ * Falls back to the app owner so enabling test mode without a recipient still routes to
+ * a safe address rather than accidentally emailing employees or silently dropping mail.
+ */
+function resolveTestRecipients(stored: StoredNotificationConfig | null): string[] {
+  const cleaned = (stored?.testRecipients ?? [])
+    .map((r) => r.trim().toLowerCase())
+    .filter((r) => r.length > 0);
+  const unique = Array.from(new Set(cleaned));
+  return unique.length > 0 ? unique : [OWNER_EMAIL];
 }
 
 function mergeTemplates(
@@ -40,6 +56,8 @@ export async function getEffectiveNotificationConfig(): Promise<ResolvedNotifica
   const stored = await readStoredNotificationConfig();
   return {
     emailEnabled: stored?.emailEnabled !== false,
+    testMode: stored?.testMode === true,
+    testRecipients: resolveTestRecipients(stored),
     eventToggles: { ...defaultEventToggles(), ...(stored?.eventToggles ?? {}) },
     templates: mergeTemplates(stored)
   };

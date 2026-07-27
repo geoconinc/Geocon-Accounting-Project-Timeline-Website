@@ -38,7 +38,8 @@ export async function POST(req: Request) {
         subitemName: s.name,
         projectCode: p.code,
         projectName: p.name,
-        dueDate: s.dueDate
+        dueDate: s.dueDate,
+        projectId: p.id
       });
       await notifyUser({
         userId: s.ownerId,

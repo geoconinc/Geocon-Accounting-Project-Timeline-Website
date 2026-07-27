@@ -35,6 +35,8 @@ async function buildAdminView(): Promise<NotificationConfigAdminView> {
   ]);
   return {
     emailEnabled: effective.emailEnabled,
+    testMode: effective.testMode,
+    testRecipients: effective.testRecipients,
     eventToggles: effective.eventToggles,
     templates: effective.templates,
     meta: {
@@ -55,9 +57,13 @@ export async function GET() {
 
 interface EmailConfigPutBody {
   emailEnabled?: boolean;
+  testMode?: boolean;
+  testRecipients?: string[];
   eventToggles?: Partial<Record<NotificationCategory, boolean>>;
   templates?: Partial<Record<EmailTemplateKey, Partial<EmailTemplate>>>;
 }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function PUT(req: Request) {
   const user = await authenticateRequest();
@@ -77,6 +83,21 @@ export async function PUT(req: Request) {
   const next: StoredNotificationConfig = { ...existing };
 
   if (body.emailEnabled !== undefined) next.emailEnabled = Boolean(body.emailEnabled);
+  if (body.testMode !== undefined) next.testMode = Boolean(body.testMode);
+
+  if (body.testRecipients !== undefined) {
+    if (!Array.isArray(body.testRecipients)) {
+      return NextResponse.json({ error: "invalid_test_recipients" }, { status: 400 });
+    }
+    const cleaned = body.testRecipients
+      .map((r) => (typeof r === "string" ? r.trim().toLowerCase() : ""))
+      .filter((r) => r.length > 0);
+    const invalid = cleaned.find((r) => !EMAIL_RE.test(r));
+    if (invalid) {
+      return NextResponse.json({ error: "invalid_test_recipient_email" }, { status: 400 });
+    }
+    next.testRecipients = Array.from(new Set(cleaned));
+  }
 
   if (body.eventToggles !== undefined) {
     const toggles: Partial<Record<NotificationCategory, boolean>> = { ...existing.eventToggles };

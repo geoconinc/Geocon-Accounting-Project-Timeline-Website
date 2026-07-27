@@ -15,6 +15,8 @@ import type {
 /** Raw stored shape. Templates hold per-key subject/body overrides (partial). */
 export interface StoredNotificationConfig {
   emailEnabled?: boolean;
+  testMode?: boolean;
+  testRecipients?: string[];
   eventToggles?: Partial<Record<NotificationCategory, boolean>>;
   templates?: Partial<Record<EmailTemplateKey, Partial<EmailTemplate>>>;
   updatedAt?: string;

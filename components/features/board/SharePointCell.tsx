@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { FolderOpen, Edit3, Copy } from "lucide-react";
-import { getProjectFoldersRoot } from "@/lib/config/localTemplates";
-import { openLocalFolderPath } from "@/lib/client/openLocalFolder";
+import { getProjectFoldersRoot, localPathToFileUrl } from "@/lib/config/localTemplates";
 
 export function SharePointCell({
   url,
@@ -27,17 +26,22 @@ export function SharePointCell({
     setEditing(false);
   }
 
+  // The anchor's file:// href opens Explorer where the browser allows it (managed
+  // Edge/Chrome, site in the Trusted/Intranet zone). We also copy the path as a fallback
+  // since browsers block local navigation from https by default.
   async function openFolder() {
     if (!url) return;
-    const result = await openLocalFolderPath(url);
-    if (result === "copied" || result === "prompted") {
-      setCopied(true);
-      setOpenHint(true);
-      window.setTimeout(() => {
-        setCopied(false);
-        setOpenHint(false);
-      }, 2500);
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      window.prompt("Copy this path and paste it into File Explorer:", url);
     }
+    setCopied(true);
+    setOpenHint(true);
+    window.setTimeout(() => {
+      setCopied(false);
+      setOpenHint(false);
+    }, 2500);
   }
 
   async function copyPath() {
@@ -86,7 +90,10 @@ export function SharePointCell({
 
   return (
     <div className="w-full h-full flex items-center gap-1 px-1.5 group">
-      <button
+      <a
+        href={localPathToFileUrl(url) || undefined}
+        target="_blank"
+        rel="noopener noreferrer"
         onClick={() => void openFolder()}
         className="flex-1 min-w-0 flex items-center gap-1.5 text-[11px] text-brand hover:text-brand-dark hover:underline"
         title={
@@ -97,7 +104,7 @@ export function SharePointCell({
       >
         <FolderOpen size={11} className="shrink-0" />
         <span className="truncate">{openHint ? "Path copied!" : "Open folder"}</span>
-      </button>
+      </a>
       <button
         onClick={() => void copyPath()}
         className="text-slate-300 hover:text-brand opacity-0 group-hover:opacity-100"

@@ -279,6 +279,13 @@ export function defaultTemplates(): Record<EmailTemplateKey, EmailTemplate> {
 /** Shape returned by GET /api/admin/email-config. */
 export interface NotificationConfigAdminView {
   emailEnabled: boolean;
+  /**
+   * Test mode: emails are still generated and sent, but every recipient is replaced with
+   * `testRecipients` (the subject is prefixed with the intended recipient). Lets you verify
+   * the whole system end-to-end without real employees receiving anything.
+   */
+  testMode: boolean;
+  testRecipients: string[];
   eventToggles: Record<NotificationCategory, boolean>;
   templates: Record<EmailTemplateKey, EmailTemplate>;
   meta: {

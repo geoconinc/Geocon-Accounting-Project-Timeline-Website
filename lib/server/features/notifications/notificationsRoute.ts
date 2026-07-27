@@ -37,7 +37,8 @@ export async function POST(req: Request) {
     actorName: auth.name,
     projectCode: project.code,
     projectName: project.name,
-    messageBody: message
+    messageBody: message,
+    projectId: project.id
   });
 
   await notifyUser({

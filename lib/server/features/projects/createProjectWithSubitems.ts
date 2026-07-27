@@ -82,7 +82,8 @@ async function sendProjectCreationNotifications(project: Project, creatorName: s
     projectCode: project.code,
     projectName: project.name,
     office: project.office ?? "—",
-    creatorName
+    creatorName,
+    projectId: project.id
   };
 
   const subs = await storage.listSubitems(project.id);

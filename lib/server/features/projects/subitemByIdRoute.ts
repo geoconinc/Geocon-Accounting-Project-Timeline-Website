@@ -53,7 +53,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         actorName: user.name,
         subitemName: updated.name,
         projectCode: before.project.code,
-        projectName: before.project.name
+        projectName: before.project.name,
+        projectId: updated.projectId
       });
       await notifyUser({
         userId: patch.ownerId,

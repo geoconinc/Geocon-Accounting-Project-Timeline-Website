@@ -1,4 +1,4 @@
-import { escapeHtml } from "./html";
+import { boardUrl, escapeHtml } from "./html";
 import { renderEmailTemplate, type RenderedEmail } from "./templateEngine";
 import { SUBITEM_ASSIGNMENT_SNIPPET } from "./subitemAssignmentSnippets";
 
@@ -8,6 +8,7 @@ export interface ProjectCreationMailContext {
   projectName: string;
   office: string;
   creatorName: string;
+  projectId?: string;
 }
 
 function esc(s: string): string {
@@ -45,7 +46,11 @@ export function buildProjectManagerCreationEmail(
 
   return renderEmailTemplate(
     "projectManagerCreated",
-    { headline: "New project — Project Manager", ctaLabel: "Open Project Timeline" },
+    {
+      headline: "New project — Project Manager",
+      ctaLabel: "Open Project Timeline",
+      ctaUrl: boardUrl(ctx.projectId)
+    },
     {
       text: {
         firstName: pmFirstNameOrName,
@@ -69,7 +74,7 @@ export function buildAssigneeDigestEmail(
 ): Promise<RenderedEmail> {
   return renderEmailTemplate(
     "assigneeDigest",
-    { headline: "New project — Your tasks", ctaLabel: "Open checklist" },
+    { headline: "New project — Your tasks", ctaLabel: "Open checklist", ctaUrl: boardUrl(ctx.projectId) },
     {
       text: {
         firstName: recipientFirstNameOrName,

@@ -41,6 +41,28 @@ describe("getEffectiveNotificationConfig", () => {
     expect(cfg.eventToggles.projectCreated).toBe(true);
   });
 
+  it("defaults test mode off with a single fallback recipient", async () => {
+    const cfg = await getEffectiveNotificationConfig();
+    expect(cfg.testMode).toBe(false);
+    expect(cfg.testRecipients).toHaveLength(1);
+  });
+
+  it("reads test mode and cleans/dedupes stored test recipients", async () => {
+    mockRead.mockResolvedValue({
+      testMode: true,
+      testRecipients: ["  Test@Geoconinc.com ", "test@geoconinc.com", ""]
+    });
+    const cfg = await getEffectiveNotificationConfig();
+    expect(cfg.testMode).toBe(true);
+    expect(cfg.testRecipients).toEqual(["test@geoconinc.com"]);
+  });
+
+  it("falls back to the owner when test mode is on but no recipient is set", async () => {
+    mockRead.mockResolvedValue({ testMode: true, testRecipients: [] });
+    const cfg = await getEffectiveNotificationConfig();
+    expect(cfg.testRecipients).toHaveLength(1);
+  });
+
   it("overrides only the provided template fields and keeps defaults otherwise", async () => {
     mockRead.mockResolvedValue({
       templates: { subitemAssigned: { subject: "Custom: {{subitemName}}" } }
@@ -64,6 +86,8 @@ describe("isCategoryEnabled", () => {
   function cfg(overrides: Partial<ResolvedNotificationConfig> = {}): ResolvedNotificationConfig {
     return {
       emailEnabled: true,
+      testMode: false,
+      testRecipients: ["owner@example.com"],
       eventToggles: defaultEventToggles(),
       templates: defaultTemplates(),
       ...overrides

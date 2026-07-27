@@ -40,9 +40,14 @@ export async function notifyUser(opts: NotifyOpts) {
   const config = await getEffectiveNotificationConfig();
   if (!isCategoryEnabled(config, opts.category)) return;
 
+  // Test mode: keep generating/sending real emails but route them to the test recipients
+  // and tag the subject with the intended recipient, so nothing reaches real employees.
+  const to = config.testMode ? config.testRecipients : [target.email];
+  const subject = config.testMode ? `[TEST → ${target.email}] ${opts.subject}` : opts.subject;
+
   await sendMail({
-    to: [target.email],
-    subject: opts.subject,
+    to,
+    subject,
     html: opts.html ?? defaultHtml(opts.message)
   })
     .then((result) => {
