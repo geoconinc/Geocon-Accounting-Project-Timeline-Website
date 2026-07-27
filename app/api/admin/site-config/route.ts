@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/server/routeAuth";
-import { isSuperAdminUser } from "@/lib/auth/superAdmin";
+import { isOwnerUser } from "@/lib/auth/superAdmin";
+import { isAdminAsync } from "@/lib/server/access";
 import {
   readAdminSiteConfig,
   writeAdminSiteConfig,
@@ -19,7 +20,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const user = await authenticateRequest();
   if (user instanceof Response) return user;
-  if (!isSuperAdminUser(user)) {
+  if (!(await isAdminAsync(user))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
@@ -50,7 +51,7 @@ export async function GET() {
 export async function PUT(req: Request) {
   const user = await authenticateRequest();
   if (user instanceof Response) return user;
-  if (!isSuperAdminUser(user)) {
+  if (!isOwnerUser(user)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

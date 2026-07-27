@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 import { authenticateRequest } from "@/lib/server/routeAuth";
-import { isSuperAdminUser } from "@/lib/auth/superAdmin";
+import { isAdminAsync } from "@/lib/server/access";
 import { resolveAuditEntityName } from "@/lib/server/auditDisplay";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +23,7 @@ function loggedInWithinDays(lastLoginAt: string | null | undefined, days: number
 export async function GET() {
   const user = await authenticateRequest();
   if (user instanceof Response) return user;
-  if (!isSuperAdminUser(user)) {
+  if (!(await isAdminAsync(user))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

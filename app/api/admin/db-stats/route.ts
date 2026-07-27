@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 import { authenticateRequest } from "@/lib/server/routeAuth";
-import { isSuperAdminUser } from "@/lib/auth/superAdmin";
+import { isAdminAsync } from "@/lib/server/access";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const user = await authenticateRequest();
   if (user instanceof Response) return user;
-  if (!isSuperAdminUser(user)) {
+  if (!(await isAdminAsync(user))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

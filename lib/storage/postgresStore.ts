@@ -75,7 +75,26 @@ function mapSubitem(r: typeof subitems.$inferSelect): Subitem {
   };
 }
 
-function mapFile(r: typeof files.$inferSelect): FileRef {
+// Metadata columns only — never selects the `data` bytea blob, which is fetched
+// separately via getFileData for downloads. Selecting the blob on list/get would
+// pull every file's bytes into memory (heavy under concurrent board loads).
+const fileMetaColumns = {
+  id: files.id,
+  parentType: files.parentType,
+  parentId: files.parentId,
+  filename: files.filename,
+  contentType: files.contentType,
+  size: files.size,
+  uploadedBy: files.uploadedBy,
+  uploadedAt: files.uploadedAt
+} as const;
+
+type FileMetaRow = Pick<
+  typeof files.$inferSelect,
+  "id" | "parentType" | "parentId" | "filename" | "contentType" | "size" | "uploadedBy" | "uploadedAt"
+>;
+
+function mapFile(r: FileMetaRow): FileRef {
   return {
     id: r.id,
     parentType: r.parentType,
@@ -446,20 +465,20 @@ export const postgresStore: Storage = {
 
   async listAllFiles() {
     const db = getDb();
-    const rows = await db.select().from(files);
+    const rows = await db.select(fileMetaColumns).from(files);
     return rows.map(mapFile);
   },
 
   async getFileById(id) {
     const db = getDb();
-    const rows = await db.select().from(files).where(eq(files.id, id)).limit(1);
+    const rows = await db.select(fileMetaColumns).from(files).where(eq(files.id, id)).limit(1);
     return rows[0] ? mapFile(rows[0]) : null;
   },
 
   async listFiles(parentType, parentId) {
     const db = getDb();
     const rows = await db
-      .select()
+      .select(fileMetaColumns)
       .from(files)
       .where(and(eq(files.parentType, parentType), eq(files.parentId, parentId)));
     return rows.map(mapFile);

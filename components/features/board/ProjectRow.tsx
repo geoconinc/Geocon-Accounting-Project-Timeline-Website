@@ -180,7 +180,7 @@ export function ProjectRow({
   }
 
   return (
-    <div className="border-b border-slate-200">
+    <div id={`project-${project.id}`} className="border-b border-slate-200 scroll-mt-24 transition-shadow">
       <div className="grid hover:bg-slate-50/70 group transition-colors" style={{ gridTemplateColumns: PROJECT_COLS }}>
         <div className="cell !p-0">
           <div className="grid grid-cols-[40px_1fr_28px] w-full items-center px-2">

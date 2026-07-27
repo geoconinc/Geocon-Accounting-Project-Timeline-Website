@@ -12,6 +12,7 @@ import {
   X
 } from "lucide-react";
 import type { ActivityEvent } from "@/lib/types";
+import { EmployeeDetailModal } from "./EmployeeDetailModal";
 
 interface EmployeeSummary {
   id: string;
@@ -60,6 +61,7 @@ export function AdminDashboardView() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<EmployeeSummary | null>(null);
 
   const load = useCallback(async () => {
     setErr(null);
@@ -195,7 +197,7 @@ export function AdminDashboardView() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
           {filteredEmployees.map((emp) => (
-            <EmployeeCard key={emp.id} employee={emp} />
+            <EmployeeCard key={emp.id} employee={emp} onClick={() => setSelectedEmployee(emp)} />
           ))}
           {filteredEmployees.length === 0 && (
             <div className="col-span-full text-center py-12 text-sm text-slate-400">
@@ -204,6 +206,14 @@ export function AdminDashboardView() {
           )}
         </div>
       </div>
+
+      {selectedEmployee && (
+        <EmployeeDetailModal
+          employeeId={selectedEmployee.id}
+          employeeName={selectedEmployee.name}
+          onClose={() => setSelectedEmployee(null)}
+        />
+      )}
     </div>
   );
 }
@@ -232,11 +242,21 @@ function StatCard({
   );
 }
 
-function EmployeeCard({ employee: e }: { employee: EmployeeSummary }) {
+function EmployeeCard({
+  employee: e,
+  onClick
+}: {
+  employee: EmployeeSummary;
+  onClick: () => void;
+}) {
   const lastLoginStr = e.lastLoginAt ? formatRelative(e.lastLoginAt) : "Never";
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 card-hover">
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left bg-white rounded-xl border border-slate-200 p-5 card-hover cursor-pointer hover:border-brand/40 focus:outline-none focus:ring-2 focus:ring-brand/40"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold text-slate-800 truncate">{e.name}</h3>
@@ -260,7 +280,7 @@ function EmployeeCard({ employee: e }: { employee: EmployeeSummary }) {
       <div className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-400">
         Last login: {lastLoginStr}
       </div>
-    </div>
+    </button>
   );
 }
 

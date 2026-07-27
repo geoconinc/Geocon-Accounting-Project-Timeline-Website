@@ -9,7 +9,8 @@ export type BusEvent =
   | { type: "subitem.reorder"; payload: { projectId: string } }
   | { type: "file.added"; payload: { parentType: "project" | "subitem"; parentId: string } }
   | { type: "file.deleted"; payload: { id: string; parentType: "project" | "subitem"; parentId: string } }
-  | { type: "notification.new"; payload: { userId: string; message: string; projectId?: string } };
+  | { type: "notification.new"; payload: { userId: string; message: string; projectId?: string } }
+  | { type: "presence.update"; payload: { count: number } };
 
 type Listener = (e: BusEvent) => void;
 

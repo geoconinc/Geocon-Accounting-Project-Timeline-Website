@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@/lib/types";
-import { LogOut, Mail, Settings, X } from "lucide-react";
+import { LogOut, Mail, Settings, Users, X } from "lucide-react";
 import { formatAppVersionLabel } from "@/lib/config/appVersion";
 
 export default function TopBar({ user }: { user: User }) {
@@ -11,6 +11,7 @@ export default function TopBar({ user }: { user: User }) {
   const [confirming, setConfirming] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [activeCount, setActiveCount] = useState<number | null>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,6 +36,26 @@ export default function TopBar({ user }: { user: User }) {
     return () => document.removeEventListener("mousedown", onClick);
   }, [showSettings]);
 
+  // Live "active users" count via the shared SSE stream. The server sends the
+  // current count on connect and broadcasts presence.update as people come and go.
+  useEffect(() => {
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource("/api/events");
+      es.addEventListener("presence.update", (ev: MessageEvent) => {
+        try {
+          const { count } = JSON.parse(ev.data) as { count: number };
+          if (typeof count === "number") setActiveCount(count);
+        } catch {
+          // ignore malformed payloads
+        }
+      });
+    } catch {
+      // SSE unavailable — counter stays hidden
+    }
+    return () => es?.close();
+  }, []);
+
   async function logout() {
     setBusy(true);
     await fetch("/api/logout", { method: "POST" });
@@ -46,6 +67,20 @@ export default function TopBar({ user }: { user: User }) {
     <div className="h-14 bg-gradient-to-b from-brand-dark to-[#062f37] border-b border-black/20 flex items-center px-4 gap-3 shrink-0">
       <span className="text-sm font-semibold text-white">Geocon Project Management</span>
       <div className="flex-1" />
+      {activeCount !== null && (
+        <div
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 ring-1 ring-white/15 text-white/90"
+          title={`${activeCount} ${activeCount === 1 ? "person" : "people"} currently on the site`}
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+          </span>
+          <Users size={13} className="opacity-80" />
+          <span className="text-xs font-semibold tabular-nums">{activeCount}</span>
+          <span className="hidden md:inline text-[10px] text-white/60">active</span>
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <div
           className="w-8 h-8 rounded-full bg-white/15 ring-1 ring-white/20 text-white grid place-items-center text-xs font-semibold"

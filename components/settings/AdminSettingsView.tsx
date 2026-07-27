@@ -21,7 +21,7 @@ interface DbStats {
 type PM = GeoconRoleAssigneesFile["projectManagers"][number];
 type Director = GeoconRoleAssigneesFile["projectDirectors"][number];
 
-export function AdminSettingsView() {
+export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
   const [topTab, setTopTab] = useState<"dashboard" | "settings">("dashboard");
   const [officeAssignees, setOfficeAssignees] = useState<OfficeAssigneeRow[]>([]);
   const [projectManagers, setProjectManagers] = useState<PM[]>([]);
@@ -181,21 +181,23 @@ export function AdminSettingsView() {
         >
           <LayoutDashboard size={16} /> Dashboard
         </button>
-        <button
-          onClick={() => setTopTab("settings")}
-          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-colors ${
-            topTab === "settings"
-              ? "text-brand border-b-2 border-brand"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          <Settings size={16} /> Site Settings
-        </button>
+        {isOwner && (
+          <button
+            onClick={() => setTopTab("settings")}
+            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-colors ${
+              topTab === "settings"
+                ? "text-brand border-b-2 border-brand"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <Settings size={16} /> Site Settings
+          </button>
+        )}
       </div>
 
       {topTab === "dashboard" && <AdminDashboardView />}
 
-      {topTab === "settings" && (
+      {topTab === "settings" && isOwner && (
         <>
           {meta.updatedAt && (
             <p className="text-[11px] text-slate-400 mb-4">

@@ -11,8 +11,6 @@ import {
   Settings as SettingsIcon,
   Shield
 } from "lucide-react";
-import type { User } from "@/lib/types";
-import { isSuperAdminUser } from "@/lib/auth/superAdmin";
 import { formatAppVersionLabel } from "@/lib/config/appVersion";
 import { cn } from "@/lib/utils";
 
@@ -23,9 +21,8 @@ const items = [
   { href: "/documents", label: "Documents", icon: Folder }
 ];
 
-export default function Sidebar({ user }: { user?: User | null }) {
+export default function Sidebar({ showAdmin = false }: { showAdmin?: boolean }) {
   const pathname = usePathname();
-  const showAdmin = user ? isSuperAdminUser(user) : false;
 
   return (
     <aside className="w-56 bg-white border-r border-slate-200 text-slate-700 flex flex-col shrink-0">

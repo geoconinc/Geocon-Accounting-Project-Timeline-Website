@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
+import { isOwnerUser } from "@/lib/auth/superAdmin";
 import type { FileRef, Project, Subitem, User } from "@/lib/types";
 
 export interface BoardPayload {
@@ -42,6 +43,7 @@ export function invalidateAccessCache(): void {
 }
 
 export function hasFullBoardAccess(user: User): boolean {
+  if (isOwnerUser(user)) return true;
   const email = user.email.toLowerCase();
   if (configuredEmails("BOARD_ADMIN_EMAILS").has(email)) return true;
   if (storedAdminEmailsCache?.has(email)) return true;
@@ -57,6 +59,14 @@ export async function hasFullBoardAccessAsync(user: User): Promise<boolean> {
   const stored = await getStoredBoardAdminEmails();
   storedAdminEmailsCache = new Set(stored.map((e) => e.toLowerCase()));
   return storedAdminEmailsCache.has(user.email.toLowerCase());
+}
+
+/**
+ * Admin = owner OR board admin. Admins get full board visibility and admin panel
+ * access. Only the owner (isOwnerUser) may change the admin list or site config.
+ */
+export async function isAdminAsync(user: User): Promise<boolean> {
+  return hasFullBoardAccessAsync(user);
 }
 
 /** Owner, project manager, or project director (not board admin — use hasFullBoardAccess for that). */

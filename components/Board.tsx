@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useBoardState, type BoardData } from "./features/board/state";
 import { Group } from "./features/board/Group";
 import { Toolbar, applyFilters, DEFAULT_FILTERS, type BoardFilters } from "./features/board/Toolbar";
@@ -32,6 +32,20 @@ export default function Board({ initialData }: { initialData: BoardData }) {
       else d.push(p);
     }
     return { current: c, future: f, completed: d };
+  }, [filtered]);
+
+  // Deep-link support: /?focusProject=<id> (e.g. from the admin employee drill-down)
+  // scrolls to and briefly highlights the project row once it has rendered.
+  useEffect(() => {
+    const focusId = new URLSearchParams(window.location.search).get("focusProject");
+    if (!focusId) return;
+    const el = document.getElementById(`project-${focusId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const ring = ["ring-2", "ring-brand", "ring-inset"];
+    el.classList.add(...ring);
+    const t = setTimeout(() => el.classList.remove(...ring), 2500);
+    return () => clearTimeout(t);
   }, [filtered]);
 
   const onProjectUpdated = useCallback(

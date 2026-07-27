@@ -94,6 +94,12 @@ describe("hasFullBoardAccess", () => {
     delete process.env.BOARD_ADMIN_EMAILS;
     expect(hasFullBoardAccess(user({ email: "admin@geoconinc.com" }))).toBe(false);
   });
+
+  it("always grants access to the owner, even with no admin list", () => {
+    delete process.env.BOARD_ADMIN_EMAILS;
+    // Owner defaults to mundra@geoconinc.com in the test env.
+    expect(hasFullBoardAccess(user({ email: "mundra@geoconinc.com" }))).toBe(true);
+  });
 });
 
 describe("forbidden", () => {
