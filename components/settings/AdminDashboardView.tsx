@@ -62,6 +62,7 @@ export function AdminDashboardView() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeSummary | null>(null);
+  const [liveActive, setLiveActive] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setErr(null);
@@ -84,6 +85,26 @@ export function AdminDashboardView() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Live count of people currently on the site via the shared SSE stream. The server
+  // sends the current count on connect and broadcasts presence.update as people come/go.
+  useEffect(() => {
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource("/api/events");
+      es.addEventListener("presence.update", (ev: MessageEvent) => {
+        try {
+          const { count } = JSON.parse(ev.data) as { count: number };
+          if (typeof count === "number") setLiveActive(count);
+        } catch {
+          // ignore malformed payloads
+        }
+      });
+    } catch {
+      // SSE unavailable — the live card shows a placeholder
+    }
+    return () => es?.close();
+  }, []);
 
   const filteredEmployees = useMemo(() => {
     if (!data) return [];
@@ -130,11 +151,18 @@ export function AdminDashboardView() {
   return (
     <div className="space-y-6">
       {/* Stats row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <StatCard
+          icon={<Users size={18} />}
+          value={liveActive ?? "—"}
+          label="Active now"
+          live
+          title="People with the site open right now"
+        />
         <StatCard icon={<FolderOpen size={18} />} value={stats.totalProjects} label="Total Projects" />
         <StatCard icon={<Clock size={18} />} value={stats.ongoingTotal} label="Ongoing Projects" />
         <StatCard icon={<CheckCircle2 size={18} />} value={stats.completedTotal} label="Completed Projects" />
-        <StatCard icon={<Users size={18} />} value={stats.activeEmployees} label="Active Employees" />
+        <StatCard icon={<Users size={18} />} value={stats.activeEmployees} label="Active (5 days)" />
       </div>
 
       {/* Filter bar */}
@@ -221,20 +249,31 @@ export function AdminDashboardView() {
 function StatCard({
   icon,
   value,
-  label
+  label,
+  live = false,
+  title
 }: {
   icon: React.ReactNode;
-  value: number;
+  value: number | string;
   label: string;
+  live?: boolean;
+  title?: string;
 }) {
+  const display = typeof value === "number" ? value.toLocaleString() : value;
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 card-hover flex items-center gap-4">
+    <div className="bg-white rounded-xl border border-slate-200 p-5 card-hover flex items-center gap-4" title={title}>
       <div className="w-10 h-10 rounded-lg bg-brand text-white grid place-items-center shrink-0">
         {icon}
       </div>
       <div className="min-w-0">
-        <div className="text-2xl font-semibold text-brand-dark leading-tight">
-          {value.toLocaleString()}
+        <div className="text-2xl font-semibold text-brand-dark leading-tight flex items-center gap-2">
+          {display}
+          {live && (
+            <span className="relative flex h-2.5 w-2.5" aria-label="live">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+            </span>
+          )}
         </div>
         <div className="text-xs text-slate-500 mt-0.5">{label}</div>
       </div>

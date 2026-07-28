@@ -17,7 +17,7 @@ async function sendMailGraph(opts: {
   subject: string;
   html: string;
 }): Promise<MailSendResult> {
-  const from = process.env.NOTIFY_FROM_ADDRESS;
+  const from = process.env.NOTIFY_FROM_ADDRESS?.trim();
   if (!from) return { ok: false, reason: "no_from_address" };
   const token = await getGraphAppAccessToken();
   if (!token) return { ok: false, reason: "no_graph_token" };

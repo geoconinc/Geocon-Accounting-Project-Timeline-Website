@@ -1024,8 +1024,39 @@ function NotificationTogglesTab({
 }) {
   if (!form) return <p className="text-sm text-slate-500">Loading notification settings…</p>;
 
+  const d = form.delivery;
+  const deliveryOk =
+    d.fromAddressSet &&
+    (d.driver !== "graph" || (d.graphTenantSet && d.graphClientIdSet && d.graphClientSecretSet));
+
   return (
     <div className="max-w-2xl">
+      <div
+        className={`rounded-lg border p-4 mb-4 text-sm ${
+          deliveryOk ? "border-emerald-200 bg-emerald-50/60" : "border-red-200 bg-red-50/60"
+        }`}
+      >
+        <p className="font-medium text-slate-800 mb-2">Email delivery (Azure env vars)</p>
+        <ul className="text-xs space-y-1 text-slate-700">
+          <li>
+            Driver: <code className="font-mono">{d.driver}</code>
+          </li>
+          <li>
+            From address:{" "}
+            {d.fromAddressSet ? (
+              <span className="text-emerald-700">set ({d.fromAddressHint})</span>
+            ) : (
+              <span className="text-red-700 font-medium">
+                MISSING — add NOTIFY_FROM_ADDRESS in Azure App Service, then restart
+              </span>
+            )}
+          </li>
+          <li>Graph tenant: {d.graphTenantSet ? "set" : "missing"}</li>
+          <li>Graph client ID: {d.graphClientIdSet ? "set" : "missing"}</li>
+          <li>Graph client secret: {d.graphClientSecretSet ? "set" : "missing"}</li>
+        </ul>
+      </div>
+
       <div className="rounded-lg border border-slate-200 p-4 mb-4">
         <ToggleRow
           label="Email notifications"

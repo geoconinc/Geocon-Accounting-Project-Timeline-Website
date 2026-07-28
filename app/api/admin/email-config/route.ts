@@ -27,6 +27,27 @@ const CATEGORY_KEYS = Object.keys(defaultEventToggles()) as NotificationCategory
 const TEMPLATE_KEYS = EMAIL_TEMPLATE_DEFS.map((def) => def.key);
 const MAX_FIELD_LENGTH = 5000;
 
+/** Masks an email for admin display: `g***@geoconinc.com`. */
+function fromAddressHint(raw: string | undefined): string | null {
+  const value = raw?.trim();
+  if (!value) return null;
+  const at = value.indexOf("@");
+  if (at <= 0) return "***";
+  return `${value[0]}***${value.slice(at)}`;
+}
+
+function buildDeliveryDiagnostics(): NotificationConfigAdminView["delivery"] {
+  const from = process.env.NOTIFY_FROM_ADDRESS?.trim();
+  return {
+    driver: (process.env.EMAIL_DRIVER ?? "auto").toLowerCase(),
+    fromAddressSet: Boolean(from),
+    fromAddressHint: fromAddressHint(from),
+    graphTenantSet: Boolean(process.env.GRAPH_APP_TENANT_ID?.trim()),
+    graphClientIdSet: Boolean(process.env.GRAPH_APP_CLIENT_ID?.trim()),
+    graphClientSecretSet: Boolean(process.env.GRAPH_APP_CLIENT_SECRET?.trim())
+  };
+}
+
 /** Effective (merged with defaults) settings plus who/when last saved. */
 async function buildAdminView(): Promise<NotificationConfigAdminView> {
   const [effective, stored] = await Promise.all([
@@ -39,6 +60,7 @@ async function buildAdminView(): Promise<NotificationConfigAdminView> {
     testRecipients: effective.testRecipients,
     eventToggles: effective.eventToggles,
     templates: effective.templates,
+    delivery: buildDeliveryDiagnostics(),
     meta: {
       updatedAt: stored?.updatedAt ?? null,
       updatedByEmail: stored?.updatedByEmail ?? null

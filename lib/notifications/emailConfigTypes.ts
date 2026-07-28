@@ -288,6 +288,15 @@ export interface NotificationConfigAdminView {
   testRecipients: string[];
   eventToggles: Record<NotificationCategory, boolean>;
   templates: Record<EmailTemplateKey, EmailTemplate>;
+  /** Runtime delivery diagnostics (env vars). Secrets are never returned. */
+  delivery: {
+    driver: string;
+    fromAddressSet: boolean;
+    fromAddressHint: string | null;
+    graphTenantSet: boolean;
+    graphClientIdSet: boolean;
+    graphClientSecretSet: boolean;
+  };
   meta: {
     updatedAt: string | null;
     updatedByEmail: string | null;
