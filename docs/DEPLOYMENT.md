@@ -217,6 +217,11 @@ POST {APP_BASE_URL}/api/integrations/gms/projects
 | `feeEstimate` | number | optional | Shown in project notes |
 | `wonDate` | string | optional | ISO date; becomes the project start date |
 | `dueDate` | string | optional | ISO date; becomes the timeline end date |
+| `prevailingWage` | boolean | optional | Prevailing-wage job flag |
+| `pwCategory` | string \| null | optional | Kind of prevailing-wage job |
+| `dasRequired` | boolean | optional | Whether DAS setup is required |
+| `dasStatus` | string \| null | optional | `not_completed` or `completed` |
+| `dasCompletedAt` | string \| null | optional | When DAS setup was completed |
 
 **Behavior**
 
@@ -225,6 +230,27 @@ POST {APP_BASE_URL}/api/integrations/gms/projects
   with the default DAS subitems and sends creation emails.
 - PM/Director users are auto-created (upserted) if they don't exist.
 - Office codes map to timeline offices via `lib/domain/gmsOfficeMap.ts`.
+- When `dasStatus` is `completed`, the board marks the **DAS Setup Sheet** checklist
+  item Completed automatically (so a GMS form submit flips the board without re-entry).
+- **Prevailing wage only:** if `prevailingWage` is not `true`, the push is accepted but
+  **skipped** (`{ ok: true, skipped: "not_prevailing_wage" }`) — Timeline does not create
+  non-PW projects.
+- GMS imports do **not** email the project manager (DAS is completed in GMS; checklist
+  emails go to accounting assignees only).
+
+### Daily DAS status pull (Timeline → GMS)
+
+GMS also exposes a read endpoint. Schedule this on Timeline (Logic App / cron):
+
+```
+POST {APP_BASE_URL}/api/cron/gms-das-status
+Header: X-Cron-Secret: $CRON_SHARED_SECRET
+```
+
+Optional query: `?status=not_completed`, `?since=2026-08-01`, `?projectNumber=SD-26-0123`
+
+Uses `GMS_INTEGRATION_API_KEY` to call GMS `GET /api/integrations/das-status` and updates
+matching projects by `projectNumber` (plus DAS Setup Sheet completion when status flips).
 
 **Responses**
 

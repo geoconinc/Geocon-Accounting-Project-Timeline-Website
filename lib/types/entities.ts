@@ -53,6 +53,16 @@ export interface Project {
   position: number;
   /** GMS (proposal system) internal proposal ID — set by integration webhook. */
   gmsProposalId?: string | null;
+  /** From GMS: whether this is a prevailing-wage job. */
+  prevailingWage?: boolean;
+  /** From GMS: prevailing-wage category label (free text). */
+  pwCategory?: string | null;
+  /** From GMS: whether a DAS setup is required for this project. */
+  dasRequired?: boolean;
+  /** From GMS: `not_completed` | `completed` (and tolerant of future values). */
+  dasStatus?: string | null;
+  /** From GMS: when DAS setup was marked completed. */
+  dasCompletedAt?: string | null;
 }
 
 export interface Subitem {

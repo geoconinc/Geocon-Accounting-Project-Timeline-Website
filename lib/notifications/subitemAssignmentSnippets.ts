@@ -4,7 +4,7 @@
  */
 export const SUBITEM_ASSIGNMENT_SNIPPET: Record<string, string> = {
   "DAS Setup Sheet":
-    "Complete the DAS setup sheet for this project and mark it done in the timeline when finished.",
+    "Status is synced from GMS when the PM completes the DAS setup form there — no action needed in Timeline.",
   "DAS 140 & Confirmation":
     "Prepare and file DAS 140 with confirmation for this project; update status when submitted.",
   "DAS 142 & Confirmation":

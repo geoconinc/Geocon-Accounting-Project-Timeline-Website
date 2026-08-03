@@ -35,9 +35,53 @@ function rosterPickerUsers(rosterMatched: User[], allUsers: User[], currentId: s
   return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function DasStatusCell({
+  status,
+  required,
+  category
+}: {
+  status: string | null | undefined;
+  required: boolean | undefined;
+  category: string | null | undefined;
+}) {
+  if (!status && !required) {
+    return <span className="text-[11px] text-slate-400">—</span>;
+  }
+  const completed = status === "completed";
+  const label =
+    status === "completed"
+      ? "Done"
+      : status === "not_completed"
+        ? "Open"
+        : status?.trim() || (required ? "Required" : "—");
+  const title = [
+    "Synced from GMS",
+    required ? "DAS required" : "DAS not required",
+    status ? `Status: ${status}` : null,
+    category ? `PW category: ${category}` : null
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <span
+      title={title}
+      className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium ${
+        completed
+          ? "bg-emerald-50 text-emerald-700"
+          : required
+            ? "bg-amber-50 text-amber-800"
+            : "bg-slate-100 text-slate-600"
+      }`}
+    >
+      {label}
+    </span>
+  );
+}
+
 // Project group is itself a sub-grid: code | name | notify
 export const PROJECT_COLS =
-  "360px 80px 80px 90px 130px 130px 180px 110px 130px 130px 140px 140px minmax(140px,1fr) 110px 70px minmax(140px,1fr) 80px";
+  "360px 80px 80px 90px 130px 130px 180px 110px 130px 130px 140px 140px minmax(140px,1fr) 110px 70px 90px 70px minmax(140px,1fr) 80px";
 
 export function ProjectHeader({ collapsed }: { collapsed: boolean }) {
   if (collapsed) return null;
@@ -66,6 +110,12 @@ export function ProjectHeader({ collapsed }: { collapsed: boolean }) {
       <div className="header-cell">Notes</div>
       <div className="header-cell">DIR #</div>
       <div className="header-cell">Union</div>
+      <div className="header-cell" title="Prevailing wage (from GMS)">
+        PW
+      </div>
+      <div className="header-cell" title="DAS status (from GMS)">
+        DAS
+      </div>
       <div className="header-cell">Reporting Systems</div>
       <div className="header-cell">CPR Contact</div>
       <div className="header-cell" />
@@ -304,6 +354,16 @@ export function ProjectRow({
         </div>
         <div className="cell !p-0">
           <CheckboxCell value={project.union} onChange={(b) => patch({ union: b })} />
+        </div>
+        <div className="cell !p-0">
+          <CheckboxCell value={project.prevailingWage ?? false} readOnly />
+        </div>
+        <div className="cell">
+          <DasStatusCell
+            status={project.dasStatus}
+            required={project.dasRequired}
+            category={project.pwCategory}
+          />
         </div>
         <div className="cell">
           <TextCell

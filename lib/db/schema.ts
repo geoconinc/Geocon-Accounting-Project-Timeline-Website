@@ -80,7 +80,12 @@ export const projects = pgTable("projects", {
   lastUpdatedAt: timestamp("last_updated_at", { withTimezone: true }).notNull().defaultNow(),
   lastUpdatedBy: uuid("last_updated_by").references(() => users.id, { onDelete: "set null" }),
   position: integer("position").notNull().default(0),
-  gmsProposalId: text("gms_proposal_id")
+  gmsProposalId: text("gms_proposal_id"),
+  prevailingWage: boolean("prevailing_wage").notNull().default(false),
+  pwCategory: text("pw_category"),
+  dasRequired: boolean("das_required").notNull().default(false),
+  dasStatus: text("das_status"),
+  dasCompletedAt: timestamp("das_completed_at", { withTimezone: true })
 });
 
 export const subitems = pgTable("subitems", {

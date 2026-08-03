@@ -18,12 +18,23 @@ export interface CreateProjectWithSubitemsInput {
   actorId: string | null;
   actorName: string;
   sendNotifications?: boolean;
+  /**
+   * When true, creation emails go only to checklist assignees (accounting), not the
+   * project manager. Used for GMS imports where DAS is completed in GMS, not here.
+   */
+  skipProjectManagerEmail?: boolean;
 }
 
 export async function createProjectWithSubitems(
   input: CreateProjectWithSubitemsInput
 ): Promise<Project> {
-  const { project: body, actorId, actorName, sendNotifications = true } = input;
+  const {
+    project: body,
+    actorId,
+    actorName,
+    sendNotifications = true,
+    skipProjectManagerEmail = false
+  } = input;
 
   await Promise.all([
     syncRoleAssigneeUsersIntoStorage(),
@@ -71,13 +82,17 @@ export async function createProjectWithSubitems(
   });
 
   if (sendNotifications) {
-    await sendProjectCreationNotifications(project, actorName);
+    await sendProjectCreationNotifications(project, actorName, { skipProjectManagerEmail });
   }
 
   return project;
 }
 
-async function sendProjectCreationNotifications(project: Project, creatorName: string) {
+async function sendProjectCreationNotifications(
+  project: Project,
+  creatorName: string,
+  opts: { skipProjectManagerEmail: boolean }
+) {
   const mailCtx = {
     projectCode: project.code,
     projectName: project.name,
@@ -99,7 +114,7 @@ async function sendProjectCreationNotifications(project: Project, creatorName: s
     byUser.set(s.ownerId, arr);
   }
 
-  if (project.projectManagerId) {
+  if (project.projectManagerId && !opts.skipProjectManagerEmail) {
     const pmUser = await storage.getUserById(project.projectManagerId);
     if (pmUser) {
       const tasks = sortTasks(byUser.get(project.projectManagerId) ?? []);
@@ -117,6 +132,8 @@ async function sendProjectCreationNotifications(project: Project, creatorName: s
         html
       });
     }
+  }
+  if (project.projectManagerId) {
     byUser.delete(project.projectManagerId);
   }
 

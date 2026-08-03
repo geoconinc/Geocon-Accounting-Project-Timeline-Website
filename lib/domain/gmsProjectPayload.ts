@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { gmsDasFieldsSchema } from "@/lib/domain/gmsDas";
 
 const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN ?? "geoconinc.com").toLowerCase();
 
@@ -7,21 +8,23 @@ export const personSchema = z.object({
   email: z.string().email()
 });
 
-export const gmsProjectPayloadSchema = z.object({
-  projectNumber: z.string().min(1),
-  projectName: z.string().min(1),
-  gmsProposalId: z.string().min(1).optional(),
-  proposalNumber: z.string().optional(),
-  clientName: z.string().optional(),
-  officeCode: z.string().min(1),
-  officeName: z.string().optional(),
-  company: z.string().optional(),
-  projectManager: personSchema,
-  projectDirector: personSchema,
-  feeEstimate: z.number().optional(),
-  wonDate: z.string().optional(),
-  dueDate: z.string().optional()
-});
+export const gmsProjectPayloadSchema = z
+  .object({
+    projectNumber: z.string().min(1),
+    projectName: z.string().min(1),
+    gmsProposalId: z.string().min(1).optional(),
+    proposalNumber: z.string().optional(),
+    clientName: z.string().optional(),
+    officeCode: z.string().min(1),
+    officeName: z.string().optional(),
+    company: z.string().optional(),
+    projectManager: personSchema,
+    projectDirector: personSchema,
+    feeEstimate: z.number().optional(),
+    wonDate: z.string().optional(),
+    dueDate: z.string().optional()
+  })
+  .merge(gmsDasFieldsSchema);
 
 export type GmsProjectPayload = z.infer<typeof gmsProjectPayloadSchema>;
 
@@ -50,5 +53,13 @@ export function buildGmsNotes(payload: GmsProjectPayload): string {
   if (payload.feeEstimate != null) {
     lines.push(`Fee estimate: $${payload.feeEstimate.toLocaleString("en-US")}`);
   }
+  if (payload.prevailingWage != null) {
+    lines.push(`Prevailing wage: ${payload.prevailingWage ? "yes" : "no"}`);
+  }
+  if (payload.pwCategory) lines.push(`PW category: ${payload.pwCategory}`);
+  if (payload.dasRequired != null) {
+    lines.push(`DAS required: ${payload.dasRequired ? "yes" : "no"}`);
+  }
+  if (payload.dasStatus) lines.push(`DAS status: ${payload.dasStatus}`);
   return lines.join("\n");
 }

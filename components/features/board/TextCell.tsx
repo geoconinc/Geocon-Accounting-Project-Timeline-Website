@@ -43,18 +43,24 @@ export function TextCell({
 
 export function CheckboxCell({
   value,
-  onChange
+  onChange,
+  readOnly = false
 }: {
   value: boolean;
-  onChange: (b: boolean) => void;
+  onChange?: (b: boolean) => void;
+  readOnly?: boolean;
 }) {
   return (
     <div className="w-full h-full flex items-center justify-center">
       <input
         type="checkbox"
         checked={value}
-        onChange={(e) => onChange(e.target.checked)}
-        className="accent-brand cursor-pointer"
+        disabled={readOnly}
+        onChange={(e) => {
+          if (!readOnly && onChange) onChange(e.target.checked);
+        }}
+        title={readOnly ? "Set by GMS (read-only)" : undefined}
+        className={`accent-brand ${readOnly ? "cursor-default opacity-80" : "cursor-pointer"}`}
       />
     </div>
   );

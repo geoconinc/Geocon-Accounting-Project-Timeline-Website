@@ -56,7 +56,12 @@ function mapProject(r: typeof projects.$inferSelect): Project {
     lastUpdatedAt: tsIso(r.lastUpdatedAt),
     lastUpdatedBy: r.lastUpdatedBy,
     position: r.position,
-    gmsProposalId: r.gmsProposalId
+    gmsProposalId: r.gmsProposalId,
+    prevailingWage: r.prevailingWage,
+    pwCategory: r.pwCategory,
+    dasRequired: r.dasRequired,
+    dasStatus: r.dasStatus,
+    dasCompletedAt: r.dasCompletedAt ? tsIso(r.dasCompletedAt) : null
   };
 }
 
@@ -290,6 +295,11 @@ export const postgresStore: Storage = {
         notes: input.notes,
         lastUpdatedBy: input.lastUpdatedBy ?? null,
         gmsProposalId: input.gmsProposalId ?? null,
+        prevailingWage: input.prevailingWage ?? false,
+        pwCategory: input.pwCategory ?? null,
+        dasRequired: input.dasRequired ?? false,
+        dasStatus: input.dasStatus ?? null,
+        dasCompletedAt: input.dasCompletedAt ? new Date(input.dasCompletedAt) : null,
         position: count
       })
       .returning();
@@ -330,6 +340,13 @@ export const postgresStore: Storage = {
         ...(patch.projectDirectorId !== undefined ? { projectDirectorId: patch.projectDirectorId } : {}),
         ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
         ...(patch.gmsProposalId !== undefined ? { gmsProposalId: patch.gmsProposalId } : {}),
+        ...(patch.prevailingWage !== undefined ? { prevailingWage: patch.prevailingWage } : {}),
+        ...(patch.pwCategory !== undefined ? { pwCategory: patch.pwCategory } : {}),
+        ...(patch.dasRequired !== undefined ? { dasRequired: patch.dasRequired } : {}),
+        ...(patch.dasStatus !== undefined ? { dasStatus: patch.dasStatus } : {}),
+        ...(patch.dasCompletedAt !== undefined
+          ? { dasCompletedAt: patch.dasCompletedAt ? new Date(patch.dasCompletedAt) : null }
+          : {}),
         ...(patch.position !== undefined ? { position: patch.position } : {}),
         lastUpdatedAt: new Date(),
         lastUpdatedBy: actorId

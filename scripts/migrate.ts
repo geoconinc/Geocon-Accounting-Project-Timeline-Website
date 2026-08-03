@@ -11,7 +11,8 @@ const MIGRATIONS = [
   "0006_subitem_created_at.sql",
   "0007_file_data.sql",
   "0008_users_last_login_at.sql",
-  "0009_gms_integration.sql"
+  "0009_gms_integration.sql",
+  "0010_gms_das_fields.sql"
 ];
 
 const BASELINE_FOR_EXISTING_DB = MIGRATIONS.slice(0, 5);

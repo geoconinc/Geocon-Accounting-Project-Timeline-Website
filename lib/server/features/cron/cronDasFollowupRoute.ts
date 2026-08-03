@@ -5,7 +5,7 @@ import { buildDasFollowupDigestEmail, type DasFollowupItem } from "@/lib/notific
 import { getEffectiveNotificationConfig, isCategoryEnabled } from "@/lib/notifications/emailConfig";
 
 const DAS_NAMES = new Set([
-  "DAS Setup Sheet",
+  // "DAS Setup Sheet" is owned by GMS status sync — do not email PMs about it from Timeline.
   "DAS 140 & Confirmation",
   "DAS 142 & Confirmation"
 ]);
@@ -16,8 +16,8 @@ const SKIP_STATUSES = new Set(["Completed", "NA"]);
  * Hit weekly by an external scheduler (Azure Timer / cron) with header
  * X-Cron-Secret: $CRON_SHARED_SECRET.
  *
- * Sends a single digest email per owner listing all their incomplete
- * DAS Setup Sheet, DAS 140, and DAS 142 subitems across all projects.
+ * Sends a single digest email per owner listing incomplete DAS 140 / DAS 142
+ * checklist items (accounting). DAS Setup Sheet status comes from GMS, not email.
  */
 export async function POST(req: Request) {
   const secret = req.headers.get("x-cron-secret");
