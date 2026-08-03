@@ -23,6 +23,10 @@ export interface Storage {
   createProject(input: Omit<Project, "id" | "lastUpdatedAt" | "position"> & { id?: string }): Promise<Project>;
   updateProject(id: string, patch: Partial<Project>, actorId: string | null): Promise<Project | null>;
   deleteProject(id: string): Promise<void>;
+  /** Deletes every project (and cascading subitems/files). Returns deleted project ids. */
+  deleteAllProjects(): Promise<string[]>;
+  /** Clears the activity/audit log. */
+  clearActivity(): Promise<number>;
 
   // subitems
   listAllSubitems(): Promise<Subitem[]>;

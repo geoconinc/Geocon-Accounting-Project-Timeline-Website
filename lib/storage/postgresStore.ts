@@ -373,6 +373,28 @@ export const postgresStore: Storage = {
     });
   },
 
+  async deleteAllProjects() {
+    const db = getDb();
+    const rows = await db.select({ id: projects.id }).from(projects);
+    const ids = rows.map((r) => r.id);
+    if (ids.length === 0) return [];
+
+    await db.transaction(async (tx) => {
+      // Files are parented by project or subitem; wipe all of them with the board reset.
+      await tx.delete(files);
+      await tx.delete(subitems);
+      await tx.delete(projects);
+    });
+    return ids;
+  },
+
+  async clearActivity() {
+    const db = getDb();
+    const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(activity);
+    await db.delete(activity);
+    return count;
+  },
+
   async listAllSubitems() {
     const db = getDb();
     const rows = await db

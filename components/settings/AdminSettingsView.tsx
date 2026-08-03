@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, ChevronUp, Database, LayoutDashboard, Plus, Save, Settings, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Database, LayoutDashboard, Plus, Save, Settings, Trash2, AlertTriangle } from "lucide-react";
 import type { OfficeAssigneeRow } from "@/lib/domain/officeAssigneeResolve";
 import type { GeoconRoleAssigneesFile } from "@/lib/types/roleAssigneeData";
 import { formatAppVersion } from "@/lib/config/appVersion";
@@ -53,7 +53,7 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
 
   const [boardAdminEmails, setBoardAdminEmails] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<
-    "pm" | "director" | "office" | "admins" | "email" | "notifications"
+    "pm" | "director" | "office" | "admins" | "email" | "notifications" | "danger"
   >("pm");
   const [dbStats, setDbStats] = useState<DbStats | null>(null);
   const [dbLoading, setDbLoading] = useState(true);
@@ -62,6 +62,10 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailErr, setEmailErr] = useState<string | null>(null);
   const [emailOk, setEmailOk] = useState<string | null>(null);
+  const [resetConfirm, setResetConfirm] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [resetErr, setResetErr] = useState<string | null>(null);
+  const [resetOk, setResetOk] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -179,6 +183,47 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
     }
   }
 
+  async function resetBoard() {
+    setResetErr(null);
+    setResetOk(null);
+    if (resetConfirm !== "RESET") {
+      setResetErr('Type RESET in the box to enable the reset button.');
+      return;
+    }
+    if (
+      !confirm(
+        "This permanently deletes ALL projects, checklist items, and uploaded files, and clears the activity log.\n\nUsers and site settings are kept.\n\nContinue?"
+      )
+    ) {
+      return;
+    }
+    setResetting(true);
+    try {
+      const res = await fetch("/api/admin/reset-board", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ confirm: "RESET" })
+      });
+      if (res.status === 403) {
+        setResetErr("Only the app owner can reset the board.");
+        return;
+      }
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+        throw new Error(j.message ?? j.error ?? `Reset failed (${res.status})`);
+      }
+      const data = (await res.json()) as { projectsDeleted: number; activityCleared: number };
+      setResetConfirm("");
+      setResetOk(
+        `Board reset. Deleted ${data.projectsDeleted} project(s) and cleared ${data.activityCleared} activity row(s). Reload the board to see an empty list.`
+      );
+    } catch (e) {
+      setResetErr(e instanceof Error ? e.message : "Reset failed");
+    } finally {
+      setResetting(false);
+    }
+  }
+
   async function save() {
     setErr(null);
     setOk(null);
@@ -238,10 +283,11 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
     { key: "office", label: "Office Directory", count: officeAssignees.length },
     { key: "admins", label: "Board Admins", count: boardAdminEmails.length },
     { key: "email", label: "Email Templates" },
-    { key: "notifications", label: "Notifications" }
+    { key: "notifications", label: "Notifications" },
+    { key: "danger", label: "Danger zone" }
   ];
 
-  const isEmailTab = activeTab === "email" || activeTab === "notifications";
+  const hideRosterSave = activeTab === "email" || activeTab === "notifications" || activeTab === "danger";
 
   return (
     <div className="h-full w-full min-w-0 overflow-y-auto p-6 lg:p-8">
@@ -373,8 +419,18 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
               onReload={() => void loadEmail()}
             />
           )}
+          {activeTab === "danger" && (
+            <DangerZoneTab
+              confirmText={resetConfirm}
+              onConfirmText={setResetConfirm}
+              resetting={resetting}
+              err={resetErr}
+              ok={resetOk}
+              onReset={() => void resetBoard()}
+            />
+          )}
 
-          {!isEmailTab && (
+          {!hideRosterSave && (
             <div className="flex items-center gap-3 mt-6 pt-4 border-t border-slate-200">
               <button
                 type="button"
@@ -1133,6 +1189,71 @@ function NotificationTogglesTab({
       </div>
 
       <EmailSaveBar saving={saving} err={err} ok={ok} onSave={onSave} onReload={onReload} />
+    </div>
+  );
+}
+
+function DangerZoneTab({
+  confirmText,
+  onConfirmText,
+  resetting,
+  err,
+  ok,
+  onReset
+}: {
+  confirmText: string;
+  onConfirmText: (value: string) => void;
+  resetting: boolean;
+  err: string | null;
+  ok: string | null;
+  onReset: () => void;
+}) {
+  const ready = confirmText === "RESET";
+
+  return (
+    <div className="max-w-xl">
+      <div className="rounded-lg border border-red-200 bg-red-50/70 p-5">
+        <div className="flex items-start gap-3 mb-3">
+          <AlertTriangle className="text-red-600 shrink-0 mt-0.5" size={18} />
+          <div>
+            <h2 className="text-sm font-semibold text-red-800">Reset board for production</h2>
+            <p className="text-xs text-red-700/90 mt-1 leading-relaxed">
+              Permanently deletes <strong>all projects</strong>, checklist items, and uploaded files,
+              and clears the activity log. Use this once before go-live so the board starts empty.
+            </p>
+            <p className="text-xs text-red-700/90 mt-2">
+              Kept: users, login sessions, office directory, admins, and email/notification settings.
+            </p>
+          </div>
+        </div>
+
+        <label className="block mt-4">
+          <span className="text-xs font-medium text-red-800">
+            Type <code className="font-mono bg-white/80 px-1 rounded">RESET</code> to confirm
+          </span>
+          <input
+            type="text"
+            value={confirmText}
+            onChange={(e) => onConfirmText(e.target.value)}
+            placeholder="RESET"
+            autoComplete="off"
+            className="mt-1 w-full border border-red-200 rounded px-2 py-1.5 text-sm font-mono focus:ring-1 focus:ring-red-400 outline-none bg-white"
+          />
+        </label>
+
+        {err && <p className="text-sm text-red-700 mt-3">{err}</p>}
+        {ok && <p className="text-sm text-green-800 mt-3">{ok}</p>}
+
+        <button
+          type="button"
+          onClick={onReset}
+          disabled={!ready || resetting}
+          className="mt-4 inline-flex items-center gap-2 rounded px-3 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:hover:bg-red-600"
+        >
+          <Trash2 size={16} />
+          {resetting ? "Resetting…" : "Delete all projects"}
+        </button>
+      </div>
     </div>
   );
 }

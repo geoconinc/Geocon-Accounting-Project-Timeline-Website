@@ -217,6 +217,30 @@ export const jsonStore: Storage = {
     );
   },
 
+  async deleteAllProjects() {
+    const fileIds: string[] = [];
+    const ids = await mutate((db) => {
+      const projectIds = db.projects.map((p) => p.id);
+      for (const f of db.files) fileIds.push(f.id);
+      db.projects = [];
+      db.subitems = [];
+      db.files = [];
+      return projectIds;
+    });
+    await Promise.all(
+      fileIds.map((fileId) => fs.unlink(path.join(FILES_DIR, fileId)).catch(() => {}))
+    );
+    return ids;
+  },
+
+  async clearActivity() {
+    return mutate((db) => {
+      const n = db.activity.length;
+      db.activity = [];
+      return n;
+    });
+  },
+
   async listAllSubitems() {
     const db = await readDb();
     return [...db.subitems].sort((a, b) => {
