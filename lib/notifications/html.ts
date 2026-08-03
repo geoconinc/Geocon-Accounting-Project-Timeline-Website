@@ -26,6 +26,12 @@ export function boardUrl(projectId?: string | null): string | null {
 export function firstNameFromDisplayName(name: string): string {
   const trimmed = name.trim();
   if (!trimmed) return "there";
-  if (trimmed.includes(",")) return trimmed.split(",")[0].trim();
+
+  // Geocon employee list style: "Lastname, Firstname" → use the given name after the comma.
+  if (trimmed.includes(",")) {
+    const afterComma = trimmed.split(",").slice(1).join(",").trim();
+    if (afterComma) return afterComma.split(/\s+/)[0] ?? afterComma;
+  }
+
   return trimmed.split(/\s+/)[0] ?? trimmed;
 }

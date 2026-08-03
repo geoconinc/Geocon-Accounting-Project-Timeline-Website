@@ -27,8 +27,9 @@ describe("escapeHtml", () => {
 });
 
 describe("firstNameFromDisplayName", () => {
-  it("takes the part before a comma (Last, First style)", () => {
-    expect(firstNameFromDisplayName("Brightman, Joanne")).toBe("Brightman");
+  it("takes the given name after a comma (Last, First style)", () => {
+    expect(firstNameFromDisplayName("Brightman, Joanne")).toBe("Joanne");
+    expect(firstNameFromDisplayName("Mizejewski, Kailua")).toBe("Kailua");
   });
   it("takes the first word of a First Last name", () => {
     expect(firstNameFromDisplayName("Jane Doe")).toBe("Jane");
@@ -65,6 +66,16 @@ describe("boardUrl", () => {
 });
 
 describe("wrapEmailLayout", () => {
+  const originalBase = process.env.APP_BASE_URL;
+  const originalRedirect = process.env.NEXT_PUBLIC_MSAL_REDIRECT_URI;
+
+  afterEach(() => {
+    if (originalBase === undefined) delete process.env.APP_BASE_URL;
+    else process.env.APP_BASE_URL = originalBase;
+    if (originalRedirect === undefined) delete process.env.NEXT_PUBLIC_MSAL_REDIRECT_URI;
+    else process.env.NEXT_PUBLIC_MSAL_REDIRECT_URI = originalRedirect;
+  });
+
   it("includes the escaped headline and body", () => {
     const html = wrapEmailLayout({
       headline: "Hi <script>",
@@ -76,6 +87,13 @@ describe("wrapEmailLayout", () => {
     expect(html).toContain("<p>Body</p>");
     expect(html).toContain("https://example.com");
     expect(html).toContain("Open");
+  });
+
+  it("embeds the Geocon logo when a base URL is configured", () => {
+    process.env.APP_BASE_URL = "https://timeline.example.com";
+    const html = wrapEmailLayout({ headline: "New project", bodyHtml: "Body" });
+    expect(html).toContain('src="https://timeline.example.com/logo.png"');
+    expect(html).toContain('alt="Geocon"');
   });
 
   it("omits the CTA when label or URL is missing", () => {
@@ -170,6 +188,13 @@ describe("project creation / digest templates", () => {
     expect(mail.subject).toContain("F-6");
     expect(mail.message).toContain("Training Fund");
     expect(mail.html).toContain("Section 3 Forms");
+  });
+
+  it("buildAssigneeDigestEmail greets with first name from Last, First display names", async () => {
+    const mail = await buildAssigneeDigestEmail(ctx, "Mizejewski, Kailua", ["Training Fund"]);
+    expect(mail.html).toContain("Hi Kailua,");
+    expect(mail.html).not.toContain("Hi Mizejewski");
+    expect(mail.message).toMatch(/^Hi Kailua,/);
   });
 
   it("buildDasFollowupDigestEmail pluralizes correctly", async () => {

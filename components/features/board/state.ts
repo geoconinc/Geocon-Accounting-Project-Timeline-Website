@@ -114,6 +114,9 @@ export function useBoardState(initial: BoardData) {
         const { id } = JSON.parse(ev.data) as { id: string };
         dispatchRef.current({ type: "deleteProject", id });
       });
+      es.addEventListener("board.reset", () => {
+        void refetch();
+      });
       es.addEventListener("subitem.upsert", scheduleRefetch);
       es.addEventListener("subitem.delete", (ev: MessageEvent) => {
         const { id } = JSON.parse(ev.data) as { id: string };

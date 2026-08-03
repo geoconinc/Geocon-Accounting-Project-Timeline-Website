@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/server/routeAuth";
 import { isOwnerUser } from "@/lib/auth/superAdmin";
@@ -42,6 +43,23 @@ export async function POST(req: Request) {
   const deletedIds = await storage.deleteAllProjects();
   const activityCleared = await storage.clearActivity();
 
+  // Verify the wipe stuck (guards against silent no-ops / wrong DB).
+  const remaining = await storage.listProjects();
+  if (remaining.length > 0) {
+    console.error("board reset failed: projects still present", remaining.length);
+    return NextResponse.json(
+      {
+        error: "reset_incomplete",
+        message: `Delete ran but ${remaining.length} project(s) still remain. Check database connection.`
+      },
+      { status: 500 }
+    );
+  }
+
+  bus.publish({
+    type: "board.reset",
+    payload: { projectsDeleted: deletedIds.length }
+  });
   for (const id of deletedIds) {
     bus.publish({ type: "project.delete", payload: { id } });
   }
@@ -49,7 +67,7 @@ export async function POST(req: Request) {
   await recordActivity({
     actorId: user.id,
     entityType: "project",
-    entityId: "board-reset",
+    entityId: randomUUID(),
     action: "delete",
     payload: {
       source: "admin_reset",
@@ -61,6 +79,7 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     projectsDeleted: deletedIds.length,
-    activityCleared
+    activityCleared,
+    remaining: 0
   });
 }

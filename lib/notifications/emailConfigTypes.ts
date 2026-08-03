@@ -103,8 +103,9 @@ export const EMAIL_TEMPLATE_DEFS: EmailTemplateDef[] = [
       subject: "Due today: {{subitemName}} · {{projectCode}}",
       body:
         "Hi {{firstName}},\n\n" +
-        "This is a reminder that the checklist item \"{{subitemName}}\" on project {{projectCode}} — {{projectName}} is due today ({{dueDate}}).\n\n" +
-        "Please complete the item or update its status in the timeline."
+        "Reminder: \"{{subitemName}}\" is due today ({{dueDate}}).\n\n" +
+        "Project: {{projectCode}} — {{projectName}}\n\n" +
+        "Please complete the item or update its status in the Geocon Project Timeline."
     }
   },
   {
@@ -122,8 +123,9 @@ export const EMAIL_TEMPLATE_DEFS: EmailTemplateDef[] = [
       subject: "Assigned: {{subitemName}} · {{projectCode}}",
       body:
         "Hi {{firstName}},\n\n" +
-        "{{actorName}} assigned you to the checklist item \"{{subitemName}}\" on {{projectCode}} — {{projectName}}.\n\n" +
-        "Please complete this item when ready and mark the status in the app."
+        "{{actorName}} assigned you to \"{{subitemName}}\".\n\n" +
+        "Project: {{projectCode}} — {{projectName}}\n\n" +
+        "Open the timeline when you are ready, complete the item, and mark its status."
     }
   },
   {
@@ -140,8 +142,9 @@ export const EMAIL_TEMPLATE_DEFS: EmailTemplateDef[] = [
       subject: "You were assigned to {{projectCode}} — {{projectName}}",
       body:
         "Hi {{firstName}},\n\n" +
-        "{{actorName}} assigned you as project owner on {{projectCode}} — {{projectName}}.\n\n" +
-        "Open the board to review subitems and update statuses."
+        "{{actorName}} assigned you as project owner.\n\n" +
+        "Project: {{projectCode}} — {{projectName}}\n\n" +
+        "Open the board to review checklist items, due dates, and statuses."
     }
   },
   {
@@ -159,7 +162,8 @@ export const EMAIL_TEMPLATE_DEFS: EmailTemplateDef[] = [
       subject: "{{projectCode}} status updated to {{newStatus}}",
       body:
         "Hi {{firstName}},\n\n" +
-        "{{actorName}} updated the status of {{projectCode}} — {{projectName}} to {{newStatus}}."
+        "{{actorName}} updated the project status to {{newStatus}}.\n\n" +
+        "Project: {{projectCode}} — {{projectName}}"
     }
   },
   {
@@ -174,11 +178,12 @@ export const EMAIL_TEMPLATE_DEFS: EmailTemplateDef[] = [
       { name: "messageBody", description: "The typed message" }
     ],
     default: {
-      subject: "Project update: {{projectCode}} — {{projectName}}",
+      subject: "Message: {{projectCode}} — {{projectName}}",
       body:
         "Hi {{firstName}},\n\n" +
         "{{actorName}} sent you a message about {{projectCode}} — {{projectName}}:\n\n" +
-        "{{messageBody}}"
+        "{{messageBody}}\n\n" +
+        "You can reply in the Project Timeline or follow up with the sender directly."
     }
   },
   {
@@ -198,9 +203,13 @@ export const EMAIL_TEMPLATE_DEFS: EmailTemplateDef[] = [
       subject: "Action needed: DAS 140 for {{projectCode}} — {{projectName}}",
       body:
         "Hi {{firstName}},\n\n" +
-        "{{creatorName}} created project {{projectCode}} — {{projectName}} ({{office}}) and assigned you as project manager.\n\n" +
-        "DAS 140: Please ensure the DAS 140 form is set up and completed for this project. If it is not done yet, you are the accountable contact.\n\n" +
+        "{{creatorName}} created a new project and assigned you as project manager.\n\n" +
+        "Project: {{projectCode}} — {{projectName}}\n" +
+        "Office: {{office}}\n\n" +
+        "Your responsibility: ensure DAS 140 is set up and completed for this job. " +
+        "If it is not done yet, you are the accountable contact.\n\n" +
         "{{setupNote}}\n\n" +
+        "Assigned checklist items:\n\n" +
         "{{taskList}}\n\n" +
         "Update statuses and attach files in the timeline when each step is complete."
     }
@@ -221,8 +230,10 @@ export const EMAIL_TEMPLATE_DEFS: EmailTemplateDef[] = [
       subject: "New project {{projectCode}}: your tasks ({{office}})",
       body:
         "Hi {{firstName}},\n\n" +
-        "{{creatorName}} created a new project in the Geocon Project Timeline: {{projectCode}} — {{projectName}} ({{office}}).\n\n" +
-        "You are assigned the following checklist items (complete them in the app when ready):\n\n" +
+        "{{creatorName}} created a new project in the Geocon Project Timeline.\n\n" +
+        "Project: {{projectCode}} — {{projectName}}\n" +
+        "Office: {{office}}\n\n" +
+        "You are assigned the following checklist items. Complete them in the app when ready:\n\n" +
         "{{taskList}}\n\n" +
         "If you have questions, contact the project manager listed on the board."
     }
@@ -241,9 +252,9 @@ export const EMAIL_TEMPLATE_DEFS: EmailTemplateDef[] = [
       subject: "Weekly reminder: {{itemCount}} incomplete DAS {{itemLabel}}",
       body:
         "Hi {{firstName}},\n\n" +
-        "This is your weekly reminder that you have {{itemCount}} incomplete DAS {{itemLabel}} assigned to you:\n\n" +
+        "Weekly DAS follow-up: you still have {{itemCount}} incomplete DAS {{itemLabel}} assigned to you.\n\n" +
         "{{itemTable}}\n\n" +
-        "Please complete these items or update their status in the app."
+        "Please complete these items or update their status in the Geocon Project Timeline."
     }
   },
   {
@@ -260,9 +271,9 @@ export const EMAIL_TEMPLATE_DEFS: EmailTemplateDef[] = [
       subject: "Action needed: {{itemCount}} {{itemLabel}} incomplete after 1 week",
       body:
         "Hi {{firstName}},\n\n" +
-        "The following checklist {{itemLabel}} ({{itemCount}}) were assigned about a week ago and are still not marked complete:\n\n" +
+        "These checklist {{itemLabel}} ({{itemCount}}) were assigned about a week ago and are still not marked complete:\n\n" +
         "{{itemTable}}\n\n" +
-        "Please complete these items or update their status in the app."
+        "Please complete them or update their status in the Geocon Project Timeline."
     }
   }
 ];

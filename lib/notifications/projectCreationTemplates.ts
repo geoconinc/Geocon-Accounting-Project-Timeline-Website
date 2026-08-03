@@ -1,4 +1,4 @@
-import { boardUrl, escapeHtml } from "./html";
+import { boardUrl, escapeHtml, firstNameFromDisplayName } from "./html";
 import { renderEmailTemplate, type RenderedEmail } from "./templateEngine";
 import { SUBITEM_ASSIGNMENT_SNIPPET } from "./subitemAssignmentSnippets";
 
@@ -15,18 +15,29 @@ function esc(s: string): string {
   return escapeHtml(s);
 }
 
-/** Trusted HTML fragment: the assigned checklist items with per-item hints. */
+/** Trusted HTML fragment: assigned checklist items with per-item hints (no duplicate heading). */
 function taskListHtml(taskNames: string[]): string {
-  const bullets = taskNames
-    .map((t) => {
-      const hint = esc(SUBITEM_ASSIGNMENT_SNIPPET[t] ?? "Complete this item in the Geocon Project Timeline.");
-      return `<li style="margin-bottom:10px"><strong>${esc(t)}</strong><br/>
-        <span style="font-size:12px;color:#64748b">${hint}</span></li>`;
+  if (taskNames.length === 0) {
+    return `<p style="margin:0;color:#64748b;font-size:13px">No checklist items assigned.</p>`;
+  }
+
+  const rows = taskNames
+    .map((t, i) => {
+      const hint = esc(
+        SUBITEM_ASSIGNMENT_SNIPPET[t] ?? "Complete this item in the Geocon Project Timeline."
+      );
+      const border = i === taskNames.length - 1 ? "none" : "1px solid #e2e8f0";
+      return `<tr>
+        <td style="padding:12px 0;border-bottom:${border};vertical-align:top">
+          <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#0f172a">${esc(t)}</p>
+          <p style="margin:0;font-size:12px;color:#64748b;line-height:1.5">${hint}</p>
+        </td>
+      </tr>`;
     })
     .join("");
-  return bullets
-    ? `<p><strong>Your assigned checklist items:</strong></p><ul style="margin:12px 0;padding-left:20px">${bullets}</ul>`
-    : "";
+
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+            style="margin:8px 0 4px;border-collapse:collapse">${rows}</table>`;
 }
 
 function taskListPlain(taskNames: string[]): string {
@@ -53,7 +64,7 @@ export function buildProjectManagerCreationEmail(
     },
     {
       text: {
-        firstName: pmFirstNameOrName,
+        firstName: firstNameFromDisplayName(pmFirstNameOrName),
         creatorName: ctx.creatorName,
         projectCode: ctx.projectCode,
         projectName: ctx.projectName,
@@ -77,7 +88,7 @@ export function buildAssigneeDigestEmail(
     { headline: "New project — Your tasks", ctaLabel: "Open checklist", ctaUrl: boardUrl(ctx.projectId) },
     {
       text: {
-        firstName: recipientFirstNameOrName,
+        firstName: firstNameFromDisplayName(recipientFirstNameOrName),
         creatorName: ctx.creatorName,
         projectCode: ctx.projectCode,
         projectName: ctx.projectName,
