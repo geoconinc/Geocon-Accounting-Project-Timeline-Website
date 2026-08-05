@@ -58,6 +58,8 @@ export function applyFilters<
   if (filters.mineOnly && meId) {
     result = result.filter((p) => {
       if (p.ownerId === meId) return true;
+      if (p.projectManagerId === meId) return true;
+      if (p.projectDirectorId === meId) return true;
       const subs = subitemsByProject[p.id] ?? [];
       return subs.some((s) => s.ownerId === meId);
     });

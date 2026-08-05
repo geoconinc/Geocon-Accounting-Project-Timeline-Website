@@ -201,7 +201,13 @@ export async function POST(req: Request) {
     actorName: "GMS",
     // Accounting owns checklist emails on this site. DAS status comes from GMS — do not email the PM.
     sendNotifications: true,
-    skipProjectManagerEmail: true
+    skipProjectManagerEmail: true,
+    activityPayload: {
+      source: "gms",
+      gmsProposalId: payload.gmsProposalId ?? null,
+      prevailingWage: true,
+      dasStatus: dasPatch.dasStatus ?? payload.dasStatus ?? null
+    }
   });
 
   // DAS Setup Sheet is driven by GMS, not by a PM checklist on this board.
@@ -212,6 +218,20 @@ export async function POST(req: Request) {
     createDasStatus !== undefined
       ? await applyGmsDasFieldsToProject(project.id, { dasStatus: createDasStatus })
       : { projectUpdated: false, setupSheetCompleted: false };
+
+  if (dasSync.setupSheetCompleted) {
+    await recordActivity({
+      actorId: null,
+      entityType: "project",
+      entityId: project.id,
+      action: "update",
+      payload: {
+        source: "gms",
+        setupSheetCompleted: true,
+        dasStatus: createDasStatus ?? null
+      }
+    });
+  }
 
   return NextResponse.json(
     {

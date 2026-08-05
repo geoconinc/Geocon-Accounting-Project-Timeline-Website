@@ -53,6 +53,24 @@ describe("applyFilters — filtering", () => {
     expect(result.map((p) => p.id)).toEqual(["mine"]);
   });
 
+  it("mineOnly keeps projects where the user is project manager", () => {
+    const projects = [
+      project({ id: "pm", ownerId: "u2", projectManagerId: "u1" }),
+      project({ id: "other", ownerId: "u2", projectManagerId: "u2" })
+    ];
+    const result = applyFilters(projects, noSubs, filters({ mineOnly: true }), "u1");
+    expect(result.map((p) => p.id)).toEqual(["pm"]);
+  });
+
+  it("mineOnly keeps projects where the user is project director", () => {
+    const projects = [
+      project({ id: "pd", ownerId: "u2", projectManagerId: "u2", projectDirectorId: "u1" }),
+      project({ id: "other", ownerId: "u2", projectDirectorId: "u2" })
+    ];
+    const result = applyFilters(projects, noSubs, filters({ mineOnly: true }), "u1");
+    expect(result.map((p) => p.id)).toEqual(["pd"]);
+  });
+
   it("mineOnly keeps projects where the user owns a subitem", () => {
     const projects = [project({ id: "p1", ownerId: "someoneElse" })];
     const subs = { p1: [{ name: "Task", ownerId: "u1", status: "NotStarted" }] };

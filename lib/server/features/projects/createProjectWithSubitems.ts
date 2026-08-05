@@ -23,6 +23,8 @@ export interface CreateProjectWithSubitemsInput {
    * project manager. Used for GMS imports where DAS is completed in GMS, not here.
    */
   skipProjectManagerEmail?: boolean;
+  /** Merged into the create audit-log payload (e.g. `{ source: "gms" }`). */
+  activityPayload?: Record<string, unknown>;
 }
 
 export async function createProjectWithSubitems(
@@ -33,7 +35,8 @@ export async function createProjectWithSubitems(
     actorId,
     actorName,
     sendNotifications = true,
-    skipProjectManagerEmail = false
+    skipProjectManagerEmail = false,
+    activityPayload
   } = input;
 
   await Promise.all([
@@ -78,7 +81,12 @@ export async function createProjectWithSubitems(
     entityType: "project",
     entityId: project.id,
     action: "create",
-    payload: { code: project.code, name: project.name, office: project.office }
+    payload: {
+      code: project.code,
+      name: project.name,
+      office: project.office,
+      ...(activityPayload ?? {})
+    }
   });
 
   if (sendNotifications) {
