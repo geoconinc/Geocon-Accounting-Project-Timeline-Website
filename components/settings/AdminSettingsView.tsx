@@ -286,10 +286,13 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
     { key: "director", label: "Project Directors", count: projectDirectors.length },
     { key: "office", label: "Office Directory", count: officeAssignees.length },
     { key: "admins", label: "Board Admins", count: boardAdminEmails.length },
-    { key: "email", label: "Email Templates" },
-    { key: "notifications", label: "Notifications" },
-    { key: "danger", label: "Danger zone" }
+    { key: "notifications", label: "Notifications" }
   ];
+  // Email Templates + Danger zone: only for app owner (mundra@geoconinc.com)
+  if (isOwner) {
+    settingsTabs.splice(4, 0, { key: "email", label: "Email Templates" });
+    settingsTabs.push({ key: "danger", label: "Danger zone" });
+  }
 
   const hideRosterSave = activeTab === "email" || activeTab === "notifications" || activeTab === "danger";
 
@@ -400,7 +403,7 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
               onChange={setBoardAdminEmails}
             />
           )}
-          {activeTab === "email" && (
+          {activeTab === "email" && isOwner && (
             <EmailTemplatesTab
               form={notifForm}
               onPatchTemplate={patchTemplate}
@@ -423,7 +426,7 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
               onReload={() => void loadEmail()}
             />
           )}
-          {activeTab === "danger" && (
+          {activeTab === "danger" && isOwner && (
             <DangerZoneTab
               confirmText={resetConfirm}
               onConfirmText={setResetConfirm}

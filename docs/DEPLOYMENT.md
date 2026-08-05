@@ -234,7 +234,8 @@ POST {APP_BASE_URL}/api/integrations/gms/projects
   item Completed automatically (so a GMS form submit flips the board without re-entry).
 - **Prevailing wage only:** if `prevailingWage` is not `true`, the push is accepted but
   **skipped** (`{ ok: true, skipped: "not_prevailing_wage" }`) — Timeline does not create
-  non-PW projects.
+  non-PW projects. If a matching project already exists, its PW flag is cleared so it
+  drops off the board. The board also hides any existing GMS imports where PW is unchecked.
 - GMS imports do **not** email the project manager (DAS is completed in GMS; checklist
   emails go to accounting assignees only).
 

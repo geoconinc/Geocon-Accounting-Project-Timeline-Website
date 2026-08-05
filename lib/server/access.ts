@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 import { isOwnerUser } from "@/lib/auth/superAdmin";
+import { isVisibleOnTimelineBoard } from "@/lib/domain/timelineBoardVisibility";
 import type { FileRef, Project, Subitem, User } from "@/lib/types";
 
 export interface BoardPayload {
@@ -88,25 +89,35 @@ export async function getBoardPayloadForUser(
 ): Promise<BoardPayload> {
   const includeFiles = options.includeFiles !== false;
 
-  const [projects, users, allSubitems, allFiles] = await Promise.all([
+  const [allProjects, users, allSubitems, allFiles] = await Promise.all([
     storage.listProjects(),
     storage.listUsers(),
     storage.listAllSubitems(),
     includeFiles ? storage.listAllFiles() : Promise.resolve([] as FileRef[])
   ]);
 
+  // GMS may push every won job; Timeline only surfaces prevailing-wage imports.
+  const projects = allProjects.filter(isVisibleOnTimelineBoard);
+  const boardProjectIds = new Set(projects.map((p) => p.id));
+  const boardSubitems = allSubitems.filter((s) => boardProjectIds.has(s.projectId));
+  const boardSubitemIds = new Set(boardSubitems.map((s) => s.id));
+  const boardFiles = allFiles.filter((file) => {
+    if (file.parentType === "project") return boardProjectIds.has(file.parentId);
+    return boardSubitemIds.has(file.parentId);
+  });
+
   if (await hasFullBoardAccessAsync(user)) {
     return {
       projects,
-      subitems: allSubitems,
+      subitems: boardSubitems,
       users,
-      files: allFiles,
+      files: boardFiles,
       me: user.id
     };
   }
 
   const subsByProject = new Map<string, Subitem[]>();
-  for (const subitem of allSubitems) {
+  for (const subitem of boardSubitems) {
     const list = subsByProject.get(subitem.projectId);
     if (list) list.push(subitem);
     else subsByProject.set(subitem.projectId, [subitem]);
@@ -134,9 +145,9 @@ export async function getBoardPayloadForUser(
   }
 
   let files: FileRef[] = [];
-  if (includeFiles && allFiles.length > 0) {
+  if (includeFiles && boardFiles.length > 0) {
     const visibleSubitemIds = new Set(visibleSubitems.map((s) => s.id));
-    files = allFiles.filter((file) => {
+    files = boardFiles.filter((file) => {
       if (file.parentType === "project") {
         return visibleProjectIds.has(file.parentId);
       }

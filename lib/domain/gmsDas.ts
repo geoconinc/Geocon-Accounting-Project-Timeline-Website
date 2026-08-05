@@ -6,14 +6,32 @@ export type GmsDasStatus = (typeof GMS_DAS_STATUSES)[number];
 
 export const gmsDasStatusSchema = z.enum(GMS_DAS_STATUSES);
 
+/** Coerce common GMS boolean wire forms (bool, 0/1, yes/no, true/false strings). */
+export function coerceGmsBoolean(value: unknown): unknown {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") {
+    if (value === 1) return true;
+    if (value === 0) return false;
+    return value;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true" || normalized === "yes" || normalized === "1") return true;
+    if (normalized === "false" || normalized === "no" || normalized === "0") return false;
+  }
+  return value;
+}
+
+const gmsBoolean = z.preprocess(coerceGmsBoolean, z.boolean().optional());
+
 /**
  * Optional DAS / prevailing-wage fields that GMS includes on project push
  * (and on the daily das-status pull). All optional so older GMS callers keep working.
  */
 export const gmsDasFieldsSchema = z.object({
-  prevailingWage: z.boolean().optional(),
+  prevailingWage: gmsBoolean,
   pwCategory: z.string().nullable().optional(),
-  dasRequired: z.boolean().optional(),
+  dasRequired: gmsBoolean,
   dasStatus: z.string().nullable().optional(),
   dasCompletedAt: z.string().nullable().optional()
 });

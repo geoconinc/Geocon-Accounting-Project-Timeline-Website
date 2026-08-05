@@ -4,11 +4,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useBoardState, type BoardData } from "./features/board/state";
 import { Group } from "./features/board/Group";
 import { Toolbar, applyFilters, DEFAULT_FILTERS, type BoardFilters } from "./features/board/Toolbar";
+import { isVisibleOnTimelineBoard } from "@/lib/domain/timelineBoardVisibility";
 import type { Project, Subitem } from "@/lib/types";
 
 export default function Board({ initialData }: { initialData: BoardData }) {
   const { state, dispatch } = useBoardState(initialData);
   const [filters, setFilters] = useState<BoardFilters>(DEFAULT_FILTERS);
+
+  // Defense in depth: hide non-PW GMS imports even if an older payload/SSE upsert includes them.
+  const boardProjects = useMemo(
+    () => state.projects.filter(isVisibleOnTimelineBoard),
+    [state.projects]
+  );
 
   const subsByProject = useMemo(() => {
     const map: Record<string, { name: string; ownerId: string | null; status: string }[]> = {};
@@ -18,8 +25,8 @@ export default function Board({ initialData }: { initialData: BoardData }) {
   }, [state.subitems]);
 
   const filtered = useMemo(
-    () => applyFilters(state.projects, subsByProject, filters, state.me),
-    [state.projects, subsByProject, filters, state.me]
+    () => applyFilters(boardProjects, subsByProject, filters, state.me),
+    [boardProjects, subsByProject, filters, state.me]
   );
 
   const { current, future, completed } = useMemo(() => {

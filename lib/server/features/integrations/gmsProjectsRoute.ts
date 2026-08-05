@@ -80,6 +80,25 @@ export async function POST(req: Request) {
   // Timeline only tracks prevailing-wage jobs. Non-PW projects are acknowledged and dropped
   // so GMS can keep pushing everything without creating noise on this board.
   if (payload.prevailingWage !== true) {
+    // If a previously imported row exists, clear PW so board visibility filters hide it.
+    const existing = await findExistingProject(payload);
+    if (existing && existing.prevailingWage !== false) {
+      const updated = await storage.updateProject(
+        existing.id,
+        { prevailingWage: false },
+        null
+      );
+      if (updated) {
+        bus.publish({ type: "project.upsert", payload: { id: updated.id } });
+        await recordActivity({
+          actorId: null,
+          entityType: "project",
+          entityId: updated.id,
+          action: "update",
+          payload: { source: "gms", skipped: "not_prevailing_wage", prevailingWage: false }
+        });
+      }
+    }
     return NextResponse.json({
       ok: true,
       skipped: "not_prevailing_wage",

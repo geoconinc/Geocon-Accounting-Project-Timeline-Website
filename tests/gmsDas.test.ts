@@ -87,6 +87,16 @@ describe("gmsProjectPayloadSchema — DAS fields", () => {
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.prevailingWage).toBe(false);
   });
+
+  it("coerces string/number prevailingWage wire forms from GMS", () => {
+    const yes = gmsProjectPayloadSchema.safeParse({ ...base, prevailingWage: "yes" });
+    expect(yes.success).toBe(true);
+    if (yes.success) expect(yes.data.prevailingWage).toBe(true);
+
+    const no = gmsProjectPayloadSchema.safeParse({ ...base, prevailingWage: "0" });
+    expect(no.success).toBe(true);
+    if (no.success) expect(no.data.prevailingWage).toBe(false);
+  });
 });
 
 describe("gmsDasStatusResponseSchema", () => {
