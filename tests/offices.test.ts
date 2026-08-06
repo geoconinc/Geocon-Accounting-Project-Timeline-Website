@@ -5,6 +5,7 @@ import {
   resolveOfficeSubitemOwnerId,
   subitemOwnerIdForOffice,
   ASSIGNEE_PROJECT_MANAGER,
+  OFFICE_ASSIGNEES,
   OFFICES
 } from "@/lib/domain/offices";
 
@@ -57,5 +58,38 @@ describe("subitemOwnerIdForOffice", () => {
     expect(subitemOwnerIdForOffice("San Diego", "DAS 140 & Confirmation", users, "u-pm")).toBe(
       "u-lauren"
     );
+  });
+});
+
+describe("OFFICE_ASSIGNEES accounting matrix", () => {
+  const KAILUA_ITEMS = [
+    "Fringe Benefit Statement",
+    "Training Fund",
+    "Other Certified Payroll Setup Forms",
+    "Section 3 Forms",
+    "Employee Information Sheet",
+    "Payroll Deduction Authorization"
+  ] as const;
+
+  it("assigns Kailua on payroll setup forms for every office", () => {
+    for (const office of OFFICES) {
+      for (const item of KAILUA_ITEMS) {
+        expect(OFFICE_ASSIGNEES[office][item]).toBe("Kailua Mizejewski");
+      }
+    }
+  });
+
+  it("assigns Certified Payroll Entry: Keiala for LA/OC/RV/SB offices, Jill for EB/NB/RK/SA/SJ/SD", () => {
+    expect(OFFICE_ASSIGNEES.Burbank["Certified Payroll Entry"]).toBe("Keiala Beck"); // LA
+    expect(OFFICE_ASSIGNEES["Orange County"]["Certified Payroll Entry"]).toBe("Keiala Beck"); // OC
+    expect(OFFICE_ASSIGNEES.Murrieta["Certified Payroll Entry"]).toBe("Keiala Beck"); // RV
+    expect(OFFICE_ASSIGNEES.Redlands["Certified Payroll Entry"]).toBe("Keiala Beck"); // SB
+
+    expect(OFFICE_ASSIGNEES.Livermore["Certified Payroll Entry"]).toBe("Jill Sader"); // EB
+    expect(OFFICE_ASSIGNEES.Suisun["Certified Payroll Entry"]).toBe("Jill Sader"); // NB
+    expect(OFFICE_ASSIGNEES.Rocklin["Certified Payroll Entry"]).toBe("Jill Sader"); // RK
+    expect(OFFICE_ASSIGNEES.Sacramento["Certified Payroll Entry"]).toBe("Jill Sader"); // SA
+    expect(OFFICE_ASSIGNEES.Stockton["Certified Payroll Entry"]).toBe("Jill Sader"); // SJ
+    expect(OFFICE_ASSIGNEES["San Diego"]["Certified Payroll Entry"]).toBe("Jill Sader"); // SD
   });
 });

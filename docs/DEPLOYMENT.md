@@ -206,7 +206,7 @@ POST {APP_BASE_URL}/api/integrations/gms/projects
 |-------|------|----------|-------|
 | `projectNumber` | string | ✅ | Project code; primary dedupe key |
 | `projectName` | string | ✅ | |
-| `officeCode` | string | ✅ | GMS office code — one of `SD, SA, EB, RK, RV, LA, OC, SB`. Others are ignored (project created with no office). |
+| `officeCode` | string | ✅ | GMS office code — one of `SD, SA, EB, NB, SJ, RK, RV, LA, OC, SB` (see `data/gms-code-list-for-sid.json`). Others are ignored (project created with no office). |
 | `projectManager` | `{ name, email }` | ✅ | `email` must be `@geoconinc.com` |
 | `projectDirector` | `{ name, email }` | ✅ | `email` must be `@geoconinc.com` |
 | `gmsProposalId` | string | optional | Secondary dedupe key; store it to allow updates |

@@ -1,10 +1,17 @@
 import { isOffice, type Office } from "./offices";
 
-/** GMS office short codes → timeline office names (accounting matrix). */
+/**
+ * GMS office short codes → timeline office names.
+ * Source of truth for codes: data/gms-code-list-for-sid.json (from GMS production).
+ * Timeline display names keep the accounting board labels where they already exist
+ * (e.g. OC → "Orange County", RV → "Murrieta", SB → "Redlands").
+ */
 export const GMS_OFFICE_CODE_MAP: Record<string, Office> = {
   SD: "San Diego",
   SA: "Sacramento",
   EB: "Livermore",
+  NB: "Suisun",
+  SJ: "Stockton",
   RK: "Rocklin",
   RV: "Murrieta",
   LA: "Burbank",
@@ -14,7 +21,7 @@ export const GMS_OFFICE_CODE_MAP: Record<string, Office> = {
 
 /**
  * Resolve a GMS office code (and optional display name) to a timeline office.
- * Offices not in the accounting matrix (e.g. SJ, NB, CV) return null.
+ * Unknown codes return null unless `officeName` is already a valid timeline office.
  */
 export function mapGmsOfficeToTimeline(
   officeCode: string,

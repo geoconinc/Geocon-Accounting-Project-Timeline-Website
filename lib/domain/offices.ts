@@ -6,15 +6,18 @@ import { resolveMatrixAssigneeId, type OfficeAssigneeRow } from "./officeAssigne
 // data/officeAssigneeDirectory.json to employee-list name + email; users must be
 // synced (syncOfficeAssigneeUsersIntoStorage) before create.
 //
-// Source: accounting assignment matrix by office (May 2026).
-// "DAS Setup Sheet" uses the literal ASSIGNEE_PROJECT_MANAGER — resolved to
-// projectManagerId at project creation.
+// GMS office codes: data/gms-code-list-for-sid.json
+// Certified Payroll Entry: Keiala Beck (LA/OC/RV/SB), Jill Sader (EB/NB/RK/SA/SJ/SD)
+// Payroll setup forms (fringe, training, etc.): Kailua Mizejewski (all offices)
+// "DAS Setup Sheet" uses ASSIGNEE_PROJECT_MANAGER — resolved to projectManagerId at create.
 
 
 export const OFFICES = [
   "San Diego",
   "Sacramento",
   "Livermore",
+  "Suisun",
+  "Stockton",
   "Rocklin",
   "Murrieta",
   "Burbank",
@@ -28,103 +31,89 @@ export type Office = (typeof OFFICES)[number];
 export const ASSIGNEE_PROJECT_MANAGER = "__PROJECT_MANAGER__";
 
 const K = "Kailua Mizejewski";
+const JILL = "Jill Sader";
+const KEIALA = "Keiala Beck";
+
+/** Shared payroll / setup forms — always Kailua. */
+const KAILUA_FORMS = {
+  "Fringe Benefit Statement": K,
+  "Training Fund": K,
+  "Other Certified Payroll Setup Forms": K,
+  "Section 3 Forms": K,
+  "Employee Information Sheet": K,
+  "Payroll Deduction Authorization": K
+} as const;
 
 export const OFFICE_ASSIGNEES: Record<Office, Record<string, string>> = {
   "San Diego": {
     "DAS Setup Sheet": ASSIGNEE_PROJECT_MANAGER,
     "DAS 140 & Confirmation": "Lauren Mason",
     "DAS 142 & Confirmation": "Lauren Mason",
-    "Fringe Benefit Statement": K,
-    "Training Fund": K,
-    "Other Certified Payroll Setup Forms": K,
-    "Certified Payroll Entry": "Jill Sader",
-    "Section 3 Forms": K,
-    "Employee Information Sheet": K,
-    "Payroll Deduction Authorization": K
+    ...KAILUA_FORMS,
+    "Certified Payroll Entry": JILL
   },
   Sacramento: {
     "DAS Setup Sheet": ASSIGNEE_PROJECT_MANAGER,
     "DAS 140 & Confirmation": "Christina Boeschen",
     "DAS 142 & Confirmation": "Christina Boeschen",
-    "Fringe Benefit Statement": K,
-    "Training Fund": K,
-    "Other Certified Payroll Setup Forms": K,
-    "Certified Payroll Entry": "Jill Sader",
-    "Section 3 Forms": K,
-    "Employee Information Sheet": K,
-    "Payroll Deduction Authorization": K
+    ...KAILUA_FORMS,
+    "Certified Payroll Entry": JILL
   },
   Livermore: {
     "DAS Setup Sheet": ASSIGNEE_PROJECT_MANAGER,
     "DAS 140 & Confirmation": "Joanne Brightman",
     "DAS 142 & Confirmation": "Joanne Brightman",
-    "Fringe Benefit Statement": K,
-    "Training Fund": K,
-    "Other Certified Payroll Setup Forms": K,
-    "Certified Payroll Entry": "Jill Sader",
-    "Section 3 Forms": K,
-    "Employee Information Sheet": K,
-    "Payroll Deduction Authorization": K
+    ...KAILUA_FORMS,
+    "Certified Payroll Entry": JILL
+  },
+  Suisun: {
+    "DAS Setup Sheet": ASSIGNEE_PROJECT_MANAGER,
+    "DAS 140 & Confirmation": "Christina Boeschen",
+    "DAS 142 & Confirmation": "Christina Boeschen",
+    ...KAILUA_FORMS,
+    "Certified Payroll Entry": JILL
+  },
+  Stockton: {
+    "DAS Setup Sheet": ASSIGNEE_PROJECT_MANAGER,
+    "DAS 140 & Confirmation": "Christina Boeschen",
+    "DAS 142 & Confirmation": "Christina Boeschen",
+    ...KAILUA_FORMS,
+    "Certified Payroll Entry": JILL
   },
   Rocklin: {
     "DAS Setup Sheet": ASSIGNEE_PROJECT_MANAGER,
     "DAS 140 & Confirmation": "Christina Boeschen",
     "DAS 142 & Confirmation": "Christina Boeschen",
-    "Fringe Benefit Statement": K,
-    "Training Fund": K,
-    "Other Certified Payroll Setup Forms": K,
-    "Certified Payroll Entry": "Jill Sader",
-    "Section 3 Forms": K,
-    "Employee Information Sheet": K,
-    "Payroll Deduction Authorization": K
+    ...KAILUA_FORMS,
+    "Certified Payroll Entry": JILL
   },
   Murrieta: {
     "DAS Setup Sheet": ASSIGNEE_PROJECT_MANAGER,
     "DAS 140 & Confirmation": "Hilda Diaz",
     "DAS 142 & Confirmation": "Hilda Diaz",
-    "Fringe Benefit Statement": K,
-    "Training Fund": K,
-    "Other Certified Payroll Setup Forms": K,
-    "Certified Payroll Entry": "Keiala Beck",
-    "Section 3 Forms": K,
-    "Employee Information Sheet": K,
-    "Payroll Deduction Authorization": K
+    ...KAILUA_FORMS,
+    "Certified Payroll Entry": KEIALA
   },
   Burbank: {
     "DAS Setup Sheet": "Kelsey Filban",
     "DAS 140 & Confirmation": "Kelsey Filban",
     "DAS 142 & Confirmation": "Amanda Fair",
-    "Fringe Benefit Statement": K,
-    "Training Fund": K,
-    "Other Certified Payroll Setup Forms": K,
-    "Certified Payroll Entry": "Keiala Beck",
-    "Section 3 Forms": K,
-    "Employee Information Sheet": K,
-    "Payroll Deduction Authorization": K
+    ...KAILUA_FORMS,
+    "Certified Payroll Entry": KEIALA
   },
   Redlands: {
     "DAS Setup Sheet": "Kelsey Filban",
     "DAS 140 & Confirmation": "Kelsey Filban",
     "DAS 142 & Confirmation": "Amanda Fair",
-    "Fringe Benefit Statement": K,
-    "Training Fund": K,
-    "Other Certified Payroll Setup Forms": K,
-    "Certified Payroll Entry": "Keiala Beck",
-    "Section 3 Forms": K,
-    "Employee Information Sheet": K,
-    "Payroll Deduction Authorization": K
+    ...KAILUA_FORMS,
+    "Certified Payroll Entry": KEIALA
   },
   "Orange County": {
     "DAS Setup Sheet": "Kelsey Filban",
     "DAS 140 & Confirmation": "Kelsey Filban",
     "DAS 142 & Confirmation": "Amanda Fair",
-    "Fringe Benefit Statement": K,
-    "Training Fund": K,
-    "Other Certified Payroll Setup Forms": K,
-    "Certified Payroll Entry": "Keiala Beck",
-    "Section 3 Forms": K,
-    "Employee Information Sheet": K,
-    "Payroll Deduction Authorization": K
+    ...KAILUA_FORMS,
+    "Certified Payroll Entry": KEIALA
   }
 };
 

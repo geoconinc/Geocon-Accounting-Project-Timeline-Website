@@ -1,0 +1,753 @@
+{
+  "generatedAt": "2026-08-05T22:06:37.426Z",
+  "source": "GEOCON GMS (production)",
+  "note": "Reference code lists for the GMS -> Project Timeline integration. Office/type/service codes are the ones that appear in a GMS proposal number and in the integration payload.",
+  "proposalNumberFormat": "OFFICE-YY-NNNN-TYPE-SERVICE  e.g. SD-26-0014-P-GT",
+  "payloadEnums": {
+    "stage": [
+      "draft",
+      "submitted",
+      "won",
+      "project_assigned",
+      "active",
+      "lost",
+      "no_go"
+    ],
+    "dasStatus": [
+      "not_completed",
+      "completed"
+    ],
+    "pwCategory": {
+      "geocon_labor_only": "PW project with only Geocon PW labor, no PW subcontractor labor (DAS forms required)",
+      "geocon_and_sub_labor": "PW project with Geocon PW labor and subcontractor PW labor (DAS forms required)",
+      "sub_labor_only": "PW project with no Geocon PW labor, only subcontractor PW labor (no DAS forms required)",
+      "master_project": "Master project number (no certified payroll or DAS forms required)"
+    }
+  },
+  "companies": [
+    {
+      "code": "CONSULTANTS",
+      "name": "GEOCON Consultants"
+    },
+    {
+      "code": "INC",
+      "name": "GEOCON Incorporated"
+    },
+    {
+      "code": "WEST",
+      "name": "GEOCON West"
+    }
+  ],
+  "offices": [
+    {
+      "code": "EB",
+      "name": "Livermore",
+      "company": "CONSULTANTS"
+    },
+    {
+      "code": "LA",
+      "name": "Burbank",
+      "company": "WEST"
+    },
+    {
+      "code": "NB",
+      "name": "Suisun",
+      "company": "CONSULTANTS"
+    },
+    {
+      "code": "OC",
+      "name": "Irvine",
+      "company": "WEST"
+    },
+    {
+      "code": "RK",
+      "name": "Rocklin",
+      "company": "CONSULTANTS"
+    },
+    {
+      "code": "RV",
+      "name": "Riverside County",
+      "company": "WEST"
+    },
+    {
+      "code": "SA",
+      "name": "Sacramento/Rancho Cordova",
+      "company": "CONSULTANTS"
+    },
+    {
+      "code": "SB",
+      "name": "Loma Linda",
+      "company": "WEST"
+    },
+    {
+      "code": "SD",
+      "name": "San Diego",
+      "company": "INC"
+    },
+    {
+      "code": "SJ",
+      "name": "Stockton",
+      "company": "CONSULTANTS"
+    }
+  ],
+  "proposalTypeCodes": [
+    {
+      "code": "P",
+      "name": "Proposal"
+    },
+    {
+      "code": "S",
+      "name": "Submittal"
+    },
+    {
+      "code": "C",
+      "name": "Change Order"
+    }
+  ],
+  "serviceCodes": [
+    {
+      "code": "GT",
+      "name": "Geotechnical"
+    },
+    {
+      "code": "EV",
+      "name": "Environmental"
+    },
+    {
+      "code": "SI",
+      "name": "Special Inspection"
+    },
+    {
+      "code": "GE",
+      "name": "Geotech and Enviro"
+    },
+    {
+      "code": "GS",
+      "name": "Geotech and SI"
+    },
+    {
+      "code": "GES",
+      "name": "Geotech, Enviro and SI"
+    },
+    {
+      "code": "MT",
+      "name": "Materials Lab Testing"
+    },
+    {
+      "code": "LT",
+      "name": "Soils Lab Testing"
+    }
+  ],
+  "teamNumbers": [
+    {
+      "code": "01",
+      "name": "01 – Rebecca Silva",
+      "company": null
+    },
+    {
+      "code": "02",
+      "name": "02 – Rick Day",
+      "company": null
+    },
+    {
+      "code": "04",
+      "name": "04 – Shane Rodacker",
+      "company": null
+    },
+    {
+      "code": "05",
+      "name": "05 – Jeremy Zorne",
+      "company": null
+    },
+    {
+      "code": "06",
+      "name": "06 – Neal Berliner",
+      "company": null
+    },
+    {
+      "code": "07",
+      "name": "07 – Josh Ewert",
+      "company": null
+    },
+    {
+      "code": "11",
+      "name": "11 – Shawn Weedon",
+      "company": null
+    },
+    {
+      "code": "17",
+      "name": "17 – Mike Watari",
+      "company": null
+    },
+    {
+      "code": "22",
+      "name": "22 – Lisa Battiato",
+      "company": null
+    },
+    {
+      "code": "24",
+      "name": "24 – Harry Derkalousdian",
+      "company": null
+    },
+    {
+      "code": "32",
+      "name": "32 – Troy Reist",
+      "company": null
+    },
+    {
+      "code": "42",
+      "name": "42 – Rod Mikesell",
+      "company": null
+    },
+    {
+      "code": "52",
+      "name": "52 – Matt Love",
+      "company": null
+    },
+    {
+      "code": "62",
+      "name": "62 – Marci Richards",
+      "company": null
+    },
+    {
+      "code": "66",
+      "name": "66 – Gerry Kasman",
+      "company": null
+    },
+    {
+      "code": "77",
+      "name": "77 – Jeff Aguilar",
+      "company": null
+    },
+    {
+      "code": "88",
+      "name": "88 – Jelisa Adams",
+      "company": null
+    },
+    {
+      "code": "99",
+      "name": "99 – Mike Cazeneuve",
+      "company": null
+    }
+  ],
+  "scopeCodes": [
+    {
+      "code": 1,
+      "name": "GEOENVIRONMENTAL INVESTIGATION - 01"
+    },
+    {
+      "code": 2,
+      "name": "SOIL & GEOLOGICAL INVESTIGATION - 02"
+    },
+    {
+      "code": 3,
+      "name": "SOIL & GEOLOGICAL RECON - 03"
+    },
+    {
+      "code": 4,
+      "name": "GEOTECHNICAL INVESTIGATION - 04"
+    },
+    {
+      "code": 5,
+      "name": "SOIL CLASS/GR - 05"
+    },
+    {
+      "code": 6,
+      "name": "GEOLOGICAL RECONNAISSANCE - 06"
+    },
+    {
+      "code": 7,
+      "name": "GEOLOGICAL/FAULT INVESTIGATION - 07"
+    },
+    {
+      "code": 8,
+      "name": "GEOTECHNICAL FEASIBILITY STUDY - 08"
+    },
+    {
+      "code": 9,
+      "name": "GEOLOGICAL FEASIBILITY STUDY - 09"
+    },
+    {
+      "code": 10,
+      "name": "TESTING & OBSERVATION - GRADING - 10"
+    },
+    {
+      "code": 11,
+      "name": "TESTING & OBSERVATION - IMPROVEMENTS - 11"
+    },
+    {
+      "code": 12,
+      "name": "IN-PLACE DENSITY TESTING - 12"
+    },
+    {
+      "code": 13,
+      "name": "FOUNDATION INSPECTION - 13"
+    },
+    {
+      "code": 14,
+      "name": "FOUNDATION DESIGN - 14"
+    },
+    {
+      "code": 15,
+      "name": "PAVEMENT DESIGN - 15"
+    },
+    {
+      "code": 16,
+      "name": "CONSULTATION - 16"
+    },
+    {
+      "code": 17,
+      "name": "EXPERT TESTIMONY - 17"
+    },
+    {
+      "code": 18,
+      "name": "FIELD INSTRUMENTATION - 18"
+    },
+    {
+      "code": 19,
+      "name": "LAB TESTING - 19"
+    },
+    {
+      "code": 20,
+      "name": "DRILLING - 20"
+    },
+    {
+      "code": 21,
+      "name": "RESEARCH - 21"
+    },
+    {
+      "code": 22,
+      "name": "PERC TESTING - 22"
+    },
+    {
+      "code": 23,
+      "name": "SEIS. INV. - 23"
+    },
+    {
+      "code": 24,
+      "name": "SEISMICITY STUDY - 24"
+    },
+    {
+      "code": 25,
+      "name": "EARTHWORK PACKAGE - 25"
+    },
+    {
+      "code": 26,
+      "name": "OTHER (DESCRIBE) - 26"
+    },
+    {
+      "code": 30,
+      "name": "AIR QUALITY STUDIES - 30"
+    },
+    {
+      "code": 31,
+      "name": "ASB/LEAD PT/MOLD/WASTE SURVEYS - 31"
+    },
+    {
+      "code": 32,
+      "name": "CONSTRUCTION MANAGEMENT - 32"
+    },
+    {
+      "code": 33,
+      "name": "PHASE I ESA - 33"
+    },
+    {
+      "code": 34,
+      "name": "FACILITY AUDITS - 34"
+    },
+    {
+      "code": 35,
+      "name": "PHASE II ESA - 35"
+    },
+    {
+      "code": 36,
+      "name": "GEOPHYSICAL SURVEYS - 36"
+    },
+    {
+      "code": 37,
+      "name": "INDUSTRIAL HYGIENE/HEALTH&SAFETY - 37"
+    },
+    {
+      "code": 38,
+      "name": "MARINE SCIENCE STUDIES - 38"
+    },
+    {
+      "code": 39,
+      "name": "HEALTH RISK ASSESSMENT - 39"
+    },
+    {
+      "code": 40,
+      "name": "REGULATORY COMPLIANCE SUPPORT - 40"
+    },
+    {
+      "code": 41,
+      "name": "REMEDIATION CONTRACTING - 41"
+    },
+    {
+      "code": 42,
+      "name": "UNDERGROUND STORAGE TANK STUDIES - 42"
+    },
+    {
+      "code": 43,
+      "name": "ADL SURVEY - 43"
+    },
+    {
+      "code": 81,
+      "name": "WATER RESOURCES;HYDROLOGY - 81"
+    },
+    {
+      "code": 85,
+      "name": "WATER SUPPLY; TREATMENT AND DIST - 85"
+    },
+    {
+      "code": 91,
+      "name": "SUBDIVISION - 91"
+    },
+    {
+      "code": 92,
+      "name": "RIVERS;CANALS;WATERWAYS;FLOOD CONTR - 92"
+    },
+    {
+      "code": 93,
+      "name": "DISTRESS ANALYSIS - 93"
+    },
+    {
+      "code": 94,
+      "name": "SPECIAL INSPECTION/MATERIAL TESTING - 94"
+    },
+    {
+      "code": 95,
+      "name": "SPECIAL INSPECTION/SOIL TESTING - 95"
+    }
+  ],
+  "projectTypeCodes": [
+    {
+      "code": 0,
+      "name": "OVERHEAD - 00"
+    },
+    {
+      "code": 0,
+      "name": "UNSPECIFIED - 00"
+    },
+    {
+      "code": 1,
+      "name": "MIXED USE - 01"
+    },
+    {
+      "code": 4,
+      "name": "AGRICULTURAL/OPEN SPACE - 04"
+    },
+    {
+      "code": 5,
+      "name": "AIRPORTS; NAVAIDS, AIRCRAFT FUEL - 05"
+    },
+    {
+      "code": 6,
+      "name": "AIRPORTS, TERMINALS & HANGERS - 06"
+    },
+    {
+      "code": 7,
+      "name": "AEROSPACE FACILITY - 07"
+    },
+    {
+      "code": 8,
+      "name": "AUDITORIUMS AND THEATERS - 08"
+    },
+    {
+      "code": 9,
+      "name": "AFFORDABLE HOUSING - 09"
+    },
+    {
+      "code": 10,
+      "name": "BARRACKS; THEATRES - 10"
+    },
+    {
+      "code": 11,
+      "name": "BRIDGES - 11"
+    },
+    {
+      "code": 12,
+      "name": "BIG BOX STORES - 12"
+    },
+    {
+      "code": 14,
+      "name": "CHURCHES - 14"
+    },
+    {
+      "code": 17,
+      "name": "COMMERCIAL BUILDINGS [LOW RISE] - 17"
+    },
+    {
+      "code": 18,
+      "name": "COMMUNICATIONS SYSTEMS; TV; MICWAVE - 18"
+    },
+    {
+      "code": 19,
+      "name": "SHERIFF; BORDER CROSS, MISC PUBLIC - 19"
+    },
+    {
+      "code": 20,
+      "name": "COMPUTER FACILITIES - 20"
+    },
+    {
+      "code": 24,
+      "name": "DAMS [CONCRETE; ARCH] - 24"
+    },
+    {
+      "code": 25,
+      "name": "DAMS [EARTH; ROCK]; DIKES; LEVEES - 25"
+    },
+    {
+      "code": 27,
+      "name": "DINING HALLS; CLUBS; RESTAURANTS - 27"
+    },
+    {
+      "code": 28,
+      "name": "ECOLOGICAL & ARCHEOLOGICAL INV'S - 28"
+    },
+    {
+      "code": 29,
+      "name": "SCHOOLS - K-12 PUBLIC - 29"
+    },
+    {
+      "code": 30,
+      "name": "SCHOOLS - K-12 PRIVATE - 30"
+    },
+    {
+      "code": 31,
+      "name": "SCHOOLS - COMMUNITY COLLEGE - 31"
+    },
+    {
+      "code": 32,
+      "name": "SCHOOLS - UNIVERSITY PUBLIC - 32"
+    },
+    {
+      "code": 33,
+      "name": "SCHOOLS - UNIVERSITY PRIVATE - 33"
+    },
+    {
+      "code": 34,
+      "name": "FALLOUT SHELTERS; BLAST RES. DESIGN - 34"
+    },
+    {
+      "code": 35,
+      "name": "FIELD HOUSES; GYMS; STADIUMS - 35"
+    },
+    {
+      "code": 36,
+      "name": "FIRE STATIONS - 36"
+    },
+    {
+      "code": 37,
+      "name": "FISHERIES; FISH LADDERS - 37"
+    },
+    {
+      "code": 38,
+      "name": "FORESTRY & FOREST PRODUCTS - 38"
+    },
+    {
+      "code": 39,
+      "name": "GARAGES; VEH MAIN FAC. PARKING LOTS - 39"
+    },
+    {
+      "code": 42,
+      "name": "HARBORS;JETTIES;PIERS;SHIP TERMINAL - 42"
+    },
+    {
+      "code": 43,
+      "name": "SPECIAL INSPECTION - 43"
+    },
+    {
+      "code": 44,
+      "name": "SOILS/SPECIAL INSPECTION - 44"
+    },
+    {
+      "code": 45,
+      "name": "HIGHRISES;AIR-RIGHTS-TYPE BLDGS. - 45"
+    },
+    {
+      "code": 46,
+      "name": "HWYS;STR;AIRFIELD PAVING;PKING LOTS - 46"
+    },
+    {
+      "code": 47,
+      "name": "MISC. MILITARY - 47"
+    },
+    {
+      "code": 48,
+      "name": "HOSPITALS & MEDICAL FACILITIES - 48"
+    },
+    {
+      "code": 49,
+      "name": "HOTELS, MOTELS, RESTAURANTS - 49"
+    },
+    {
+      "code": 50,
+      "name": "INSTRUMENTATION - 50"
+    },
+    {
+      "code": 51,
+      "name": "IN HOUSE LAB TESTING - 51"
+    },
+    {
+      "code": 52,
+      "name": "IND. BLDGS., MANUFACTURING PLANTS - 52"
+    },
+    {
+      "code": 53,
+      "name": "MINES/QUARRIES - 53"
+    },
+    {
+      "code": 54,
+      "name": "INDUSTRIAL WASTE TREATMENT - 54"
+    },
+    {
+      "code": 57,
+      "name": "JUDICIAL & COURTROOM FACILITIES - 57"
+    },
+    {
+      "code": 58,
+      "name": "LABORATORIES; MEDICAL RESEARCH/FAC. - 58"
+    },
+    {
+      "code": 60,
+      "name": "LIBRARIES; MUSEUMS; GALLERIES - 60"
+    },
+    {
+      "code": 63,
+      "name": "MATERIALS HANDLING SYSTEMS; CONVEY - 63"
+    },
+    {
+      "code": 68,
+      "name": "MISSILE FAC., [SILOS; FUELS; TRANS] - 68"
+    },
+    {
+      "code": 71,
+      "name": "NUCLEAR FACILITIES - 71"
+    },
+    {
+      "code": 72,
+      "name": "COMMERCIAL IND. LAND DEVELOPMENT - 72"
+    },
+    {
+      "code": 73,
+      "name": "SWIMMING POOLS - 73"
+    },
+    {
+      "code": 74,
+      "name": "ORDNANCE;MUNITIONS;SPECIAL WEAPONS - 74"
+    },
+    {
+      "code": 75,
+      "name": "STORM WATER HANDLING & FACILITIES - 75"
+    },
+    {
+      "code": 76,
+      "name": "SUBSTATIONS, TRANSMISSION LINES - 76"
+    },
+    {
+      "code": 77,
+      "name": "PIPELINES-CROSSCOUNTRY,LIQUID GAS - 77"
+    },
+    {
+      "code": 78,
+      "name": "TOWERS-SELF SUPPORTING & GUYED SYS - 78"
+    },
+    {
+      "code": 79,
+      "name": "TUNNELS AND SUBWAYS - 79"
+    },
+    {
+      "code": 80,
+      "name": "WAREHOUSES AND DEPOTS - 80"
+    },
+    {
+      "code": 81,
+      "name": "WATER RES., HYDROLOGY; GROUND WATER - 81"
+    },
+    {
+      "code": 82,
+      "name": "POSTAL FACILITIES - 82"
+    },
+    {
+      "code": 83,
+      "name": "POWER GEN., ALTERNATE ENERGY - 83"
+    },
+    {
+      "code": 84,
+      "name": "PRISONS & CORRECTIONAL FACILITIES - 84"
+    },
+    {
+      "code": 85,
+      "name": "WATER SUPPLY,TREATMENT & DISTRIBUT - 85"
+    },
+    {
+      "code": 86,
+      "name": "WIND TUNNELS;RES.TEST FAC. DESIGN - 86"
+    },
+    {
+      "code": 87,
+      "name": "RAILROAD; RAPID TRANSIT - 87"
+    },
+    {
+      "code": 88,
+      "name": "REC. FAC., PARKS, MARINAS, ETC. - 88"
+    },
+    {
+      "code": 89,
+      "name": "HOUSING - 89"
+    },
+    {
+      "code": 90,
+      "name": "RESOURCE RECOVERY; RECYCLING - 90"
+    },
+    {
+      "code": 91,
+      "name": "SUBDIVISION - 91"
+    },
+    {
+      "code": 92,
+      "name": "RIVERS;CANALS;WATERWAYS;FLOOD CONTR - 92"
+    },
+    {
+      "code": 93,
+      "name": "DISTRESS ANALYSIS - 93"
+    },
+    {
+      "code": 94,
+      "name": "APARTMENT - 94"
+    },
+    {
+      "code": 95,
+      "name": "STUDY ZONE/MUNICIPALITY - 95"
+    },
+    {
+      "code": 96,
+      "name": "SEWAGE COLLECTION; TREATMENT & DISP - 96"
+    },
+    {
+      "code": 97,
+      "name": "CONDOMINIUM HOMEOWNERS ASSOCIATION - 97"
+    },
+    {
+      "code": 98,
+      "name": "SINGLE FAMILY - 98"
+    },
+    {
+      "code": 99,
+      "name": "SOLID WASTES;INCINERATION;LAND FILL - 99"
+    },
+    {
+      "code": 100,
+      "name": "CNG FUELING STATION; SCHOOLS - 100"
+    },
+    {
+      "code": 101,
+      "name": "Agricultural/Ranch Land - 101"
+    },
+    {
+      "code": 102,
+      "name": "SOLAR, WIND, RENEWABLE ENERGY - 102"
+    }
+  ]
+}
