@@ -50,16 +50,20 @@ export default function LoginPage() {
   }
 
   if (stage === "verifying" || stage === "redirecting") {
+    const label =
+      stage === "verifying" ? "Verifying your account…" : "Loading your workspace…";
+
     return (
-      <div className="min-h-screen grid place-items-center bg-gradient-to-br from-brand-dark via-brand to-brand-light p-6">
-        <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md animate-fade-in-up">
-          <div className="flex flex-col items-center text-center gap-4">
-            <Image src="/logo.png" alt="Geocon" width={120} height={44} priority />
-            <div className="w-8 h-8 border-3 border-brand/30 border-t-brand rounded-full animate-spin" />
-            <p className="text-sm font-medium text-brand-dark">
-              {stage === "verifying" ? "Verifying your account..." : "Loading your workspace..."}
-            </p>
-            <p className="text-xs text-slate-400">This will only take a moment</p>
+      <div className="login-loading-screen" role="status" aria-live="polite" aria-busy="true">
+        <div className="login-loading-inner">
+          <div className="login-loading-logo-wrap">
+            <Image src="/logo.png" alt="Geocon" width={140} height={52} priority className="h-10 w-auto" />
+          </div>
+          <div className="login-loading-spinner" aria-hidden />
+          <p className="login-loading-title">{label}</p>
+          <p className="login-loading-sub">This will only take a moment</p>
+          <div className="login-loading-bar" aria-hidden>
+            <span className="login-loading-bar-fill" />
           </div>
         </div>
       </div>
