@@ -38,7 +38,9 @@ export default async function globalSetup() {
     lastUpdatedAt: nowIso(),
     lastUpdatedBy: null,
     position: 0,
-    gmsProposalId: null
+    gmsProposalId: null,
+    // Timeline board is PW-only; without this the seed is filtered out of /api/projects.
+    prevailingWage: true
   };
 
   const db = {
