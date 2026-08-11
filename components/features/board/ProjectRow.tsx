@@ -128,6 +128,8 @@ export function ProjectRow({
   subitems,
   users,
   files,
+  meId,
+  canEditProject,
   onProjectUpdated,
   onProjectDeleted,
   onSubitemUpdated,
@@ -138,6 +140,8 @@ export function ProjectRow({
   subitems: Subitem[];
   users: User[];
   files: FileRef[];
+  meId: string;
+  canEditProject: boolean;
   onProjectUpdated?: (project: Project) => void;
   onProjectDeleted?: (id: string) => void;
   onSubitemUpdated?: (subitem: Subitem) => void;
@@ -244,31 +248,40 @@ export function ProjectRow({
             <div className="flex items-center gap-2 min-w-0">
               <input
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
-                onBlur={() => code !== project.code && patch({ code })}
+                readOnly={!canEditProject}
+                onChange={(e) => canEditProject && setCode(e.target.value)}
+                onBlur={() => canEditProject && code !== project.code && patch({ code })}
                 onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
                 placeholder="Code"
-                className="bg-transparent text-xs font-mono text-slate-600 w-24 outline-none border-0 focus:bg-white focus:ring-1 focus:ring-brand rounded px-1"
+                className={`bg-transparent text-xs font-mono text-slate-600 w-24 outline-none border-0 rounded px-1 ${
+                  canEditProject ? "focus:bg-white focus:ring-1 focus:ring-brand" : "cursor-default"
+                }`}
               />
               <input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                onBlur={() => name !== project.name && patch({ name })}
+                readOnly={!canEditProject}
+                onChange={(e) => canEditProject && setName(e.target.value)}
+                onBlur={() => canEditProject && name !== project.name && patch({ name })}
                 onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
                 placeholder="Project name"
-                className="bg-transparent text-xs font-medium flex-1 outline-none border-0 truncate focus:bg-white focus:ring-1 focus:ring-brand rounded px-1"
+                className={`bg-transparent text-xs font-medium flex-1 outline-none border-0 truncate rounded px-1 ${
+                  canEditProject ? "focus:bg-white focus:ring-1 focus:ring-brand" : "cursor-default"
+                }`}
               />
               <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 rounded">
                 {subitems.length}
               </span>
             </div>
-            <NotificationButton projectId={project.id} users={users} ownerId={project.ownerId} />
+            {canEditProject && (
+              <NotificationButton projectId={project.id} users={users} ownerId={project.ownerId} />
+            )}
           </div>
         </div>
         <div className="cell !p-0">
           <OwnerCell
             ownerId={project.ownerId}
             users={users}
+            readOnly={!canEditProject}
             onChange={(id) => patch({ ownerId: id })}
           />
         </div>
@@ -276,6 +289,7 @@ export function ProjectRow({
           <OwnerCell
             ownerId={project.projectManagerId ?? null}
             users={pmPickerUsers}
+            readOnly={!canEditProject}
             onChange={(id) => patch({ projectManagerId: id })}
           />
         </div>
@@ -283,12 +297,14 @@ export function ProjectRow({
           <OwnerCell
             ownerId={project.projectDirectorId ?? null}
             users={directorPickerUsers}
+            readOnly={!canEditProject}
             onChange={(id) => patch({ projectDirectorId: id })}
           />
         </div>
         <div className="cell !p-0">
           <ProjectStatusCell
             value={project.status}
+            readOnly={!canEditProject}
             onChange={(status: ProjectStatus) => patch({ status })}
           />
         </div>
@@ -300,7 +316,7 @@ export function ProjectRow({
             >
               {project.office}
             </span>
-          ) : (
+          ) : canEditProject ? (
             <select
               value=""
               onChange={(e) => patch({ office: e.target.value || null })}
@@ -313,26 +329,39 @@ export function ProjectRow({
                 </option>
               ))}
             </select>
+          ) : (
+            <span className="text-[12px] text-slate-400 px-1">—</span>
           )}
         </div>
         <div className="cell !p-0">
           <SubitemsStatusCell subitems={sortedSubs} />
         </div>
         <div className="cell">
-          <DateCell value={project.startDate} onChange={(d) => patch({ startDate: d })} />
+          <DateCell
+            value={project.startDate}
+            readOnly={!canEditProject}
+            onChange={(d) => patch({ startDate: d })}
+          />
         </div>
         <div className="cell !p-0 relative">
           <TimelineCell
             start={project.timelineStart}
             end={project.timelineEnd}
+            readOnly={!canEditProject}
             onChange={(s, e) => patch({ timelineStart: s, timelineEnd: e })}
           />
         </div>
         <div className="cell !p-0">
-          <SharePointCell
-            url={project.sharepointUrl}
-            onChange={(next) => patch({ sharepointUrl: next })}
-          />
+          {canEditProject ? (
+            <SharePointCell
+              url={project.sharepointUrl}
+              onChange={(next) => patch({ sharepointUrl: next })}
+            />
+          ) : (
+            <span className="text-[12px] text-slate-500 px-2 truncate block" title={project.sharepointUrl ?? undefined}>
+              {project.sharepointUrl || "—"}
+            </span>
+          )}
         </div>
         <div className="cell">
           <LastUpdatedCell at={project.lastUpdatedAt} by={project.lastUpdatedBy} users={users} />
@@ -340,6 +369,7 @@ export function ProjectRow({
         <div className="cell">
           <TextCell
             value={project.notes}
+            readOnly={!canEditProject}
             onChange={(v) => patch({ notes: v })}
             placeholder="Notes"
           />
@@ -347,13 +377,18 @@ export function ProjectRow({
         <div className="cell">
           <TextCell
             value={project.dirNumber}
+            readOnly={!canEditProject}
             onChange={(v) => patch({ dirNumber: v })}
             placeholder="—"
             type="number"
           />
         </div>
         <div className="cell !p-0">
-          <CheckboxCell value={project.union} onChange={(b) => patch({ union: b })} />
+          <CheckboxCell
+            value={project.union}
+            readOnly={!canEditProject}
+            onChange={(b) => patch({ union: b })}
+          />
         </div>
         <div className="cell !p-0">
           <CheckboxCell value={project.prevailingWage ?? false} readOnly />
@@ -368,6 +403,7 @@ export function ProjectRow({
         <div className="cell">
           <TextCell
             value={project.reportingSystems}
+            readOnly={!canEditProject}
             onChange={(v) => patch({ reportingSystems: v })}
             placeholder="—"
           />
@@ -375,19 +411,22 @@ export function ProjectRow({
         <div className="cell">
           <TextCell
             value={project.cprContact}
+            readOnly={!canEditProject}
             onChange={(v) => patch({ cprContact: v })}
             placeholder="CPR contact"
           />
         </div>
         <div className="cell !justify-center">
-          <button
-            type="button"
-            onClick={handleDeleteProject}
-            className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 focus:opacity-100 focus-visible:ring-2 focus-visible:ring-brand opacity-70 group-hover:opacity-100"
-            title="Delete project"
-          >
-            <Trash2 size={14} />
-          </button>
+          {canEditProject && (
+            <button
+              type="button"
+              onClick={handleDeleteProject}
+              className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 focus:opacity-100 focus-visible:ring-2 focus-visible:ring-brand opacity-70 group-hover:opacity-100"
+              title="Delete project"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -395,7 +434,11 @@ export function ProjectRow({
         <div className="bg-slate-50/40 pl-12 pr-4 py-2">
           <div className="bg-white border border-slate-200 rounded">
             <SubitemHeader />
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={canEditProject ? onDragEnd : () => undefined}
+            >
               <SortableContext items={liveIds} strategy={verticalListSortingStrategy}>
                 {liveSubs.map((s) => (
                   <SubitemRow
@@ -404,6 +447,8 @@ export function ProjectRow({
                     users={users}
                     projectId={project.id}
                     files={filesBySubitemId.get(s.id) ?? []}
+                    meId={meId}
+                    canEditMeta={canEditProject}
                     onSubitemUpdated={onSubitemUpdated}
                     onSubitemDeleted={onSubitemDeleted}
                     onFileDeleted={onFileDeleted}
@@ -411,12 +456,14 @@ export function ProjectRow({
                 ))}
               </SortableContext>
             </DndContext>
-            <button
-              onClick={addSubitem}
-              className="text-xs text-slate-500 hover:text-brand p-2 flex items-center gap-1"
-            >
-              <Plus size={12} /> Add subitem
-            </button>
+            {canEditProject && (
+              <button
+                onClick={addSubitem}
+                className="text-xs text-slate-500 hover:text-brand p-2 flex items-center gap-1"
+              >
+                <Plus size={12} /> Add subitem
+              </button>
+            )}
           </div>
         </div>
       )}

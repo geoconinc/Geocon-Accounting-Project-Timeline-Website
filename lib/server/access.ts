@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 import { isOwnerUser } from "@/lib/auth/superAdmin";
 import { isVisibleOnTimelineBoard } from "@/lib/domain/timelineBoardVisibility";
+import {
+  isDasOnlyAssignee,
+  isDasTrackingSubitemName
+} from "@/lib/domain/projectDefaults";
+import { loadViewAsUser, toViewAsTarget } from "@/lib/server/viewAs";
+import type { ViewAsTarget } from "@/lib/domain/viewAs";
 import type { FileRef, Project, Subitem, User } from "@/lib/types";
+
+export type BoardRole = "admin" | "das" | "assignee";
 
 export interface BoardPayload {
   projects: Project[];
@@ -10,6 +18,15 @@ export interface BoardPayload {
   users: User[];
   files: FileRef[];
   me: string;
+  /** Full board admins (Sid / Kailua / Bill / Marissa, etc.). */
+  isAdmin: boolean;
+  /** Drives board visibility: admin = everything; das = DAS 140/142 only; assignee = own items. */
+  boardRole: BoardRole;
+  /**
+   * When set, the signed-in admin is previewing this user's board.
+   * UI should treat the board as read-only until they exit.
+   */
+  viewAs: ViewAsTarget | null;
 }
 
 export interface BoardPayloadOptions {
@@ -83,11 +100,41 @@ export function forbidden(message = "forbidden") {
   return NextResponse.json({ error: message }, { status: 403 });
 }
 
+function filesForSubitems(allFiles: FileRef[], subitems: Subitem[], projectIds: Set<string>): FileRef[] {
+  if (allFiles.length === 0) return [];
+  const subitemIds = new Set(subitems.map((s) => s.id));
+  return allFiles.filter((file) => {
+    if (file.parentType === "project") return projectIds.has(file.parentId);
+    return subitemIds.has(file.parentId);
+  });
+}
+
 export async function getBoardPayloadForUser(
   user: User,
   options: BoardPayloadOptions = {}
 ): Promise<BoardPayload> {
   const includeFiles = options.includeFiles !== false;
+
+  // Admins may preview another user's filtered board via the view-as cookie.
+  let viewer = user;
+  let viewAs: ViewAsTarget | null = null;
+  if (await hasFullBoardAccessAsync(user)) {
+    const target = await loadViewAsUser();
+    if (target && target.id !== user.id) {
+      viewer = target;
+      viewAs = toViewAsTarget(target);
+    }
+  }
+
+  const payload = await buildBoardPayloadForViewer(viewer, includeFiles);
+  return { ...payload, viewAs };
+}
+
+async function buildBoardPayloadForViewer(
+  user: User,
+  includeFiles: boolean
+): Promise<Omit<BoardPayload, "viewAs">> {
+  const isAdmin = await hasFullBoardAccessAsync(user);
 
   const [allProjects, users, allSubitems, allFiles] = await Promise.all([
     storage.listProjects(),
@@ -100,19 +147,39 @@ export async function getBoardPayloadForUser(
   const projects = allProjects.filter(isVisibleOnTimelineBoard);
   const boardProjectIds = new Set(projects.map((p) => p.id));
   const boardSubitems = allSubitems.filter((s) => boardProjectIds.has(s.projectId));
-  const boardSubitemIds = new Set(boardSubitems.map((s) => s.id));
-  const boardFiles = allFiles.filter((file) => {
-    if (file.parentType === "project") return boardProjectIds.has(file.parentId);
-    return boardSubitemIds.has(file.parentId);
-  });
+  const boardFiles = includeFiles
+    ? allFiles.filter((file) => {
+        if (file.parentType === "project") return boardProjectIds.has(file.parentId);
+        return boardSubitems.some((s) => s.id === file.parentId);
+      })
+    : [];
 
-  if (await hasFullBoardAccessAsync(user)) {
+  if (isAdmin) {
     return {
       projects,
       subitems: boardSubitems,
       users,
       files: boardFiles,
-      me: user.id
+      me: user.id,
+      isAdmin: true,
+      boardRole: "admin"
+    };
+  }
+
+  const ownedOnBoard = boardSubitems.filter((s) => s.ownerId === user.id);
+
+  // DAS 140/142 specialists: every PW project; only those two checklist rows.
+  if (isDasOnlyAssignee(ownedOnBoard)) {
+    const dasSubitems = boardSubitems.filter((s) => isDasTrackingSubitemName(s.name));
+    const projectIds = new Set(projects.map((p) => p.id));
+    return {
+      projects,
+      subitems: dasSubitems,
+      users,
+      files: includeFiles ? filesForSubitems(boardFiles, dasSubitems, projectIds) : [],
+      me: user.id,
+      isAdmin: false,
+      boardRole: "das"
     };
   }
 
@@ -137,31 +204,33 @@ export async function getBoardPayloadForUser(
     visibleProjects.push(project);
     visibleProjectIds.add(project.id);
 
-    if (leadsProject) {
-      visibleSubitems.push(...projectSubitems);
-    } else {
-      visibleSubitems.push(...assignedSubitems);
+    // Leads still see their projects, but only their own checklist rows unless admin.
+    // (Project field edits are admin-only; checklist work stays on assigned items.)
+    if (leadsProject && assignedSubitems.length === 0) {
+      // Lead with no personal checklist ownership: show the project shell, no foreign statuses.
+      continue;
     }
-  }
-
-  let files: FileRef[] = [];
-  if (includeFiles && boardFiles.length > 0) {
-    const visibleSubitemIds = new Set(visibleSubitems.map((s) => s.id));
-    files = boardFiles.filter((file) => {
-      if (file.parentType === "project") {
-        return visibleProjectIds.has(file.parentId);
-      }
-      return visibleSubitemIds.has(file.parentId);
-    });
+    visibleSubitems.push(...assignedSubitems);
   }
 
   return {
     projects: visibleProjects,
     subitems: visibleSubitems,
     users,
-    files,
-    me: user.id
+    files: includeFiles
+      ? filesForSubitems(boardFiles, visibleSubitems, visibleProjectIds)
+      : [],
+    me: user.id,
+    isAdmin: false,
+    boardRole: "assignee"
   };
+}
+
+/** True when a board admin is previewing someone else's board (mutations must be denied). */
+export async function isSimulatingBoardView(realUser: User): Promise<boolean> {
+  if (!(await hasFullBoardAccessAsync(realUser))) return false;
+  const target = await loadViewAsUser();
+  return Boolean(target && target.id !== realUser.id);
 }
 
 export async function findSubitem(subitemId: string): Promise<LocatedSubitem | null> {
@@ -174,22 +243,45 @@ export async function findSubitem(subitemId: string): Promise<LocatedSubitem | n
 
 export async function canViewProject(user: User, project: Project, subitems: Subitem[]): Promise<boolean> {
   if (await hasFullBoardAccessAsync(user)) return true;
-  return isProjectLead(user, project) || subitems.some((subitem) => subitem.ownerId === user.id);
+  if (isProjectLead(user, project)) return true;
+  if (subitems.some((subitem) => subitem.ownerId === user.id)) return true;
+  if (isVisibleOnTimelineBoard(project)) {
+    const allOwned = (await storage.listAllSubitems()).filter((s) => s.ownerId === user.id);
+    if (isDasOnlyAssignee(allOwned)) return true;
+  }
+  return false;
 }
 
-export async function canManageProject(user: User, project: Project): Promise<boolean> {
-  if (await hasFullBoardAccessAsync(user)) return true;
-  return isProjectLead(user, project);
+/** Project create/update/delete and project-level field edits — board admins only. */
+export async function canManageProject(user: User, _project?: Project): Promise<boolean> {
+  if (await isSimulatingBoardView(user)) return false;
+  return hasFullBoardAccessAsync(user);
 }
 
 export async function canViewSubitem(user: User, project: Project, subitem: Subitem): Promise<boolean> {
   if (await hasFullBoardAccessAsync(user)) return true;
-  return isProjectLead(user, project) || subitem.ownerId === user.id;
+  if (subitem.ownerId === user.id) return true;
+  if (isDasTrackingSubitemName(subitem.name)) {
+    const owned = (await storage.listAllSubitems()).filter((s) => s.ownerId === user.id);
+    if (isDasOnlyAssignee(owned)) return true;
+  }
+  return false;
 }
 
+/**
+ * Assignees may update status / dates / notes on their own items.
+ * Project leads no longer get blanket edit of every checklist row.
+ */
 export async function canManageSubitem(user: User, project: Project, subitem: Subitem): Promise<boolean> {
+  if (await isSimulatingBoardView(user)) return false;
   if (await hasFullBoardAccessAsync(user)) return true;
-  return isProjectLead(user, project) || subitem.ownerId === user.id;
+  return subitem.ownerId === user.id;
+}
+
+/** Renaming, reassigning, or deleting checklist rows is admin-only. */
+export async function canAdminSubitem(user: User): Promise<boolean> {
+  if (await isSimulatingBoardView(user)) return false;
+  return hasFullBoardAccessAsync(user);
 }
 
 export async function canAccessFileParent(
@@ -197,16 +289,17 @@ export async function canAccessFileParent(
   parentType: FileRef["parentType"],
   parentId: string
 ): Promise<boolean> {
+  if (await isSimulatingBoardView(user)) return false;
   if (await hasFullBoardAccessAsync(user)) return true;
 
   if (parentType === "project") {
-    const project = await storage.getProject(parentId);
-    return Boolean(project && isProjectLead(user, project));
+    // Project-level files: admins only.
+    return false;
   }
 
   const located = await findSubitem(parentId);
   if (!located) return false;
-  return isProjectLead(user, located.project) || located.subitem.ownerId === user.id;
+  return canManageSubitem(user, located.project, located.subitem);
 }
 
 export async function findFile(fileId: string): Promise<LocatedFile | null> {

@@ -84,6 +84,7 @@ All non-public endpoints require a valid `session_token` cookie. Middleware redi
 | Method | Path | Handler | Description |
 |--------|------|---------|-------------|
 | GET | `/api/events` | `eventsRoute` | SSE stream for real-time board updates |
+| POST | `/api/cron/monday-incomplete` | `cronMondayIncompleteRoute` | Scheduled Monday job: email each assignee their incomplete checklist items. Requires `X-Cron-Secret` header. |
 | POST | `/api/cron/incomplete-week` | `cronIncompleteWeekRoute` | Scheduled job: email assignees when subitems are still incomplete 7 days after creation. Requires `X-Cron-Secret` header. |
 | POST | `/api/cron/due-dates` | `cronDueDatesRoute` | Scheduled job: send due-date reminder emails. Requires `X-Cron-Secret` header. |
 | POST | `/api/cron/gms-das-status` | `cronGmsDasStatusRoute` | Pull prevailing-wage DAS status from GMS and sync projects / DAS Setup Sheet. Requires `X-Cron-Secret`. |

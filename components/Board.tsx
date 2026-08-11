@@ -76,6 +76,8 @@ export default function Board({ initialData }: { initialData: BoardData }) {
     [dispatch]
   );
 
+  const canEditProject = Boolean(state.isAdmin) && !state.viewAs;
+
   return (
     <div className="flex flex-col h-full">
       <Toolbar filters={filters} onChange={setFilters} users={state.users} />
@@ -87,6 +89,8 @@ export default function Board({ initialData }: { initialData: BoardData }) {
             allSubitems={state.subitems}
             users={state.users}
             files={state.files}
+            meId={state.me}
+            canEditProject={canEditProject}
             onProjectUpdated={onProjectUpdated}
             onProjectDeleted={onProjectDeleted}
             onSubitemUpdated={onSubitemUpdated}
@@ -99,6 +103,8 @@ export default function Board({ initialData }: { initialData: BoardData }) {
             allSubitems={state.subitems}
             users={state.users}
             files={state.files}
+            meId={state.me}
+            canEditProject={canEditProject}
             onProjectUpdated={onProjectUpdated}
             onProjectDeleted={onProjectDeleted}
             onSubitemUpdated={onSubitemUpdated}
@@ -112,6 +118,8 @@ export default function Board({ initialData }: { initialData: BoardData }) {
               allSubitems={state.subitems}
               users={state.users}
               files={state.files}
+              meId={state.me}
+              canEditProject={canEditProject}
               onProjectUpdated={onProjectUpdated}
               onProjectDeleted={onProjectDeleted}
               onSubitemUpdated={onSubitemUpdated}

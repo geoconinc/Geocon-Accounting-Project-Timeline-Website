@@ -14,6 +14,7 @@ import {
 } from "@/lib/notifications/projectCreationTemplates";
 import { buildDasFollowupDigestEmail } from "@/lib/notifications/dasFollowupTemplates";
 import { buildIncompleteWeekDigestEmail } from "@/lib/notifications/incompleteWeekTemplates";
+import { buildMondayIncompleteDigestEmail } from "@/lib/notifications/mondayIncompleteTemplates";
 import { SUBITEM_ASSIGNMENT_SNIPPET } from "@/lib/notifications/subitemAssignmentSnippets";
 import { DEFAULT_SUBITEM_NAMES } from "@/lib/domain/projectDefaults";
 
@@ -219,6 +220,19 @@ describe("project creation / digest templates", () => {
     ]);
     expect(mail.subject.toLowerCase()).toContain("incomplete");
     expect(mail.html).toContain("A");
+  });
+
+  it("buildMondayIncompleteDigestEmail lists incomplete items with the requested copy", async () => {
+    const mail = await buildMondayIncompleteDigestEmail("Mizejewski, Kailua", [
+      { projectCode: "A-1", projectName: "Alpha", subitemName: "Training Fund", status: "NotStarted" },
+      { projectCode: "B-2", projectName: "Beta", subitemName: "DAS 140 & Confirmation", status: "InProgress" }
+    ]);
+    expect(mail.subject).toContain("2 incomplete items");
+    expect(mail.message).toContain("Hi Kailua,");
+    expect(mail.message).toContain("You have the following items not completed:");
+    expect(mail.message).toContain("Training Fund");
+    expect(mail.html).toContain("Training Fund");
+    expect(mail.html).toContain("DAS 140");
   });
 });
 

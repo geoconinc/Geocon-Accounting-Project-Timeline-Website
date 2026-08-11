@@ -4,10 +4,17 @@ import { authenticateRequest } from "@/lib/server/routeAuth";
 import { bus } from "@/lib/events/bus";
 import { notifyUser } from "@/lib/notifications/dispatch";
 import { buildSubitemAssignedEmail } from "@/lib/notifications/templates/operational";
-import { canManageSubitem, findSubitem, forbidden } from "@/lib/server/access";
+import {
+  canAdminSubitem,
+  canManageSubitem,
+  findSubitem,
+  forbidden
+} from "@/lib/server/access";
 import { syncProjectStatusFromSubitems } from "@/lib/domain/projectStatusSync";
 import { recordActivity } from "@/lib/server/activityLog";
 import { parseJsonBody, badRequest } from "@/lib/server/http";
+
+const ADMIN_ONLY_SUBITEM_KEYS = new Set(["ownerId", "name", "position"]);
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const user = await authenticateRequest();
@@ -19,6 +26,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const patch = await parseJsonBody<Record<string, unknown>>(req);
   if (!patch) return badRequest();
+
+  const touchesAdminFields = Object.keys(patch).some((k) => ADMIN_ONLY_SUBITEM_KEYS.has(k));
+  if (touchesAdminFields && !(await canAdminSubitem(user))) {
+    return forbidden("admin_required");
+  }
+
   const updated = await storage.updateSubitem(params.id, patch);
   if (!updated) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
@@ -72,10 +85,9 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
   const auth = await authenticateRequest();
   if (auth instanceof Response) return auth;
 
-  // Need projectId for the SSE event; look it up before deleting.
   const located = await findSubitem(params.id);
   if (!located) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  if (!(await canManageSubitem(auth, located.project, located.subitem))) return forbidden();
+  if (!(await canAdminSubitem(auth))) return forbidden("admin_required");
 
   await storage.deleteSubitem(params.id);
   await syncProjectStatusFromSubitems(located.project.id, auth.id);

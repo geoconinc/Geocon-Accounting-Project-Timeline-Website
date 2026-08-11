@@ -10,6 +10,10 @@ export interface BoardData {
   users: User[];
   files: FileRef[];
   me: string;
+  isAdmin?: boolean;
+  boardRole?: "admin" | "das" | "assignee";
+  /** Set when an admin is previewing another user's board. */
+  viewAs?: { id: string; name: string; email: string; initials: string } | null;
 }
 
 type Action =

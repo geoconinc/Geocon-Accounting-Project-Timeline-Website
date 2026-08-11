@@ -7,18 +7,21 @@ export function TextCell({
   onChange,
   placeholder = "",
   type = "text",
-  dataAttr
+  dataAttr,
+  readOnly = false
 }: {
   value: string | null;
   onChange: (v: string | null) => void;
   placeholder?: string;
   type?: "text" | "number";
   dataAttr?: { name: string; value: string };
+  readOnly?: boolean;
 }) {
   const [local, setLocal] = useState(value ?? "");
   useEffect(() => setLocal(value ?? ""), [value]);
 
   function commit() {
+    if (readOnly) return;
     const next = local.trim() === "" ? null : local;
     if (next !== value) onChange(next);
   }
@@ -29,13 +32,18 @@ export function TextCell({
     <input
       type={type}
       value={local}
-      onChange={(e) => setLocal(e.target.value)}
+      readOnly={readOnly}
+      onChange={(e) => {
+        if (!readOnly) setLocal(e.target.value);
+      }}
       onBlur={commit}
       onKeyDown={(e) => {
         if (e.key === "Enter") (e.target as HTMLInputElement).blur();
       }}
       placeholder={placeholder}
-      className="w-full h-full bg-transparent border-0 outline-none text-xs px-1"
+      className={`w-full h-full bg-transparent border-0 outline-none text-xs px-1 ${
+        readOnly ? "cursor-default text-slate-700" : ""
+      }`}
       {...dataProps}
     />
   );

@@ -9,12 +9,14 @@ export function OwnerCell({
   ownerId,
   users,
   onChange,
-  allowClear = true
+  allowClear = true,
+  readOnly = false
 }: {
   ownerId: string | null;
   users: User[];
   onChange: (id: string | null) => void;
   allowClear?: boolean;
+  readOnly?: boolean;
 }) {
   const { open, setOpen, ref } = usePopover();
   const [q, setQ] = useState("");
@@ -31,12 +33,19 @@ export function OwnerCell({
   return (
     <div className="relative w-full h-full flex items-center justify-center" ref={ref}>
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (!readOnly) setOpen((o) => !o);
+        }}
         className="peer"
+        disabled={readOnly}
         title={
           owner
-            ? `${owner.name} (${owner.email})${owner.phone ? ` · ${owner.phone}` : ""}`
-            : "Assign"
+            ? `${owner.name} (${owner.email})${owner.phone ? ` · ${owner.phone}` : ""}${
+                readOnly ? " · view only" : ""
+              }`
+            : readOnly
+              ? "Unassigned"
+              : "Assign"
         }
       >
         <Avatar user={owner} />
@@ -48,7 +57,7 @@ export function OwnerCell({
           {owner.phone && <div className="text-slate-500">{owner.phone}</div>}
         </div>
       )}
-      {open && (
+      {open && !readOnly && (
         <div className="absolute z-30 top-full left-1/2 -translate-x-1/2 mt-1 bg-white rounded-md shadow-lg border border-slate-200 w-72">
           <input
             autoFocus

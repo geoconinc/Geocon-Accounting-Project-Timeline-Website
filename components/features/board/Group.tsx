@@ -18,6 +18,8 @@ export function Group({
   allSubitems,
   users,
   files,
+  meId,
+  canEditProject,
   onProjectUpdated,
   onProjectDeleted,
   onSubitemUpdated,
@@ -29,6 +31,8 @@ export function Group({
   allSubitems: Subitem[];
   users: User[];
   files: FileRef[];
+  meId: string;
+  canEditProject: boolean;
   onProjectUpdated?: (project: Project) => void;
   onProjectDeleted?: (id: string) => void;
   onSubitemUpdated?: (subitem: Subitem) => void;
@@ -67,23 +71,31 @@ export function Group({
           {projects.length} project{projects.length === 1 ? "" : "s"}
         </span>
         <div className="flex-1" />
-        <button
-          onClick={() => setAdding(true)}
-          className="text-[11px] text-slate-500 hover:text-brand-dark flex items-center gap-1 px-2 py-1 rounded hover:bg-white transition-colors"
-        >
-          <Plus size={12} /> Add project
-        </button>
+        {canEditProject && (
+          <button
+            onClick={() => setAdding(true)}
+            className="text-[11px] text-slate-500 hover:text-brand-dark flex items-center gap-1 px-2 py-1 rounded hover:bg-white transition-colors"
+          >
+            <Plus size={12} /> Add project
+          </button>
+        )}
       </div>
       {open && (
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto scrollbar-thin">
           <ProjectHeader collapsed={false} />
           {projects.length === 0 ? (
-            <button
-              onClick={() => setAdding(true)}
-              className="w-full px-6 py-8 text-xs text-slate-400 hover:text-brand-dark hover:bg-slate-50 flex items-center justify-center gap-2 border-dashed transition-colors"
-            >
-              <Plus size={14} /> No projects in {name} yet — click to add one
-            </button>
+            canEditProject ? (
+              <button
+                onClick={() => setAdding(true)}
+                className="w-full px-6 py-8 text-xs text-slate-400 hover:text-brand-dark hover:bg-slate-50 flex items-center justify-center gap-2 border-dashed transition-colors"
+              >
+                <Plus size={14} /> No projects in {name} yet — click to add one
+              </button>
+            ) : (
+              <div className="w-full px-6 py-8 text-xs text-slate-400 text-center">
+                No projects in {name}
+              </div>
+            )
           ) : (
             projects.map((p) => (
               <ProjectRow
@@ -92,6 +104,8 @@ export function Group({
                 subitems={subsByProjectId.get(p.id) ?? []}
                 users={users}
                 files={files}
+                meId={meId}
+                canEditProject={canEditProject}
                 onProjectUpdated={onProjectUpdated}
                 onProjectDeleted={onProjectDeleted}
                 onSubitemUpdated={onSubitemUpdated}
@@ -102,7 +116,9 @@ export function Group({
           )}
         </div>
       )}
-      <AddProjectDialog group={name} open={adding} onClose={() => setAdding(false)} users={users} />
+      {canEditProject && (
+        <AddProjectDialog group={name} open={adding} onClose={() => setAdding(false)} users={users} />
+      )}
     </div>
   );
 }

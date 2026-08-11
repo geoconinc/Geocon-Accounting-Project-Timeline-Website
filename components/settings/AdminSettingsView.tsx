@@ -20,7 +20,8 @@ import { AdminDashboardView } from "./AdminDashboardView";
 const CRON_CATEGORIES = new Set<NotificationCategory>([
   "dueDateReminder",
   "dasFollowup",
-  "incompleteWeek"
+  "incompleteWeek",
+  "mondayIncomplete"
 ]);
 
 interface DbStats {

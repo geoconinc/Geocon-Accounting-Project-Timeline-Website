@@ -5,8 +5,7 @@ import {
   canViewSubitem,
   findFile,
   forbidden,
-  hasFullBoardAccessAsync,
-  isProjectLead
+  hasFullBoardAccessAsync
 } from "@/lib/server/access";
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
@@ -16,8 +15,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   if (!located) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   if (located.file.parentType === "project") {
-    const canViewProjectFile = (await hasFullBoardAccessAsync(user)) || isProjectLead(user, located.project);
-    if (!canViewProjectFile) return forbidden();
+    if (!(await hasFullBoardAccessAsync(user))) return forbidden();
   } else if (!located.subitem || !(await canViewSubitem(user, located.project, located.subitem))) {
     return forbidden();
   }

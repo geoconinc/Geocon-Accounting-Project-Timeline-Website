@@ -8,7 +8,16 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   const initialData = user
     ? await getBoardPayloadForUser(user, { includeFiles: false })
-    : { projects: [], subitems: [], users: [], files: [], me: "" };
+    : {
+        projects: [],
+        subitems: [],
+        users: [],
+        files: [],
+        me: "",
+        isAdmin: false,
+        boardRole: "assignee" as const,
+        viewAs: null
+      };
 
   return <DashboardView initialData={initialData} />;
 }

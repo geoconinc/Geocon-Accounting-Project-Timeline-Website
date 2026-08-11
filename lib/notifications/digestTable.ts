@@ -55,6 +55,16 @@ export function buildDigestPlain(items: DigestItem[]): string {
     .join("; ");
 }
 
+/** Multi-line bullet list for Monday / weekly digests (plain text). */
+export function buildDigestPlainList(items: DigestItem[]): string {
+  return items
+    .map(
+      (it) =>
+        `• ${it.projectCode} — ${it.projectName} — ${it.subitemName} (${statusLabel(it.status)})`
+    )
+    .join("\n");
+}
+
 /** "item" / "items" for pluralizing template copy. */
 export function itemLabel(count: number): string {
   return count === 1 ? "item" : "items";

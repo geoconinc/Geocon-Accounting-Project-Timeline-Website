@@ -16,7 +16,8 @@ export type NotificationCategory =
   | "manualMessage"
   | "dueDateReminder"
   | "dasFollowup"
-  | "incompleteWeek";
+  | "incompleteWeek"
+  | "mondayIncomplete";
 
 export const NOTIFICATION_CATEGORIES: {
   key: NotificationCategory;
@@ -30,7 +31,12 @@ export const NOTIFICATION_CATEGORIES: {
   { key: "manualMessage", label: "Manual board messages", description: "Messages sent manually from the board." },
   { key: "dueDateReminder", label: "Due-today reminders", description: "Daily reminder for tasks due today." },
   { key: "dasFollowup", label: "Weekly DAS digest", description: "Weekly DAS follow-up digest." },
-  { key: "incompleteWeek", label: "One-week incomplete digest", description: "Digest of items still incomplete after a week." }
+  { key: "incompleteWeek", label: "One-week incomplete digest", description: "Digest of items still incomplete after a week." },
+  {
+    key: "mondayIncomplete",
+    label: "Monday incomplete digest",
+    description: "Every Monday: list of all incomplete checklist items assigned to each person."
+  }
 ];
 
 /** All categories default to enabled. */
@@ -43,7 +49,8 @@ export function defaultEventToggles(): Record<NotificationCategory, boolean> {
     manualMessage: true,
     dueDateReminder: true,
     dasFollowup: true,
-    incompleteWeek: true
+    incompleteWeek: true,
+    mondayIncomplete: true
   };
 }
 
@@ -62,7 +69,8 @@ export type EmailTemplateKey =
   | "manualMessage"
   | "dueDateReminder"
   | "dasFollowup"
-  | "incompleteWeek";
+  | "incompleteWeek"
+  | "mondayIncomplete";
 
 export interface EmailTemplateToken {
   name: string;
@@ -274,6 +282,25 @@ export const EMAIL_TEMPLATE_DEFS: EmailTemplateDef[] = [
         "These checklist {{itemLabel}} ({{itemCount}}) were assigned about a week ago and are still not marked complete:\n\n" +
         "{{itemTable}}\n\n" +
         "Please complete them or update their status in the Geocon Project Timeline."
+    }
+  },
+  {
+    key: "mondayIncomplete",
+    label: "Monday incomplete digest",
+    description: "Weekly Monday reminder listing every incomplete checklist item assigned to the recipient.",
+    tokens: [
+      RECIPIENT_TOKEN,
+      { name: "itemCount", description: "Number of incomplete items" },
+      { name: "itemLabel", description: "\"item\" or \"items\" (auto-pluralized)" },
+      { name: "itemTable", description: "Formatted list/table of incomplete items" }
+    ],
+    default: {
+      subject: "Weekly reminder: {{itemCount}} incomplete {{itemLabel}}",
+      body:
+        "Hi {{firstName}},\n\n" +
+        "You have the following items not completed:\n\n" +
+        "{{itemTable}}\n\n" +
+        "Please complete these items or update their status in the Geocon Project Timeline."
     }
   }
 ];

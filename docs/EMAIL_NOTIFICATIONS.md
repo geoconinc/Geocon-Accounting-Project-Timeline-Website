@@ -37,14 +37,41 @@ All emails use the branded layout in `lib/notifications/layout.ts` (Geocon heade
 | 3 | **Weekly DAS cron** (legacy, optional) | `Weekly reminder: N incomplete DAS item(s)` | `dasFollowupTemplates.ts` → `buildDasFollowupDigestEmail` |
 | 4 | **Due today cron** (legacy, optional) | `Due today: {subitem} · {code}` | `templates/operational.ts` → `buildDueTodayEmail` |
 | 5 | **One week incomplete cron** | `Action needed: N item(s) incomplete after 1 week` | `incompleteWeekTemplates.ts` → `buildIncompleteWeekDigestEmail` |
-| 6 | **Owner assigned** on project | `You were assigned to {code} — {name}` | `templates/operational.ts` → `buildProjectOwnerAssignedEmail` |
-| 7 | **Status changed** on project | `{code} status updated to {status}` | `templates/operational.ts` → `buildProjectStatusChangedEmail` |
-| 8 | **Subitem assigned** | `Assigned: {subitem} · {code}` | `templates/operational.ts` → `buildSubitemAssignedEmail` |
-| 9 | **Manual message** from board | `Project update: {code} — {name}` | `templates/operational.ts` → `buildManualProjectUpdateEmail` |
+| 6 | **Monday incomplete cron** | `Weekly reminder: N incomplete item(s)` | `mondayIncompleteTemplates.ts` → `buildMondayIncompleteDigestEmail` |
+| 7 | **Owner assigned** on project | `You were assigned to {code} — {name}` | `templates/operational.ts` → `buildProjectOwnerAssignedEmail` |
+| 8 | **Status changed** on project | `{code} status updated to {status}` | `templates/operational.ts` → `buildProjectStatusChangedEmail` |
+| 9 | **Subitem assigned** | `Assigned: {subitem} · {code}` | `templates/operational.ts` → `buildSubitemAssignedEmail` |
+| 10 | **Manual message** from board | `Project update: {code} — {name}` | `templates/operational.ts` → `buildManualProjectUpdateEmail` |
 
 Checklist item hints on new-project emails are in `lib/notifications/subitemAssignmentSnippets.ts`.
 
-## Cron job (daily)
+## Monday incomplete digest (recommended)
+
+Run **once every Monday**. Finds every checklist item that is still not `Completed` or `NA` on the timeline board, groups by assignee, and sends each person one email:
+
+> You have the following items not completed:  
+> *(table / list of their incomplete items)*
+
+**Schedule** (Azure Logic App, Container Apps Job, or any scheduler):
+
+| Setting | Value |
+|---------|--------|
+| Schedule | Mondays only (e.g. `0 15 * * 1` = Monday 8am PT / 3pm UTC — adjust) |
+| Command | see below |
+
+```bash
+curl -sS -X POST -H "X-Cron-Secret: $CRON_SHARED_SECRET" "$APP_BASE_URL/api/cron/monday-incomplete"
+```
+
+Toggle / edit copy in **Admin → Email**: category **Monday incomplete digest**.
+
+**Manual test:**
+
+```bash
+curl -sS -X POST -H "X-Cron-Secret: YOUR_SECRET" "http://localhost:3000/api/cron/monday-incomplete"
+```
+
+## One-week incomplete cron (optional)
 
 Run **once per day**. The job finds subitems that were **created exactly 7 calendar days ago** and are still not `Completed` or `NA`, then emails each assignee one digest.
 

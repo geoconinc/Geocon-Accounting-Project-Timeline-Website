@@ -5,8 +5,18 @@ import { useRouter } from "next/navigation";
 import type { User } from "@/lib/types";
 import { LogOut, Mail, Settings, X } from "lucide-react";
 import { formatAppVersionLabel } from "@/lib/config/appVersion";
+import { ViewAsControls } from "@/components/ViewAsControls";
+import type { ViewAsTarget } from "@/lib/domain/viewAs";
 
-export default function TopBar({ user }: { user: User }) {
+export default function TopBar({
+  user,
+  canViewAs = false,
+  viewAs = null
+}: {
+  user: User;
+  canViewAs?: boolean;
+  viewAs?: ViewAsTarget | null;
+}) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -46,6 +56,7 @@ export default function TopBar({ user }: { user: User }) {
     <div className="h-14 bg-gradient-to-b from-brand-dark to-[#062f37] border-b border-black/20 flex items-center px-4 gap-3 shrink-0">
       <span className="text-sm font-semibold text-white">Geocon Project Management</span>
       <div className="flex-1" />
+      <ViewAsControls canViewAs={canViewAs} viewAs={viewAs} />
       <div className="flex items-center gap-2">
         <div
           className="w-8 h-8 rounded-full bg-white/15 ring-1 ring-white/20 text-white grid place-items-center text-xs font-semibold"

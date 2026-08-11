@@ -40,6 +40,8 @@ export function SubitemRow({
   users,
   projectId,
   files,
+  meId,
+  canEditMeta,
   onSubitemUpdated,
   onSubitemDeleted,
   onFileDeleted
@@ -48,12 +50,17 @@ export function SubitemRow({
   users: User[];
   projectId: string;
   files: FileRef[];
+  meId: string;
+  /** Admin-only: rename, reassign owner, delete, drag reorder handle. */
+  canEditMeta: boolean;
   onSubitemUpdated?: (subitem: Subitem) => void;
   onSubitemDeleted?: (id: string) => void;
   onFileDeleted?: (id: string) => void;
 }) {
+  const canEditWork = canEditMeta || subitem.ownerId === meId;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: subitem.id
+    id: subitem.id,
+    disabled: !canEditMeta
   });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -87,56 +94,90 @@ export function SubitemRow({
       style={{ ...style, gridTemplateColumns: SUBITEM_COLS }}
       className="grid hover:bg-slate-50 group"
     >
-      <button
-        {...attributes}
-        {...listeners}
-        className="cell !justify-center text-slate-300 hover:text-slate-600 cursor-grab opacity-0 group-hover:opacity-100"
-      >
-        <GripVertical size={14} />
-      </button>
+      {canEditMeta ? (
+        <button
+          {...attributes}
+          {...listeners}
+          className="cell !justify-center text-slate-300 hover:text-slate-600 cursor-grab opacity-0 group-hover:opacity-100"
+        >
+          <GripVertical size={14} />
+        </button>
+      ) : (
+        <div className="cell" />
+      )}
       <div className="cell !justify-center">
-        <NotificationButton projectId={projectId} users={users} ownerId={subitem.ownerId} />
+        {canEditWork ? (
+          <NotificationButton projectId={projectId} users={users} ownerId={subitem.ownerId} />
+        ) : null}
       </div>
       <div className="cell">
         <TextCell
           value={subitem.name}
+          readOnly={!canEditMeta}
           onChange={(v) => patch({ name: v ?? "" })}
           dataAttr={{ name: "subitem-name", value: subitem.id }}
         />
-        <button
-          type="button"
-          onClick={handleDeleteSubitem}
-          className="ml-2 p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 opacity-70 group-hover:opacity-100 focus:opacity-100"
-          title="Delete subitem"
-        >
-          <Trash2 size={13} />
-        </button>
+        {canEditMeta && (
+          <button
+            type="button"
+            onClick={handleDeleteSubitem}
+            className="ml-2 p-0.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 opacity-70 group-hover:opacity-100 focus:opacity-100"
+            title="Delete subitem"
+          >
+            <Trash2 size={13} />
+          </button>
+        )}
       </div>
       <div className="cell !p-0 !px-0">
-        <OwnerCell ownerId={subitem.ownerId} users={users} onChange={(id) => patch({ ownerId: id })} />
+        <OwnerCell
+          ownerId={subitem.ownerId}
+          users={users}
+          readOnly={!canEditMeta}
+          onChange={(id) => patch({ ownerId: id })}
+        />
       </div>
       <div className="cell !p-0">
         <SubitemStatusCell
           value={subitem.status}
+          readOnly={!canEditWork}
           onChange={(status: SubitemStatus) => patch({ status })}
         />
       </div>
       <div className="cell">
-        <DateCell value={subitem.dueDate} onChange={(d) => patch({ dueDate: d })} />
+        <DateCell
+          value={subitem.dueDate}
+          readOnly={!canEditWork}
+          onChange={(d) => patch({ dueDate: d })}
+        />
       </div>
       <div className="cell">
-        <DateCell value={subitem.dateCompleted} onChange={(d) => patch({ dateCompleted: d })} />
+        <DateCell
+          value={subitem.dateCompleted}
+          readOnly={!canEditWork}
+          onChange={(d) => patch({ dateCompleted: d })}
+        />
       </div>
       <div className="cell">
-        <TextCell value={subitem.notes} onChange={(v) => patch({ notes: v })} placeholder="Notes" />
+        <TextCell
+          value={subitem.notes}
+          readOnly={!canEditWork}
+          onChange={(v) => patch({ notes: v })}
+          placeholder="Notes"
+        />
       </div>
       <div className="cell !p-0">
-        <FilesCell
-          parentType="subitem"
-          parentId={subitem.id}
-          files={files}
-          onFileDeleted={onFileDeleted}
-        />
+        {canEditWork ? (
+          <FilesCell
+            parentType="subitem"
+            parentId={subitem.id}
+            files={files}
+            onFileDeleted={onFileDeleted}
+          />
+        ) : (
+          <span className="text-[11px] text-slate-400 px-2">
+            {files.length > 0 ? `${files.length} file(s)` : "—"}
+          </span>
+        )}
       </div>
     </div>
   );

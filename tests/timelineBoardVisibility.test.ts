@@ -49,11 +49,13 @@ describe("isGmsImportedProject", () => {
 });
 
 describe("isVisibleOnTimelineBoard", () => {
-  it("always shows manual projects", () => {
-    expect(isVisibleOnTimelineBoard(project({ prevailingWage: false }))).toBe(true);
+  it("shows only projects with prevailing wage checked", () => {
+    expect(isVisibleOnTimelineBoard(project({ prevailingWage: true }))).toBe(true);
+    expect(isVisibleOnTimelineBoard(project({ prevailingWage: false }))).toBe(false);
+    expect(isVisibleOnTimelineBoard(project({ prevailingWage: undefined }))).toBe(false);
   });
 
-  it("shows GMS projects only when prevailing wage is checked", () => {
+  it("hides non-PW GMS imports and shows PW GMS imports", () => {
     expect(
       isVisibleOnTimelineBoard(
         project({ gmsProposalId: "g-1", prevailingWage: true, notes: "Imported from GMS." })
@@ -63,9 +65,6 @@ describe("isVisibleOnTimelineBoard", () => {
       isVisibleOnTimelineBoard(
         project({ gmsProposalId: "g-1", prevailingWage: false, notes: "Imported from GMS." })
       )
-    ).toBe(false);
-    expect(
-      isVisibleOnTimelineBoard(project({ notes: "Imported from GMS.", prevailingWage: undefined }))
     ).toBe(false);
   });
 });

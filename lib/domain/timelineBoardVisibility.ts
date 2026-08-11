@@ -8,10 +8,10 @@ export function isGmsImportedProject(project: Project): boolean {
 }
 
 /**
- * Timeline only tracks prevailing-wage GMS jobs. Manual (non-GMS) projects stay visible;
- * GMS imports without PW checked are hidden from Current / Future / Completed.
+ * Timeline is a prevailing-wage board only.
+ * Non-PW rows (GMS skips, PW flipped off, or legacy rows) stay hidden from Current /
+ * Future / Completed — including manual creates that are not marked PW.
  */
 export function isVisibleOnTimelineBoard(project: Project): boolean {
-  if (!isGmsImportedProject(project)) return true;
   return project.prevailingWage === true;
 }

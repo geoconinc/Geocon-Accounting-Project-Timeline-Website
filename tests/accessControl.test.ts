@@ -4,8 +4,13 @@ import {
   canManageProject,
   canViewSubitem,
   canManageSubitem,
+  canAdminSubitem,
   invalidateAccessCache
 } from "@/lib/server/access";
+import {
+  isDasOnlyAssignee,
+  isDasTrackingSubitemName
+} from "@/lib/domain/projectDefaults";
 import type { Project, Subitem, User } from "@/lib/types";
 
 function user(overrides: Partial<User> = {}): User {
@@ -42,6 +47,7 @@ function project(overrides: Partial<Project> = {}): Project {
     lastUpdatedAt: "2026-01-01T00:00:00.000Z",
     lastUpdatedBy: null,
     position: 0,
+    prevailingWage: true,
     ...overrides
   };
 }
@@ -68,6 +74,35 @@ afterEach(() => {
   if (ORIGINAL_ADMINS === undefined) delete process.env.BOARD_ADMIN_EMAILS;
   else process.env.BOARD_ADMIN_EMAILS = ORIGINAL_ADMINS;
   invalidateAccessCache();
+});
+
+describe("DAS tracking helpers", () => {
+  it("recognizes DAS 140/142 names only", () => {
+    expect(isDasTrackingSubitemName("DAS 140 & Confirmation")).toBe(true);
+    expect(isDasTrackingSubitemName("DAS 142 & Confirmation")).toBe(true);
+    expect(isDasTrackingSubitemName("DAS Setup Sheet")).toBe(false);
+    expect(isDasTrackingSubitemName("Training Fund")).toBe(false);
+  });
+
+  it("isDasOnlyAssignee when owned items are DAS 140/142 (and optional Setup Sheet)", () => {
+    expect(
+      isDasOnlyAssignee([
+        { name: "DAS 140 & Confirmation" },
+        { name: "DAS 142 & Confirmation" }
+      ])
+    ).toBe(true);
+    expect(
+      isDasOnlyAssignee([
+        { name: "DAS Setup Sheet" },
+        { name: "DAS 140 & Confirmation" }
+      ])
+    ).toBe(true);
+    expect(isDasOnlyAssignee([{ name: "DAS Setup Sheet" }])).toBe(false);
+    expect(
+      isDasOnlyAssignee([{ name: "DAS 140 & Confirmation" }, { name: "Training Fund" }])
+    ).toBe(false);
+    expect(isDasOnlyAssignee([])).toBe(false);
+  });
 });
 
 describe("canViewProject", () => {
@@ -98,11 +133,19 @@ describe("canViewProject", () => {
 });
 
 describe("canManageProject", () => {
-  it("requires lead access for non-admins", async () => {
+  it("is admin-only — project leads cannot edit project fields", async () => {
     delete process.env.BOARD_ADMIN_EMAILS;
     invalidateAccessCache();
     expect(await canManageProject(user(), project())).toBe(false);
-    expect(await canManageProject(user({ id: "pm" }), project({ projectManagerId: "pm" }))).toBe(true);
+    expect(await canManageProject(user({ id: "pm" }), project({ projectManagerId: "pm" }))).toBe(
+      false
+    );
+  });
+
+  it("allows board admins", async () => {
+    process.env.BOARD_ADMIN_EMAILS = "worker@geoconinc.com";
+    invalidateAccessCache();
+    expect(await canManageProject(user(), project())).toBe(true);
   });
 });
 
@@ -115,11 +158,31 @@ describe("canViewSubitem / canManageSubitem", () => {
     expect(await canManageSubitem(user({ id: "u1" }), project(), s)).toBe(true);
   });
 
-  it("denies a user who is neither lead nor owner", async () => {
+  it("denies a user who is neither admin nor owner", async () => {
     delete process.env.BOARD_ADMIN_EMAILS;
     invalidateAccessCache();
     const s = subitem({ ownerId: "someone-else" });
     expect(await canViewSubitem(user({ id: "u1" }), project(), s)).toBe(false);
     expect(await canManageSubitem(user({ id: "u1" }), project(), s)).toBe(false);
+  });
+
+  it("does not let a project lead manage someone else's subitem", async () => {
+    delete process.env.BOARD_ADMIN_EMAILS;
+    invalidateAccessCache();
+    const s = subitem({ ownerId: "other" });
+    expect(
+      await canManageSubitem(user({ id: "pm" }), project({ projectManagerId: "pm" }), s)
+    ).toBe(false);
+  });
+});
+
+describe("canAdminSubitem", () => {
+  it("is true only for board admins", async () => {
+    delete process.env.BOARD_ADMIN_EMAILS;
+    invalidateAccessCache();
+    expect(await canAdminSubitem(user())).toBe(false);
+    process.env.BOARD_ADMIN_EMAILS = "worker@geoconinc.com";
+    invalidateAccessCache();
+    expect(await canAdminSubitem(user())).toBe(true);
   });
 });

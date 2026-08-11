@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/server/routeAuth";
-import { getBoardPayloadForUser, hasFullBoardAccessAsync, forbidden } from "@/lib/server/access";
+import { getBoardPayloadForUser, hasFullBoardAccessAsync, forbidden, isSimulatingBoardView } from "@/lib/server/access";
 import { createProjectWithSubitems } from "@/lib/server/features/projects/createProjectWithSubitems";
 import { parseJsonBody, badRequest } from "@/lib/server/http";
 import type { Project } from "@/lib/types";
@@ -17,6 +17,9 @@ export async function POST(req: Request) {
   const user = await authenticateRequest();
   if (user instanceof Response) return user;
   if (!(await hasFullBoardAccessAsync(user))) return forbidden();
+  if (await isSimulatingBoardView(user)) {
+    return forbidden("exit_view_as_to_edit");
+  }
   const body = await parseJsonBody<
     Partial<Omit<Project, "id" | "lastUpdatedAt" | "position" | "lastUpdatedBy">>
   >(req);
@@ -47,7 +50,9 @@ export async function POST(req: Request) {
           ? body.projectDirectorId
           : null,
       notes: body.notes ?? null,
-      gmsProposalId: body.gmsProposalId ?? null
+      gmsProposalId: body.gmsProposalId ?? null,
+      // This board is PW-only; manual creates are always treated as prevailing wage.
+      prevailingWage: true
     },
     actorId: user.id,
     actorName: user.name

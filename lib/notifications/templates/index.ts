@@ -8,6 +8,7 @@
  * | Weekly DAS reminder | Cron /api/cron/das-followup | buildDasFollowupDigestEmail |
  * | Due today | Cron /api/cron/due-dates | buildDueTodayEmail |
  * | One week incomplete | Cron /api/cron/incomplete-week | buildIncompleteWeekDigestEmail |
+ * | Monday incomplete | Cron /api/cron/monday-incomplete | buildMondayIncompleteDigestEmail |
  * | Project owner assigned | PATCH project ownerId | buildProjectOwnerAssignedEmail |
  * | Project status changed | PATCH project status | buildProjectStatusChangedEmail |
  * | Subitem assigned | PATCH subitem ownerId | buildSubitemAssignedEmail |
@@ -25,3 +26,4 @@ export {
 export { buildProjectManagerCreationEmail, buildAssigneeDigestEmail } from "../projectCreationTemplates";
 export { buildDasFollowupDigestEmail } from "../dasFollowupTemplates";
 export { buildIncompleteWeekDigestEmail } from "../incompleteWeekTemplates";
+export { buildMondayIncompleteDigestEmail } from "../mondayIncompleteTemplates";

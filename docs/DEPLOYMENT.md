@@ -89,14 +89,22 @@ confirm the board loads and edits save.
 ## Cron jobs on Azure
 
 Use **Azure Container Apps Jobs**, a **Logic App**, or any scheduler to `POST`
-daily to the cron endpoints with the `X-Cron-Secret` header:
+cron endpoints with the `X-Cron-Secret` header. Schedule **monday-incomplete**
+for Mondays only (e.g. `0 15 * * 1`):
+
+```bash
+curl -sS -X POST -H "X-Cron-Secret: <CRON_SHARED_SECRET>" \
+  "https://YOUR-APP.azurewebsites.net/api/cron/monday-incomplete"
+```
+
+Also available (optional):
 
 ```bash
 curl -sS -X POST -H "X-Cron-Secret: <CRON_SHARED_SECRET>" \
   "https://YOUR-APP.azurewebsites.net/api/cron/incomplete-week"
 ```
 
-Endpoints: `/api/cron/incomplete-week`, `/api/cron/due-dates`, `/api/cron/das-followup`.
+Endpoints: `/api/cron/monday-incomplete`, `/api/cron/incomplete-week`, `/api/cron/due-dates`, `/api/cron/das-followup`.
 
 ## Environment Variables
 
