@@ -20,7 +20,7 @@ export interface BoardPayload {
   me: string;
   /** Full board admins (Sid / Kailua / Bill / Marissa, etc.). */
   isAdmin: boolean;
-  /** Drives board visibility: admin = everything; das = DAS 140/142 only; assignee = own items. */
+  /** Drives board visibility: admin = everything; das = own DAS 140/142 only; assignee = own items. */
   boardRole: BoardRole;
   /**
    * When set, the signed-in admin is previewing this user's board.
@@ -168,15 +168,18 @@ async function buildBoardPayloadForViewer(
 
   const ownedOnBoard = boardSubitems.filter((s) => s.ownerId === user.id);
 
-  // DAS 140/142 specialists: every PW project; only those two checklist rows.
+  // DAS 140/142 specialists: only their assigned DAS 140/142 rows (and those projects).
   if (isDasOnlyAssignee(ownedOnBoard)) {
-    const dasSubitems = boardSubitems.filter((s) => isDasTrackingSubitemName(s.name));
-    const projectIds = new Set(projects.map((p) => p.id));
+    const dasSubitems = ownedOnBoard.filter((s) => isDasTrackingSubitemName(s.name));
+    const visibleProjectIds = new Set(dasSubitems.map((s) => s.projectId));
+    const visibleProjects = projects.filter((p) => visibleProjectIds.has(p.id));
     return {
-      projects,
+      projects: visibleProjects,
       subitems: dasSubitems,
       users,
-      files: includeFiles ? filesForSubitems(boardFiles, dasSubitems, projectIds) : [],
+      files: includeFiles
+        ? filesForSubitems(boardFiles, dasSubitems, visibleProjectIds)
+        : [],
       me: user.id,
       isAdmin: false,
       boardRole: "das"
@@ -245,10 +248,6 @@ export async function canViewProject(user: User, project: Project, subitems: Sub
   if (await hasFullBoardAccessAsync(user)) return true;
   if (isProjectLead(user, project)) return true;
   if (subitems.some((subitem) => subitem.ownerId === user.id)) return true;
-  if (isVisibleOnTimelineBoard(project)) {
-    const allOwned = (await storage.listAllSubitems()).filter((s) => s.ownerId === user.id);
-    if (isDasOnlyAssignee(allOwned)) return true;
-  }
   return false;
 }
 
@@ -258,21 +257,16 @@ export async function canManageProject(user: User, _project?: Project): Promise<
   return hasFullBoardAccessAsync(user);
 }
 
-export async function canViewSubitem(user: User, project: Project, subitem: Subitem): Promise<boolean> {
+export async function canViewSubitem(user: User, _project: Project, subitem: Subitem): Promise<boolean> {
   if (await hasFullBoardAccessAsync(user)) return true;
-  if (subitem.ownerId === user.id) return true;
-  if (isDasTrackingSubitemName(subitem.name)) {
-    const owned = (await storage.listAllSubitems()).filter((s) => s.ownerId === user.id);
-    if (isDasOnlyAssignee(owned)) return true;
-  }
-  return false;
+  return subitem.ownerId === user.id;
 }
 
 /**
- * Assignees may update status / dates / notes on their own items.
- * Project leads no longer get blanket edit of every checklist row.
+ * Assignees (including DAS 140/142 people) may update status / dates / notes
+ * on their own items only. Project leads no longer get blanket edit of every checklist row.
  */
-export async function canManageSubitem(user: User, project: Project, subitem: Subitem): Promise<boolean> {
+export async function canManageSubitem(user: User, _project: Project, subitem: Subitem): Promise<boolean> {
   if (await isSimulatingBoardView(user)) return false;
   if (await hasFullBoardAccessAsync(user)) return true;
   return subitem.ownerId === user.id;

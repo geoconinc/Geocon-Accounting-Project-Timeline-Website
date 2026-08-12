@@ -13,7 +13,7 @@ export const DEFAULT_SUBITEM_NAMES = [
 
 export const CPR_SUBITEM_NAME = "Certified Payroll Entry";
 
-/** Checklist items DAS specialists may see board-wide (status for these on every project). */
+/** Checklist rows shown on the DAS specialist board (only when assigned to that user). */
 export const DAS_TRACKING_SUBITEM_NAMES = [
   "DAS 140 & Confirmation",
   "DAS 142 & Confirmation"
@@ -34,7 +34,7 @@ function isDasFamilySubitemName(name: string): boolean {
 
 /**
  * True when the user only owns DAS-family checklist rows (140/142 and/or Setup Sheet).
- * Those users get a DAS board: all PW projects, only DAS 140/142 rows.
+ * Those users get a DAS board: only their assigned DAS 140/142 rows.
  */
 export function isDasOnlyAssignee(
   ownedSubitems: Array<{ name: string }>

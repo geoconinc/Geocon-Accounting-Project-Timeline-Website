@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import {
   canViewProject,
   canManageProject,
@@ -12,6 +12,20 @@ import {
   isDasTrackingSubitemName
 } from "@/lib/domain/projectDefaults";
 import type { Project, Subitem, User } from "@/lib/types";
+
+const { listAllSubitemsMock } = vi.hoisted(() => ({
+  listAllSubitemsMock: vi.fn(async () => [] as Subitem[])
+}));
+
+vi.mock("@/lib/storage", () => ({
+  storage: {
+    listAllSubitems: listAllSubitemsMock,
+    getUserById: vi.fn(async () => null),
+    getSubitemById: vi.fn(async () => null),
+    getProject: vi.fn(async () => null),
+    getFileById: vi.fn(async () => null)
+  }
+}));
 
 function user(overrides: Partial<User> = {}): User {
   return {
@@ -74,6 +88,8 @@ afterEach(() => {
   if (ORIGINAL_ADMINS === undefined) delete process.env.BOARD_ADMIN_EMAILS;
   else process.env.BOARD_ADMIN_EMAILS = ORIGINAL_ADMINS;
   invalidateAccessCache();
+  listAllSubitemsMock.mockReset();
+  listAllSubitemsMock.mockResolvedValue([]);
 });
 
 describe("DAS tracking helpers", () => {
@@ -173,6 +189,32 @@ describe("canViewSubitem / canManageSubitem", () => {
     expect(
       await canManageSubitem(user({ id: "pm" }), project({ projectManagerId: "pm" }), s)
     ).toBe(false);
+  });
+
+  it("does not let a non-DAS user manage an unowned DAS tracking row", async () => {
+    delete process.env.BOARD_ADMIN_EMAILS;
+    invalidateAccessCache();
+    listAllSubitemsMock.mockResolvedValue([
+      subitem({ id: "mine", name: "Training Fund", ownerId: "u1" })
+    ]);
+    const s = subitem({ name: "DAS 140 & Confirmation", ownerId: "other" });
+    expect(await canManageSubitem(user({ id: "u1" }), project(), s)).toBe(false);
+  });
+
+  it("does not let a DAS-only assignee see or manage someone else's DAS 140/142 row", async () => {
+    delete process.env.BOARD_ADMIN_EMAILS;
+    invalidateAccessCache();
+    listAllSubitemsMock.mockResolvedValue([
+      subitem({ id: "owned-140", name: "DAS 140 & Confirmation", ownerId: "u1" }),
+      subitem({ id: "owned-142", name: "DAS 142 & Confirmation", ownerId: "u1" })
+    ]);
+    const otherOffice = subitem({
+      id: "other-140",
+      name: "DAS 140 & Confirmation",
+      ownerId: "someone-else"
+    });
+    expect(await canViewSubitem(user({ id: "u1" }), project(), otherOffice)).toBe(false);
+    expect(await canManageSubitem(user({ id: "u1" }), project(), otherOffice)).toBe(false);
   });
 });
 
