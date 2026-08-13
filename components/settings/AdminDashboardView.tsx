@@ -3,15 +3,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
+  AlertTriangle,
   CheckCircle2,
   Clock,
   FolderOpen,
+  ListChecks,
   RefreshCw,
   Search,
+  Target,
+  Timer,
   Users,
   X
 } from "lucide-react";
 import type { ActivityEvent } from "@/lib/types";
+import { formatDaysMetric, formatPctMetric } from "@/lib/domain/workStats";
 import { EmployeeDetailModal } from "./EmployeeDetailModal";
 
 interface EmployeeSummary {
@@ -21,6 +26,13 @@ interface EmployeeSummary {
   initials: string;
   ongoingCount: number;
   completedCount: number;
+  assignedTasks: number;
+  openTasks: number;
+  completionPct: number;
+  overdueCount: number;
+  avgCompletionDays: number | null;
+  medianCompletionDays: number | null;
+  onTimePct: number | null;
   lastLoginAt: string | null;
 }
 
@@ -44,6 +56,13 @@ interface DashboardStats {
   completedTotal: number;
   activeEmployees: number;
   totalEmployees: number;
+  assignedTasks: number;
+  openTasks: number;
+  completionPct: number;
+  overdueCount: number;
+  avgCompletionDays: number | null;
+  medianCompletionDays: number | null;
+  onTimePct: number | null;
 }
 
 interface DashboardData {
@@ -150,7 +169,14 @@ export function AdminDashboardView() {
 
   return (
     <div className="space-y-6">
-      {/* Stats row */}
+      <div>
+        <h2 className="text-lg font-semibold text-slate-800">Company overview</h2>
+        <p className="text-sm text-slate-500">
+          Organization-wide project and checklist metrics. Personal dashboards only show each
+          employee&apos;s own work.
+        </p>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
           icon={<Users size={18} />}
@@ -165,7 +191,28 @@ export function AdminDashboardView() {
         <StatCard icon={<Users size={18} />} value={stats.activeEmployees} label="Active (5 days)" />
       </div>
 
-      {/* Filter bar */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          icon={<ListChecks size={18} />}
+          value={stats.openTasks}
+          label="Open checklist tasks"
+          title={`${stats.assignedTasks} total assigned`}
+        />
+        <StatCard icon={<AlertTriangle size={18} />} value={stats.overdueCount} label="Overdue tasks" />
+        <StatCard
+          icon={<Timer size={18} />}
+          value={formatDaysMetric(stats.avgCompletionDays)}
+          label="Avg completion time"
+          title="Company mean: created → completed"
+        />
+        <StatCard
+          icon={<Target size={18} />}
+          value={formatPctMetric(stats.onTimePct)}
+          label="On-time rate"
+          title={`Completion rate ${stats.completionPct}% · median ${formatDaysMetric(stats.medianCompletionDays)}`}
+        />
+      </div>
+
       <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2 flex-1 min-w-[200px]">
           <span className="text-xs font-medium text-slate-500">Filter by Employee:</span>
@@ -212,10 +259,8 @@ export function AdminDashboardView() {
         </div>
       </div>
 
-      {/* Audit log */}
       {showAuditLog && <AuditLogPanel entries={data.auditLog} />}
 
-      {/* Employees grid */}
       <div>
         <h2 className="text-lg font-semibold text-slate-800 mb-4">
           Employees
@@ -261,7 +306,10 @@ function StatCard({
 }) {
   const display = typeof value === "number" ? value.toLocaleString() : value;
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 card-hover flex items-center gap-4" title={title}>
+    <div
+      className="bg-white rounded-xl border border-slate-200 p-5 card-hover flex items-center gap-4"
+      title={title}
+    >
       <div className="w-10 h-10 rounded-lg bg-brand text-white grid place-items-center shrink-0">
         {icon}
       </div>
@@ -303,21 +351,40 @@ function EmployeeCard({
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <div className="text-center">
-            <div className="text-lg font-bold text-brand-dark">{e.ongoingCount}</div>
+            <div className="text-lg font-bold text-brand-dark">{e.openTasks}</div>
             <div className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">
-              Ongoing
+              Open
             </div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-brand-dark">{e.completedCount}</div>
+            <div className="text-lg font-bold text-brand-dark">{e.completionPct}%</div>
             <div className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">
-              Completed
+              Done
             </div>
           </div>
         </div>
       </div>
-      <div className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-400">
-        Last login: {lastLoginStr}
+      <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] text-slate-500">
+        <div>
+          <div className="font-semibold text-slate-700">{formatDaysMetric(e.avgCompletionDays)}</div>
+          <div className="text-[9px] uppercase tracking-wider text-slate-400">Avg time</div>
+        </div>
+        <div>
+          <div className="font-semibold text-slate-700">{formatPctMetric(e.onTimePct)}</div>
+          <div className="text-[9px] uppercase tracking-wider text-slate-400">On time</div>
+        </div>
+        <div>
+          <div className={`font-semibold ${e.overdueCount ? "text-red-600" : "text-slate-700"}`}>
+            {e.overdueCount}
+          </div>
+          <div className="text-[9px] uppercase tracking-wider text-slate-400">Overdue</div>
+        </div>
+      </div>
+      <div className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex justify-between gap-2">
+        <span>
+          Projects {e.ongoingCount} open / {e.completedCount} done
+        </span>
+        <span>Login: {lastLoginStr}</span>
       </div>
     </button>
   );

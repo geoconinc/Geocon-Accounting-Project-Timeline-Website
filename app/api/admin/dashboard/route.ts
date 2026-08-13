@@ -3,13 +3,14 @@ import { storage } from "@/lib/storage";
 import { authenticateRequest } from "@/lib/server/routeAuth";
 import { isAdminAsync } from "@/lib/server/access";
 import { resolveAuditEntityName } from "@/lib/server/auditDisplay";
+import { computeWorkStats, subitemsForUser } from "@/lib/domain/workStats";
 
 export const dynamic = "force-dynamic";
 
 const ACTIVE_LOGIN_DAYS = 5;
 
-function hasAssignment(ongoingCount: number, completedCount: number): boolean {
-  return ongoingCount > 0 || completedCount > 0;
+function hasAssignment(ongoingCount: number, completedCount: number, assignedTasks: number): boolean {
+  return ongoingCount > 0 || completedCount > 0 || assignedTasks > 0;
 }
 
 function loggedInWithinDays(lastLoginAt: string | null | undefined, days: number): boolean {
@@ -34,11 +35,14 @@ export async function GET() {
     storage.listRecentActivity(200)
   ]);
 
+  const companyWork = computeWorkStats(allSubitems);
+
   const allEmployees = allUsers.map((u) => {
     const ownedProjects = allProjects.filter(
       (p) => p.ownerId === u.id || p.projectManagerId === u.id || p.projectDirectorId === u.id
     );
-    const assignedSubitems = allSubitems.filter((s) => s.ownerId === u.id);
+    const assignedSubitems = subitemsForUser(allSubitems, u.id);
+    const work = computeWorkStats(assignedSubitems);
 
     const ongoingProjects = new Set<string>();
     const completedProjects = new Set<string>();
@@ -61,12 +65,19 @@ export async function GET() {
       initials: u.initials,
       ongoingCount: ongoingProjects.size,
       completedCount: completedProjects.size,
+      assignedTasks: work.assignedCount,
+      openTasks: work.openCount,
+      completionPct: work.completionPct,
+      overdueCount: work.overdueCount,
+      avgCompletionDays: work.avgCompletionDays,
+      medianCompletionDays: work.medianCompletionDays,
+      onTimePct: work.onTimePct,
       lastLoginAt: u.lastLoginAt ?? null
     };
   });
 
   const employees = allEmployees
-    .filter((e) => hasAssignment(e.ongoingCount, e.completedCount))
+    .filter((e) => hasAssignment(e.ongoingCount, e.completedCount, e.assignedTasks))
     .sort((a, b) => {
       const aTime = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0;
       const bTime = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0;
@@ -104,7 +115,14 @@ export async function GET() {
       ongoingTotal,
       completedTotal,
       activeEmployees,
-      totalEmployees: employees.length
+      totalEmployees: employees.length,
+      assignedTasks: companyWork.assignedCount,
+      openTasks: companyWork.openCount,
+      completionPct: companyWork.completionPct,
+      overdueCount: companyWork.overdueCount,
+      avgCompletionDays: companyWork.avgCompletionDays,
+      medianCompletionDays: companyWork.medianCompletionDays,
+      onTimePct: companyWork.onTimePct
     },
     employees,
     auditLog: activityWithNames
