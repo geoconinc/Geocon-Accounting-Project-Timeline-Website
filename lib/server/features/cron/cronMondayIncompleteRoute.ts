@@ -7,6 +7,7 @@ import {
 } from "@/lib/notifications/mondayIncompleteTemplates";
 import { getEffectiveNotificationConfig, isCategoryEnabled } from "@/lib/notifications/emailConfig";
 import { isVisibleOnTimelineBoard } from "@/lib/domain/timelineBoardVisibility";
+import { isAccountingEmailRecipient } from "@/lib/notifications/accountingOnly";
 
 const SKIP_STATUSES = new Set(["Completed", "NA"]);
 
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
 
     const project = projectById.get(sub.projectId);
     if (!project) continue;
+    if (!isAccountingEmailRecipient(sub.ownerId, project)) continue;
 
     const list = ownerItems.get(sub.ownerId) ?? [];
     list.push({

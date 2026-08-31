@@ -173,6 +173,10 @@ export const jsonStore: Storage = {
         projectManagerId: input.projectManagerId ?? null,
         projectDirectorId: input.projectDirectorId ?? null,
         gmsProposalId: input.gmsProposalId ?? null,
+        dirContractNumber: input.dirContractNumber ?? null,
+        payrollCycle: input.payrollCycle ?? "biweekly",
+        prevailingWage: input.prevailingWage ?? false,
+        prevailingWageType: input.prevailingWageType ?? null,
         id: input.id ?? randomUUID(),
         position: groupCount,
         lastUpdatedAt: nowIso()

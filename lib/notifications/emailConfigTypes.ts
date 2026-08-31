@@ -24,11 +24,11 @@ export const NOTIFICATION_CATEGORIES: {
   label: string;
   description: string;
 }[] = [
-  { key: "projectCreated", label: "Project created", description: "PM and assignees are emailed when a project is created." },
-  { key: "ownerAssigned", label: "Project owner assigned", description: "The new owner is emailed when assigned a project." },
-  { key: "subitemAssigned", label: "Task assigned", description: "The owner is emailed when assigned a task." },
-  { key: "statusChanged", label: "Project status changed", description: "The owner is emailed when a project status changes." },
-  { key: "manualMessage", label: "Manual board messages", description: "Messages sent manually from the board." },
+  { key: "projectCreated", label: "Project created", description: "Accounting checklist assignees are emailed when a project is created." },
+  { key: "ownerAssigned", label: "Project owner assigned", description: "Unused — PMs/directors are not emailed from Timeline." },
+  { key: "subitemAssigned", label: "Task assigned", description: "Accounting assignees are emailed when assigned a task (not PMs/directors)." },
+  { key: "statusChanged", label: "Project status changed", description: "Unused — project status emails to owners are disabled." },
+  { key: "manualMessage", label: "Manual board messages", description: "Messages sent manually from the board to accounting assignees." },
   { key: "dueDateReminder", label: "Due-today reminders", description: "Daily reminder for tasks due today." },
   { key: "dasFollowup", label: "Weekly DAS digest", description: "Weekly DAS follow-up digest." },
   { key: "incompleteWeek", label: "One-week incomplete digest", description: "Digest of items still incomplete after a week." },
@@ -197,7 +197,7 @@ export const EMAIL_TEMPLATE_DEFS: EmailTemplateDef[] = [
   {
     key: "projectManagerCreated",
     label: "New project — Project Manager",
-    description: "Sent to the project manager when a project is created.",
+    description: "Unused — PMs are not emailed from Timeline (kept for admin template history).",
     tokens: [
       RECIPIENT_TOKEN,
       { name: "creatorName", description: "Person who created the project" },

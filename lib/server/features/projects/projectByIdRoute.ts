@@ -2,23 +2,14 @@ import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 import { authenticateRequest } from "@/lib/server/routeAuth";
 import { bus } from "@/lib/events/bus";
-import { notifyUser } from "@/lib/notifications/dispatch";
-import {
-  buildProjectOwnerAssignedEmail,
-  buildProjectStatusChangedEmail
-} from "@/lib/notifications/templates/operational";
 import { canManageProject, forbidden } from "@/lib/server/access";
 import { deriveProjectActivityPatch } from "@/lib/domain/projectStatusSync";
 import { recordActivity } from "@/lib/server/activityLog";
 import { parseJsonBody, badRequest } from "@/lib/server/http";
-
-const PROJECT_STATUS_LABEL: Record<string, string> = {
-  New: "New",
-  Completed: "Completed",
-  InProgress: "In Progress",
-  Missing: "Missing",
-  Future: "Future"
-};
+import {
+  gmsImportLockedFieldsInPatch,
+  gmsOwnedFieldsInPatch
+} from "@/lib/domain/gmsDas";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const user = await authenticateRequest();
@@ -41,6 +32,28 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     );
   }
 
+  const gmsOwned = gmsOwnedFieldsInPatch(patch);
+  if (gmsOwned.length > 0) {
+    return NextResponse.json(
+      {
+        error: "gms_field_locked",
+        message: `These fields are managed by GMS and cannot be changed here: ${gmsOwned.join(", ")}.`
+      },
+      { status: 400 }
+    );
+  }
+
+  const gmsImportLocked = gmsImportLockedFieldsInPatch(patch, before);
+  if (gmsImportLocked.length > 0) {
+    return NextResponse.json(
+      {
+        error: "gms_field_locked",
+        message: `This project was imported from GMS. These fields cannot be changed here: ${gmsImportLocked.join(", ")}.`
+      },
+      { status: 400 }
+    );
+  }
+
   const activityPatch = deriveProjectActivityPatch(before, patch);
   const mergedPatch = activityPatch ? { ...patch, ...activityPatch } : patch;
 
@@ -49,45 +62,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   bus.publish({ type: "project.upsert", payload: { id: updated.id } });
 
-  if (patch.ownerId && patch.ownerId !== before.ownerId && typeof patch.ownerId === "string") {
-    const assignee = await storage.getUserById(patch.ownerId);
-    if (assignee) {
-      const mail = await buildProjectOwnerAssignedEmail({
-        recipientName: assignee.name,
-        actorName: user.name,
-        projectCode: updated.code,
-        projectName: updated.name,
-        projectId: updated.id
-      });
-      await notifyUser({
-        userId: patch.ownerId,
-        projectId: updated.id,
-        category: "ownerAssigned",
-        ...mail
-      });
-    }
-  }
-  if (mergedPatch.status && mergedPatch.status !== before.status && updated.ownerId) {
-    const owner = await storage.getUserById(updated.ownerId);
-    if (owner) {
-      const status =
-        PROJECT_STATUS_LABEL[String(mergedPatch.status)] ?? String(mergedPatch.status);
-      const mail = await buildProjectStatusChangedEmail({
-        recipientName: owner.name,
-        actorName: user.name,
-        projectCode: updated.code,
-        projectName: updated.name,
-        newStatus: status,
-        projectId: updated.id
-      });
-      await notifyUser({
-        userId: updated.ownerId,
-        projectId: updated.id,
-        category: "statusChanged",
-        ...mail
-      });
-    }
-  }
+  // Project owner / status emails target PMs and directors, who do not use Timeline.
+  // Checklist (accounting) emails are sent on create and via cron digests instead.
 
   await recordActivity({
     actorId: user.id,

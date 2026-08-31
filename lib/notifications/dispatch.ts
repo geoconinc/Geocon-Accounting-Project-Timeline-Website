@@ -5,6 +5,7 @@ import { wrapEmailLayout } from "./layout";
 import { sendMail } from "./email";
 import { getEffectiveNotificationConfig, isCategoryEnabled } from "./emailConfig";
 import type { NotificationCategory } from "./emailConfigTypes";
+import { isAccountingEmailRecipient } from "./accountingOnly";
 
 export { escapeHtml } from "./html";
 
@@ -30,6 +31,12 @@ function defaultHtml(message: string): string {
 export async function notifyUser(opts: NotifyOpts) {
   const target = await storage.getUserById(opts.userId);
   if (!target) return;
+
+  // PMs / directors do not use Timeline — never email or ping them about a project.
+  if (opts.projectId) {
+    const project = await storage.getProject(opts.projectId);
+    if (project && !isAccountingEmailRecipient(opts.userId, project)) return;
+  }
 
   // In-app notification always fires; it is not gated by email settings.
   bus.publish({

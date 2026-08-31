@@ -3,6 +3,7 @@ import { storage } from "@/lib/storage";
 import { notifyUser } from "@/lib/notifications/dispatch";
 import { buildDasFollowupDigestEmail, type DasFollowupItem } from "@/lib/notifications/dasFollowupTemplates";
 import { getEffectiveNotificationConfig, isCategoryEnabled } from "@/lib/notifications/emailConfig";
+import { isAccountingEmailRecipient } from "@/lib/notifications/accountingOnly";
 
 const DAS_NAMES = new Set([
   // "DAS Setup Sheet" is owned by GMS status sync — do not email PMs about it from Timeline.
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
 
     const project = projectById.get(sub.projectId);
     if (!project) continue;
+    if (!isAccountingEmailRecipient(sub.ownerId, project)) continue;
 
     const list = ownerItems.get(sub.ownerId) ?? [];
     list.push({

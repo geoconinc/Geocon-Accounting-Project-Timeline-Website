@@ -45,7 +45,11 @@ function mapProject(r: typeof projects.$inferSelect): Project {
     timelineStart: dateOnly(r.timelineStart),
     timelineEnd: dateOnly(r.timelineEnd),
     dirNumber: r.dirNumber,
+    dirContractNumber: r.dirContractNumber,
     union: r.union,
+    payrollCycle: (r.payrollCycle === "weekly" || r.payrollCycle === "biweekly"
+      ? r.payrollCycle
+      : "biweekly") as Project["payrollCycle"],
     reportingSystems: r.reportingSystems,
     cprContact: r.cprContact,
     sharepointUrl: r.sharepointUrl,
@@ -58,6 +62,11 @@ function mapProject(r: typeof projects.$inferSelect): Project {
     position: r.position,
     gmsProposalId: r.gmsProposalId,
     prevailingWage: r.prevailingWage,
+    prevailingWageType: (r.prevailingWageType === "no" ||
+    r.prevailingWageType === "yes" ||
+    r.prevailingWageType === "union"
+      ? r.prevailingWageType
+      : null) as Project["prevailingWageType"],
     pwCategory: r.pwCategory,
     dasRequired: r.dasRequired,
     dasStatus: r.dasStatus,
@@ -285,7 +294,9 @@ export const postgresStore: Storage = {
         timelineStart: input.timelineStart,
         timelineEnd: input.timelineEnd,
         dirNumber: input.dirNumber,
+        dirContractNumber: input.dirContractNumber ?? null,
         union: input.union,
+        payrollCycle: input.payrollCycle ?? "biweekly",
         reportingSystems: input.reportingSystems,
         cprContact: input.cprContact,
         sharepointUrl: input.sharepointUrl,
@@ -296,6 +307,7 @@ export const postgresStore: Storage = {
         lastUpdatedBy: input.lastUpdatedBy ?? null,
         gmsProposalId: input.gmsProposalId ?? null,
         prevailingWage: input.prevailingWage ?? false,
+        prevailingWageType: input.prevailingWageType ?? null,
         pwCategory: input.pwCategory ?? null,
         dasRequired: input.dasRequired ?? false,
         dasStatus: input.dasStatus ?? null,
@@ -331,7 +343,11 @@ export const postgresStore: Storage = {
         ...(patch.timelineStart !== undefined ? { timelineStart: patch.timelineStart } : {}),
         ...(patch.timelineEnd !== undefined ? { timelineEnd: patch.timelineEnd } : {}),
         ...(patch.dirNumber !== undefined ? { dirNumber: patch.dirNumber } : {}),
+        ...(patch.dirContractNumber !== undefined
+          ? { dirContractNumber: patch.dirContractNumber }
+          : {}),
         ...(patch.union !== undefined ? { union: patch.union } : {}),
+        ...(patch.payrollCycle !== undefined ? { payrollCycle: patch.payrollCycle } : {}),
         ...(patch.reportingSystems !== undefined ? { reportingSystems: patch.reportingSystems } : {}),
         ...(patch.cprContact !== undefined ? { cprContact: patch.cprContact } : {}),
         ...(patch.sharepointUrl !== undefined ? { sharepointUrl: patch.sharepointUrl } : {}),
@@ -341,6 +357,9 @@ export const postgresStore: Storage = {
         ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
         ...(patch.gmsProposalId !== undefined ? { gmsProposalId: patch.gmsProposalId } : {}),
         ...(patch.prevailingWage !== undefined ? { prevailingWage: patch.prevailingWage } : {}),
+        ...(patch.prevailingWageType !== undefined
+          ? { prevailingWageType: patch.prevailingWageType }
+          : {}),
         ...(patch.pwCategory !== undefined ? { pwCategory: patch.pwCategory } : {}),
         ...(patch.dasRequired !== undefined ? { dasRequired: patch.dasRequired } : {}),
         ...(patch.dasStatus !== undefined ? { dasStatus: patch.dasStatus } : {}),

@@ -5,6 +5,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Trash2 } from "lucide-react";
 import type { FileRef, Subitem, SubitemStatus, User } from "@/lib/types";
+import { isGmsManagedSubitemName } from "@/lib/domain/gmsDas";
 import { OwnerCell } from "./OwnerCell";
 import { SubitemStatusCell } from "./StatusCell";
 import { DateCell } from "./DateCell";
@@ -12,6 +13,7 @@ import { TextCell } from "./TextCell";
 import { NotificationButton } from "./NotificationButton";
 import { FilesCell } from "./FilesCell";
 import { api } from "@/lib/client/boardApi";
+import { isAccountingEmailRecipient } from "@/lib/notifications/accountingOnly";
 
 export const SUBITEM_COLS =
   "32px 32px minmax(280px,1fr) 80px 130px 110px 110px minmax(220px,1fr) minmax(180px,1fr)";
@@ -39,6 +41,8 @@ export function SubitemRow({
   subitem,
   users,
   projectId,
+  projectManagerId,
+  projectDirectorId,
   files,
   meId,
   canEditMeta,
@@ -49,6 +53,8 @@ export function SubitemRow({
   subitem: Subitem;
   users: User[];
   projectId: string;
+  projectManagerId: string | null;
+  projectDirectorId: string | null;
   files: FileRef[];
   meId: string;
   /** Admin-only: rename, reassign owner, delete, drag reorder handle. */
@@ -57,7 +63,14 @@ export function SubitemRow({
   onSubitemDeleted?: (id: string) => void;
   onFileDeleted?: (id: string) => void;
 }) {
+  const gmsStatusLocked = isGmsManagedSubitemName(subitem.name);
   const canEditWork = canEditMeta || subitem.ownerId === meId;
+  const canEditStatus = canEditWork && !gmsStatusLocked;
+  const emailRecipientIds =
+    subitem.ownerId &&
+    isAccountingEmailRecipient(subitem.ownerId, { projectManagerId, projectDirectorId })
+      ? [subitem.ownerId]
+      : [];
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: subitem.id,
     disabled: !canEditMeta
@@ -107,7 +120,7 @@ export function SubitemRow({
       )}
       <div className="cell !justify-center">
         {canEditWork ? (
-          <NotificationButton projectId={projectId} users={users} ownerId={subitem.ownerId} />
+          <NotificationButton projectId={projectId} recipientIds={emailRecipientIds} />
         ) : null}
       </div>
       <div className="cell">
@@ -136,10 +149,13 @@ export function SubitemRow({
           onChange={(id) => patch({ ownerId: id })}
         />
       </div>
-      <div className="cell !p-0">
+      <div
+        className="cell !p-0"
+        title={gmsStatusLocked ? "Status from GMS (not editable)" : undefined}
+      >
         <SubitemStatusCell
           value={subitem.status}
-          readOnly={!canEditWork}
+          readOnly={!canEditStatus}
           onChange={(status: SubitemStatus) => patch({ status })}
         />
       </div>
@@ -150,10 +166,13 @@ export function SubitemRow({
           onChange={(d) => patch({ dueDate: d })}
         />
       </div>
-      <div className="cell">
+      <div
+        className="cell"
+        title={gmsStatusLocked ? "Date completed from GMS (not editable)" : undefined}
+      >
         <DateCell
           value={subitem.dateCompleted}
-          readOnly={!canEditWork}
+          readOnly={!canEditStatus}
           onChange={(d) => patch({ dateCompleted: d })}
         />
       </div>

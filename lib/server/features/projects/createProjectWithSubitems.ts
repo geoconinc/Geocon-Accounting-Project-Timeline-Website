@@ -8,10 +8,8 @@ import { notifyUser } from "@/lib/notifications/dispatch";
 import { syncRoleAssigneeUsersIntoStorage } from "@/lib/server/site-data/syncRoleAssignees";
 import { syncOfficeAssigneeUsersIntoStorage } from "@/lib/server/site-data/syncOfficeAssignees";
 import { getEffectiveOfficeAssigneeRows } from "@/lib/server/site-data/adminSiteConfigStore";
-import {
-  buildAssigneeDigestEmail,
-  buildProjectManagerCreationEmail
-} from "@/lib/notifications/projectCreationTemplates";
+import { buildAssigneeDigestEmail } from "@/lib/notifications/projectCreationTemplates";
+import { isAccountingEmailRecipient } from "@/lib/notifications/accountingOnly";
 
 export interface CreateProjectWithSubitemsInput {
   project: Omit<Project, "id" | "lastUpdatedAt" | "position" | "lastUpdatedBy"> & { id?: string };
@@ -19,8 +17,7 @@ export interface CreateProjectWithSubitemsInput {
   actorName: string;
   sendNotifications?: boolean;
   /**
-   * When true, creation emails go only to checklist assignees (accounting), not the
-   * project manager. Used for GMS imports where DAS is completed in GMS, not here.
+   * @deprecated Always skipped — PMs do not use Timeline. Kept for call-site compat.
    */
   skipProjectManagerEmail?: boolean;
   /** Merged into the create audit-log payload (e.g. `{ source: "gms" }`). */
@@ -35,7 +32,6 @@ export async function createProjectWithSubitems(
     actorId,
     actorName,
     sendNotifications = true,
-    skipProjectManagerEmail = false,
     activityPayload
   } = input;
 
@@ -90,17 +86,13 @@ export async function createProjectWithSubitems(
   });
 
   if (sendNotifications) {
-    await sendProjectCreationNotifications(project, actorName, { skipProjectManagerEmail });
+    await sendProjectCreationNotifications(project, actorName);
   }
 
   return project;
 }
 
-async function sendProjectCreationNotifications(
-  project: Project,
-  creatorName: string,
-  opts: { skipProjectManagerEmail: boolean }
-) {
+async function sendProjectCreationNotifications(project: Project, creatorName: string) {
   const mailCtx = {
     projectCode: project.code,
     projectName: project.name,
@@ -117,32 +109,11 @@ async function sendProjectCreationNotifications(
   const byUser = new Map<string, string[]>();
   for (const s of subs) {
     if (!s.ownerId) continue;
+    // Only accounting checklist owners — never PM / director.
+    if (!isAccountingEmailRecipient(s.ownerId, project)) continue;
     const arr = byUser.get(s.ownerId) ?? [];
     arr.push(s.name);
     byUser.set(s.ownerId, arr);
-  }
-
-  if (project.projectManagerId && !opts.skipProjectManagerEmail) {
-    const pmUser = await storage.getUserById(project.projectManagerId);
-    if (pmUser) {
-      const tasks = sortTasks(byUser.get(project.projectManagerId) ?? []);
-      const { subject, message, html } = await buildProjectManagerCreationEmail(
-        mailCtx,
-        pmUser.name,
-        tasks
-      );
-      await notifyUser({
-        userId: project.projectManagerId,
-        projectId: project.id,
-        category: "projectCreated",
-        subject,
-        message,
-        html
-      });
-    }
-  }
-  if (project.projectManagerId) {
-    byUser.delete(project.projectManagerId);
   }
 
   for (const [userId, tasks] of byUser) {

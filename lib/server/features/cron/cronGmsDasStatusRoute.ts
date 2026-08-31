@@ -33,6 +33,8 @@ export async function POST(req: Request) {
   let matched = 0;
   let updated = 0;
   let setupSheetsCompleted = 0;
+  let das140Updated = 0;
+  let das142Updated = 0;
   let missing = 0;
 
   for (const row of remote.projects) {
@@ -45,16 +47,32 @@ export async function POST(req: Request) {
 
     const result = await applyGmsDasFieldsToProject(project.id, {
       prevailingWage: row.prevailingWage,
+      prevailingWageType: row.prevailingWageType,
+      union: row.union,
       pwCategory: row.pwCategory,
+      dirNumber: row.dirNumber,
+      dirContractNumber: row.dirContractNumber,
       dasRequired: row.dasRequired,
       dasStatus: row.dasStatus,
-      dasCompletedAt: row.dasCompletedAt
+      dasCompletedAt: row.dasCompletedAt,
+      das140Status: row.das140Status,
+      das140FiledAt: row.das140FiledAt,
+      das142Status: row.das142Status,
+      das142FiledAt: row.das142FiledAt,
+      payrollCycle: row.payrollCycle
     });
 
     if (result.projectUpdated) updated++;
     if (result.setupSheetCompleted) setupSheetsCompleted++;
+    if (result.das140Updated) das140Updated++;
+    if (result.das142Updated) das142Updated++;
 
-    if (result.projectUpdated || result.setupSheetCompleted) {
+    if (
+      result.projectUpdated ||
+      result.setupSheetCompleted ||
+      result.das140Updated ||
+      result.das142Updated
+    ) {
       await recordActivity({
         actorId: null,
         entityType: "project",
@@ -64,7 +82,11 @@ export async function POST(req: Request) {
           source: "gms_das_status_pull",
           projectNumber: row.projectNumber,
           dasStatus: row.dasStatus,
-          setupSheetCompleted: result.setupSheetCompleted
+          das140Status: row.das140Status,
+          das142Status: row.das142Status,
+          setupSheetCompleted: result.setupSheetCompleted,
+          das140Updated: result.das140Updated,
+          das142Updated: result.das142Updated
         }
       });
     }
@@ -77,6 +99,8 @@ export async function POST(req: Request) {
     matched,
     updated,
     setupSheetsCompleted,
+    das140Updated,
+    das142Updated,
     missing
   });
 }

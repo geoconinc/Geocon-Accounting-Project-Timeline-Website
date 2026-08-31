@@ -3,16 +3,15 @@
  *
  * | Template | Trigger | Builder |
  * |----------|---------|---------|
- * | New project — PM | Project created | buildProjectManagerCreationEmail |
  * | New project — assignee tasks | Project created | buildAssigneeDigestEmail |
  * | Weekly DAS reminder | Cron /api/cron/das-followup | buildDasFollowupDigestEmail |
  * | Due today | Cron /api/cron/due-dates | buildDueTodayEmail |
  * | One week incomplete | Cron /api/cron/incomplete-week | buildIncompleteWeekDigestEmail |
  * | Monday incomplete | Cron /api/cron/monday-incomplete | buildMondayIncompleteDigestEmail |
- * | Project owner assigned | PATCH project ownerId | buildProjectOwnerAssignedEmail |
- * | Project status changed | PATCH project status | buildProjectStatusChangedEmail |
- * | Subitem assigned | PATCH subitem ownerId | buildSubitemAssignedEmail |
- * | Manual board message | POST /api/notifications | buildManualProjectUpdateEmail |
+ * | Subitem assigned | PATCH subitem ownerId (accounting only) | buildSubitemAssignedEmail |
+ * | Manual board message | POST /api/notifications (accounting only) | buildManualProjectUpdateEmail |
+ *
+ * Project managers and directors are never emailed (accounting-only recipients).
  */
 
 export {

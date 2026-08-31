@@ -7,6 +7,7 @@ import {
 } from "@/lib/notifications/incompleteWeekTemplates";
 import { getEffectiveNotificationConfig, isCategoryEnabled } from "@/lib/notifications/emailConfig";
 import { isoDateDaysAgo } from "@/lib/utils";
+import { isAccountingEmailRecipient } from "@/lib/notifications/accountingOnly";
 
 const SKIP_STATUSES = new Set(["Completed", "NA"]);
 const REMINDER_AFTER_DAYS = 7;
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
 
     const project = projectById.get(sub.projectId);
     if (!project) continue;
+    if (!isAccountingEmailRecipient(sub.ownerId, project)) continue;
 
     const list = ownerItems.get(sub.ownerId) ?? [];
     list.push({

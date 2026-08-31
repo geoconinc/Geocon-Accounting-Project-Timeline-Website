@@ -24,6 +24,7 @@ import { SubitemsStatusCell } from "./SubitemsStatusCell";
 import { SubitemRow, SubitemHeader } from "./SubitemRow";
 import { api } from "@/lib/client/boardApi";
 import { rosterDirectorPickerUsers, rosterPmPickerUsers } from "@/lib/domain/roleAssigneeRoster";
+import { accountingAssigneeIds } from "@/lib/notifications/accountingOnly";
 
 function rosterPickerUsers(rosterMatched: User[], allUsers: User[], currentId: string | null): User[] {
   const map = new Map<string, User>();
@@ -81,7 +82,7 @@ function DasStatusCell({
 
 // Project group is itself a sub-grid: code | name | notify
 export const PROJECT_COLS =
-  "360px 80px 80px 90px 130px 130px 180px 110px 130px 130px 140px 140px minmax(140px,1fr) 110px 70px 90px 70px minmax(140px,1fr) 80px";
+  "360px 80px 80px 90px 130px 130px 180px 110px 130px 130px 140px 140px minmax(140px,1fr) 110px 70px 100px 90px 70px minmax(140px,1fr) 80px";
 
 export function ProjectHeader({ collapsed }: { collapsed: boolean }) {
   if (collapsed) return null;
@@ -108,12 +109,19 @@ export function ProjectHeader({ collapsed }: { collapsed: boolean }) {
       <div className="header-cell">Project Folder</div>
       <div className="header-cell">Last updated</div>
       <div className="header-cell">Notes</div>
-      <div className="header-cell">DIR #</div>
-      <div className="header-cell">Union</div>
-      <div className="header-cell" title="Prevailing wage (from GMS)">
+      <div className="header-cell" title="DIR number from GMS (not editable)">
+        DIR #
+      </div>
+      <div className="header-cell" title="Union from GMS (not editable)">
+        Union
+      </div>
+      <div className="header-cell" title="Certified payroll cycle">
+        Payroll
+      </div>
+      <div className="header-cell" title="Prevailing wage from GMS (not editable)">
         PW
       </div>
-      <div className="header-cell" title="DAS status (from GMS)">
+      <div className="header-cell" title="DAS status from GMS (not editable)">
         DAS
       </div>
       <div className="header-cell">Reporting Systems</div>
@@ -196,6 +204,8 @@ export function ProjectRow({
       window.alert(err instanceof Error ? err.message : "Could not delete project");
     }
   }
+  const gmsImportLocked = Boolean(project.gmsProposalId);
+  const canEditCore = canEditProject && !gmsImportLocked;
   const sortedSubs = subitems;
   const ids = sortedSubs.map((s) => s.id);
   const liveIds = orderedIds.length === ids.length ? orderedIds : ids;
@@ -248,24 +258,26 @@ export function ProjectRow({
             <div className="flex items-center gap-2 min-w-0">
               <input
                 value={code}
-                readOnly={!canEditProject}
-                onChange={(e) => canEditProject && setCode(e.target.value)}
-                onBlur={() => canEditProject && code !== project.code && patch({ code })}
+                readOnly={!canEditCore}
+                onChange={(e) => canEditCore && setCode(e.target.value)}
+                onBlur={() => canEditCore && code !== project.code && patch({ code })}
                 onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
                 placeholder="Code"
+                title={gmsImportLocked ? "From GMS (not editable)" : undefined}
                 className={`bg-transparent text-xs font-mono text-slate-600 w-24 outline-none border-0 rounded px-1 ${
-                  canEditProject ? "focus:bg-white focus:ring-1 focus:ring-brand" : "cursor-default"
+                  canEditCore ? "focus:bg-white focus:ring-1 focus:ring-brand" : "cursor-default"
                 }`}
               />
               <input
                 value={name}
-                readOnly={!canEditProject}
-                onChange={(e) => canEditProject && setName(e.target.value)}
-                onBlur={() => canEditProject && name !== project.name && patch({ name })}
+                readOnly={!canEditCore}
+                onChange={(e) => canEditCore && setName(e.target.value)}
+                onBlur={() => canEditCore && name !== project.name && patch({ name })}
                 onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
                 placeholder="Project name"
+                title={gmsImportLocked ? "From GMS (not editable)" : undefined}
                 className={`bg-transparent text-xs font-medium flex-1 outline-none border-0 truncate rounded px-1 ${
-                  canEditProject ? "focus:bg-white focus:ring-1 focus:ring-brand" : "cursor-default"
+                  canEditCore ? "focus:bg-white focus:ring-1 focus:ring-brand" : "cursor-default"
                 }`}
               />
               <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 rounded">
@@ -273,7 +285,13 @@ export function ProjectRow({
               </span>
             </div>
             {canEditProject && (
-              <NotificationButton projectId={project.id} users={users} ownerId={project.ownerId} />
+              <NotificationButton
+                projectId={project.id}
+                recipientIds={accountingAssigneeIds(
+                  project,
+                  subitems.map((s) => s.ownerId)
+                )}
+              />
             )}
           </div>
         </div>
@@ -285,19 +303,25 @@ export function ProjectRow({
             onChange={(id) => patch({ ownerId: id })}
           />
         </div>
-        <div className="cell !p-0">
+        <div
+          className="cell !p-0"
+          title={gmsImportLocked ? "Project manager from GMS (not editable)" : undefined}
+        >
           <OwnerCell
             ownerId={project.projectManagerId ?? null}
             users={pmPickerUsers}
-            readOnly={!canEditProject}
+            readOnly={!canEditCore}
             onChange={(id) => patch({ projectManagerId: id })}
           />
         </div>
-        <div className="cell !p-0">
+        <div
+          className="cell !p-0"
+          title={gmsImportLocked ? "Project director from GMS (not editable)" : undefined}
+        >
           <OwnerCell
             ownerId={project.projectDirectorId ?? null}
             users={directorPickerUsers}
-            readOnly={!canEditProject}
+            readOnly={!canEditCore}
             onChange={(id) => patch({ projectDirectorId: id })}
           />
         </div>
@@ -336,10 +360,13 @@ export function ProjectRow({
         <div className="cell !p-0">
           <SubitemsStatusCell subitems={sortedSubs} />
         </div>
-        <div className="cell">
+        <div
+          className="cell"
+          title={gmsImportLocked ? "Start date from GMS (not editable)" : undefined}
+        >
           <DateCell
             value={project.startDate}
-            readOnly={!canEditProject}
+            readOnly={!canEditCore}
             onChange={(d) => patch({ startDate: d })}
           />
         </div>
@@ -366,34 +393,66 @@ export function ProjectRow({
         <div className="cell">
           <LastUpdatedCell at={project.lastUpdatedAt} by={project.lastUpdatedBy} users={users} />
         </div>
-        <div className="cell">
+        <div
+          className="cell"
+          title={gmsImportLocked ? "Notes from GMS (not editable)" : undefined}
+        >
           <TextCell
             value={project.notes}
-            readOnly={!canEditProject}
+            readOnly={!canEditCore}
             onChange={(v) => patch({ notes: v })}
             placeholder="Notes"
           />
         </div>
-        <div className="cell">
+        <div
+          className="cell"
+          title={
+            project.dirContractNumber
+              ? `DIR # from GMS (not editable). Contract #: ${project.dirContractNumber}`
+              : "DIR # from GMS (not editable)"
+          }
+        >
           <TextCell
             value={project.dirNumber}
-            readOnly={!canEditProject}
-            onChange={(v) => patch({ dirNumber: v })}
+            readOnly
+            onChange={() => {}}
             placeholder="—"
             type="number"
           />
         </div>
-        <div className="cell !p-0">
-          <CheckboxCell
-            value={project.union}
-            readOnly={!canEditProject}
-            onChange={(b) => patch({ union: b })}
-          />
-        </div>
-        <div className="cell !p-0">
-          <CheckboxCell value={project.prevailingWage ?? false} readOnly />
+        <div
+          className="cell !p-0"
+          title={
+            project.prevailingWageType
+              ? `Union from GMS (not editable). PW type: ${project.prevailingWageType}`
+              : "Union from GMS (not editable)"
+          }
+        >
+          <CheckboxCell value={project.union} readOnly />
         </div>
         <div className="cell">
+          {canEditProject ? (
+            <select
+              value={project.payrollCycle === "weekly" ? "weekly" : "biweekly"}
+              onChange={(e) =>
+                patch({ payrollCycle: e.target.value === "weekly" ? "weekly" : "biweekly" })
+              }
+              className="bg-transparent text-[12px] outline-none w-full cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5"
+              title="Payroll cycle"
+            >
+              <option value="biweekly">Bi-weekly</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          ) : (
+            <span className="text-[12px] text-slate-700 px-1">
+              {project.payrollCycle === "weekly" ? "Weekly" : "Bi-weekly"}
+            </span>
+          )}
+        </div>
+        <div className="cell !p-0" title="Prevailing wage from GMS (not editable)">
+          <CheckboxCell value={project.prevailingWage ?? false} readOnly />
+        </div>
+        <div className="cell" title="DAS status from GMS (not editable)">
           <DasStatusCell
             status={project.dasStatus}
             required={project.dasRequired}
@@ -446,6 +505,8 @@ export function ProjectRow({
                     subitem={s}
                     users={users}
                     projectId={project.id}
+                    projectManagerId={project.projectManagerId}
+                    projectDirectorId={project.projectDirectorId}
                     files={filesBySubitemId.get(s.id) ?? []}
                     meId={meId}
                     canEditMeta={canEditProject}

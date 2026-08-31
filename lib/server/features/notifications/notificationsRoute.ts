@@ -4,6 +4,7 @@ import { storage } from "@/lib/storage";
 import { notifyUser } from "@/lib/notifications/dispatch";
 import { buildManualProjectUpdateEmail } from "@/lib/notifications/templates/operational";
 import { canManageProject, forbidden } from "@/lib/server/access";
+import { isAccountingEmailRecipient } from "@/lib/notifications/accountingOnly";
 
 export async function POST(req: Request) {
   const auth = await authenticateRequest();
@@ -19,6 +20,12 @@ export async function POST(req: Request) {
     const project = await storage.getProject(projectId);
     if (!project) return NextResponse.json({ error: "project_not_found" }, { status: 404 });
     if (!(await canManageProject(auth, project))) return forbidden();
+    if (!isAccountingEmailRecipient(userId, project)) {
+      return NextResponse.json(
+        { error: "invalid_recipient", message: "Only accounting assignees can be emailed." },
+        { status: 400 }
+      );
+    }
   } else {
     return NextResponse.json(
       { error: "invalid_request", message: "projectId is required." },

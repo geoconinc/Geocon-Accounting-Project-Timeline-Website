@@ -13,6 +13,8 @@ import {
 import { syncProjectStatusFromSubitems } from "@/lib/domain/projectStatusSync";
 import { recordActivity } from "@/lib/server/activityLog";
 import { parseJsonBody, badRequest } from "@/lib/server/http";
+import { gmsOwnedSubitemFieldsInPatch } from "@/lib/domain/gmsDas";
+import { isAccountingEmailRecipient } from "@/lib/notifications/accountingOnly";
 
 const ADMIN_ONLY_SUBITEM_KEYS = new Set(["ownerId", "name", "position"]);
 
@@ -26,6 +28,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const patch = await parseJsonBody<Record<string, unknown>>(req);
   if (!patch) return badRequest();
+
+  const gmsLocked = gmsOwnedSubitemFieldsInPatch(before.subitem.name, patch);
+  if (gmsLocked.length > 0) {
+    return NextResponse.json(
+      {
+        error: "gms_field_locked",
+        message: `${before.subitem.name} status is managed by GMS and cannot be changed here.`
+      },
+      { status: 400 }
+    );
+  }
 
   const touchesAdminFields = Object.keys(patch).some((k) => ADMIN_ONLY_SUBITEM_KEYS.has(k));
   if (touchesAdminFields && !(await canAdminSubitem(user))) {
@@ -60,7 +73,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   if (patch.ownerId && patch.ownerId !== before.subitem.ownerId && typeof patch.ownerId === "string") {
     const assignee = await storage.getUserById(patch.ownerId);
-    if (assignee && before.project) {
+    if (
+      assignee &&
+      before.project &&
+      isAccountingEmailRecipient(patch.ownerId, before.project)
+    ) {
       const mail = await buildSubitemAssignedEmail({
         recipientName: assignee.name,
         actorName: user.name,

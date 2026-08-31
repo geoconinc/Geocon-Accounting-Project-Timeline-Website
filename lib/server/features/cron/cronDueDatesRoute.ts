@@ -3,6 +3,7 @@ import { storage } from "@/lib/storage";
 import { notifyUser } from "@/lib/notifications/dispatch";
 import { buildDueTodayEmail } from "@/lib/notifications/templates/operational";
 import { getEffectiveNotificationConfig, isCategoryEnabled } from "@/lib/notifications/emailConfig";
+import { isAccountingEmailRecipient } from "@/lib/notifications/accountingOnly";
 
 // Hit daily by an Azure timer / WebJob with header X-Cron-Secret: $CRON_SHARED_SECRET.
 // Sends a notification to the assignee for any subitem whose due date is today
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
       if (!s.dueDate || s.dueDate !== today) continue;
       if (s.status === "Completed" || s.status === "NA") continue;
       if (!s.ownerId) continue;
+      if (!isAccountingEmailRecipient(s.ownerId, p)) continue;
       const assignee = await storage.getUserById(s.ownerId);
       if (!assignee) continue;
       const mail = await buildDueTodayEmail({

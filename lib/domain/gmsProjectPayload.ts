@@ -56,10 +56,21 @@ export function buildGmsNotes(payload: GmsProjectPayload): string {
   if (payload.prevailingWage != null) {
     lines.push(`Prevailing wage: ${payload.prevailingWage ? "yes" : "no"}`);
   }
+  if (payload.prevailingWageType) {
+    lines.push(`PW type: ${payload.prevailingWageType}`);
+  }
+  if (payload.union != null) {
+    lines.push(`Union: ${payload.union ? "yes" : "no"}`);
+  }
   if (payload.pwCategory) lines.push(`PW category: ${payload.pwCategory}`);
+  if (payload.dirNumber) lines.push(`DIR #: ${payload.dirNumber}`);
+  if (payload.dirContractNumber) lines.push(`DIR contract #: ${payload.dirContractNumber}`);
   if (payload.dasRequired != null) {
     lines.push(`DAS required: ${payload.dasRequired ? "yes" : "no"}`);
   }
   if (payload.dasStatus) lines.push(`DAS status: ${payload.dasStatus}`);
+  if (payload.das140Status) lines.push(`DAS 140: ${payload.das140Status}`);
+  if (payload.das142Status) lines.push(`DAS 142: ${payload.das142Status}`);
+  if (payload.payrollCycle) lines.push(`Payroll cycle: ${payload.payrollCycle}`);
   return lines.join("\n");
 }

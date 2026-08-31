@@ -1,4 +1,10 @@
-import type { ProjectGroup, ProjectStatus, SubitemStatus } from "./enums";
+import type {
+  PayrollCycle,
+  PrevailingWageType,
+  ProjectGroup,
+  ProjectStatus,
+  SubitemStatus
+} from "./enums";
 
 export interface User {
   id: string;
@@ -39,7 +45,11 @@ export interface Project {
   timelineStart: string | null;
   timelineEnd: string | null;
   dirNumber: string | null;
+  /** From GMS when present: DIR contract number (companion to DIR #). */
+  dirContractNumber?: string | null;
   union: boolean;
+  /** Certified payroll cycle; defaults to biweekly. */
+  payrollCycle?: PayrollCycle;
   reportingSystems: string | null;
   cprContact: string | null;
   sharepointUrl: string | null;
@@ -55,6 +65,8 @@ export interface Project {
   gmsProposalId?: string | null;
   /** From GMS: whether this is a prevailing-wage job. */
   prevailingWage?: boolean;
+  /** From GMS: `no` | `yes` | `union` (legacy boolean still mapped into prevailingWage). */
+  prevailingWageType?: PrevailingWageType | null;
   /** From GMS: prevailing-wage category label (free text). */
   pwCategory?: string | null;
   /** From GMS: whether a DAS setup is required for this project. */

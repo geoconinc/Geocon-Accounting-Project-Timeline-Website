@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 import { bus } from "@/lib/events/bus";
 import { mapGmsOfficeToTimeline } from "@/lib/domain/gmsOfficeMap";
-import { gmsDasProjectPatch } from "@/lib/domain/gmsDas";
+import { gmsDasProjectPatch, resolvePrevailingWageFromGms, DAS_SETUP_SHEET_NAME, DEFAULT_PAYROLL_CYCLE } from "@/lib/domain/gmsDas";
 import {
   buildGmsNotes,
   dateOnly,
@@ -13,7 +13,6 @@ import {
 import { verifyGmsIntegrationKey } from "@/lib/server/integrations/verifyIntegrationKey";
 import { createProjectWithSubitems } from "@/lib/server/features/projects/createProjectWithSubitems";
 import { applyGmsDasFieldsToProject } from "@/lib/server/features/integrations/applyGmsDasFields";
-import { DAS_SETUP_SHEET_NAME } from "@/lib/domain/gmsDas";
 import { recordActivity } from "@/lib/server/activityLog";
 import { initialsFromName } from "@/lib/utils";
 
@@ -77,15 +76,16 @@ export async function POST(req: Request) {
 
   const payload = parsed.data;
 
-  // Timeline only tracks prevailing-wage jobs. Non-PW projects are acknowledged and dropped
-  // so GMS can keep pushing everything without creating noise on this board.
-  if (payload.prevailingWage !== true) {
+  // Timeline only tracks prevailing-wage jobs. Prefer prevailingWageType; fall back
+  // to legacy prevailingWage boolean so older GMS callers keep working.
+  const isPrevailingWage = resolvePrevailingWageFromGms(payload);
+  if (isPrevailingWage !== true) {
     // If a previously imported row exists, clear PW so board visibility filters hide it.
     const existing = await findExistingProject(payload);
     if (existing && existing.prevailingWage !== false) {
       const updated = await storage.updateProject(
         existing.id,
-        { prevailingWage: false },
+        { prevailingWage: false, prevailingWageType: "no" },
         null
       );
       if (updated) {
@@ -148,26 +148,30 @@ export async function POST(req: Request) {
 
     await clearDasSetupSheetOwner(updated.id);
 
-    // Sync DAS Setup Sheet when GMS reports completion (e.g. PM submitted the form).
-    const incomingDasStatus = dasPatch.dasStatus ?? payload.dasStatus;
-    const dasSync =
-      incomingDasStatus !== undefined
-        ? await applyGmsDasFieldsToProject(updated.id, { dasStatus: incomingDasStatus })
-        : { projectUpdated: false, setupSheetCompleted: false };
+    // Sync Setup Sheet + DAS 140/142 checklist items from GMS.
+    const dasSync = await applyGmsDasFieldsToProject(updated.id, payload);
 
     await recordActivity({
       actorId: null,
       entityType: "project",
       entityId: updated.id,
       action: "update",
-      payload: { ...gmsPatch, source: "gms", setupSheetCompleted: dasSync.setupSheetCompleted }
+      payload: {
+        ...gmsPatch,
+        source: "gms",
+        setupSheetCompleted: dasSync.setupSheetCompleted,
+        das140Updated: dasSync.das140Updated,
+        das142Updated: dasSync.das142Updated
+      }
     });
 
     return NextResponse.json({
       ok: true,
       created: false,
       project: { id: updated.id, code: updated.code },
-      setupSheetCompleted: dasSync.setupSheetCompleted
+      setupSheetCompleted: dasSync.setupSheetCompleted,
+      das140Updated: dasSync.das140Updated,
+      das142Updated: dasSync.das142Updated
     });
   }
 
@@ -181,8 +185,10 @@ export async function POST(req: Request) {
       startDate,
       timelineStart: null,
       timelineEnd: dateOnly(payload.dueDate),
-      dirNumber: null,
-      union: false,
+      dirNumber: dasPatch.dirNumber ?? null,
+      dirContractNumber: dasPatch.dirContractNumber ?? null,
+      union: dasPatch.union ?? false,
+      payrollCycle: dasPatch.payrollCycle ?? DEFAULT_PAYROLL_CYCLE,
       reportingSystems: null,
       cprContact: null,
       sharepointUrl: null,
@@ -192,6 +198,7 @@ export async function POST(req: Request) {
       gmsProposalId: payload.gmsProposalId ?? null,
       notes,
       prevailingWage: true,
+      prevailingWageType: dasPatch.prevailingWageType ?? "yes",
       pwCategory: dasPatch.pwCategory,
       dasRequired: dasPatch.dasRequired,
       dasStatus: dasPatch.dasStatus,
@@ -206,6 +213,7 @@ export async function POST(req: Request) {
       source: "gms",
       gmsProposalId: payload.gmsProposalId ?? null,
       prevailingWage: true,
+      prevailingWageType: dasPatch.prevailingWageType ?? null,
       dasStatus: dasPatch.dasStatus ?? payload.dasStatus ?? null
     }
   });
@@ -213,13 +221,9 @@ export async function POST(req: Request) {
   // DAS Setup Sheet is driven by GMS, not by a PM checklist on this board.
   await clearDasSetupSheetOwner(project.id);
 
-  const createDasStatus = dasPatch.dasStatus ?? payload.dasStatus;
-  const dasSync =
-    createDasStatus !== undefined
-      ? await applyGmsDasFieldsToProject(project.id, { dasStatus: createDasStatus })
-      : { projectUpdated: false, setupSheetCompleted: false };
+  const dasSync = await applyGmsDasFieldsToProject(project.id, payload);
 
-  if (dasSync.setupSheetCompleted) {
+  if (dasSync.setupSheetCompleted || dasSync.das140Updated || dasSync.das142Updated) {
     await recordActivity({
       actorId: null,
       entityType: "project",
@@ -227,8 +231,10 @@ export async function POST(req: Request) {
       action: "update",
       payload: {
         source: "gms",
-        setupSheetCompleted: true,
-        dasStatus: createDasStatus ?? null
+        setupSheetCompleted: dasSync.setupSheetCompleted,
+        das140Updated: dasSync.das140Updated,
+        das142Updated: dasSync.das142Updated,
+        dasStatus: dasPatch.dasStatus ?? payload.dasStatus ?? null
       }
     });
   }
@@ -238,7 +244,9 @@ export async function POST(req: Request) {
       ok: true,
       created: true,
       project: { id: project.id, code: project.code },
-      setupSheetCompleted: dasSync.setupSheetCompleted
+      setupSheetCompleted: dasSync.setupSheetCompleted,
+      das140Updated: dasSync.das140Updated,
+      das142Updated: dasSync.das142Updated
     },
     { status: 201 }
   );
