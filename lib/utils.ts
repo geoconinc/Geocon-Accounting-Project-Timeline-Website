@@ -1,5 +1,21 @@
+import { format } from "date-fns";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+
+/** Format YYYY-MM-DD (or ISO datetime) as a calendar date — no UTC day shift. */
+export function formatCalendarDateShort(value: string): string {
+  const trimmed = value.trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
+  if (match) {
+    const [, y, m, d] = match;
+    return format(new Date(Number(y), Number(m) - 1, Number(d)), "MMM d");
+  }
+  try {
+    return format(new Date(trimmed), "MMM d");
+  } catch {
+    return trimmed;
+  }
+}
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { gmsDasFieldsSchema } from "@/lib/domain/gmsDas";
+import {
+  gmsDasFieldsSchema,
+  isTimelineTrackedJobFromGms,
+  resolvePrevailingWageFromGms,
+  resolveUnionFromGms
+} from "@/lib/domain/gmsDas";
 
 const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN ?? "geoconinc.com").toLowerCase();
 
@@ -53,14 +58,17 @@ export function buildGmsNotes(payload: GmsProjectPayload): string {
   if (payload.feeEstimate != null) {
     lines.push(`Fee estimate: $${payload.feeEstimate.toLocaleString("en-US")}`);
   }
-  if (payload.prevailingWage != null) {
-    lines.push(`Prevailing wage: ${payload.prevailingWage ? "yes" : "no"}`);
-  }
   if (payload.prevailingWageType) {
     lines.push(`PW type: ${payload.prevailingWageType}`);
   }
-  if (payload.union != null) {
-    lines.push(`Union: ${payload.union ? "yes" : "no"}`);
+  const unionJob = resolveUnionFromGms(payload) === true;
+  const pwJob = resolvePrevailingWageFromGms(payload) === true;
+  if (unionJob) {
+    lines.push("Union: yes");
+  } else if (pwJob || isTimelineTrackedJobFromGms(payload) === true) {
+    lines.push("Prevailing wage: yes");
+  } else if (payload.prevailingWage != null || payload.union != null) {
+    lines.push("Prevailing wage: no");
   }
   if (payload.pwCategory) lines.push(`PW category: ${payload.pwCategory}`);
   if (payload.dirNumber) lines.push(`DIR #: ${payload.dirNumber}`);

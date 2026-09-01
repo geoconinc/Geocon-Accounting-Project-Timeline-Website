@@ -153,13 +153,26 @@ export function normalizePrevailingWageType(
 }
 
 /**
- * Resolve whether a GMS payload is a prevailing-wage job.
- * Prefer prevailingWageType; fall back to legacy prevailingWage boolean.
+ * Whether GMS says this job belongs on the Timeline board (PW-only or union — not plain non-PW).
+ * Prefer prevailingWageType; fall back to legacy booleans.
  */
-export function resolvePrevailingWageFromGms(fields: GmsDasFields): boolean | undefined {
+export function isTimelineTrackedJobFromGms(fields: GmsDasFields): boolean | undefined {
   const type = normalizePrevailingWageType(fields.prevailingWageType ?? null);
   if (type === "yes" || type === "union") return true;
   if (type === "no") return false;
+  if (resolveUnionFromGms(fields) === true) return true;
+  if (fields.prevailingWage !== undefined) return fields.prevailingWage;
+  return undefined;
+}
+
+/**
+ * PW checkbox only — true for prevailing-wage (non-union) jobs. Union jobs are false here.
+ */
+export function resolvePrevailingWageFromGms(fields: GmsDasFields): boolean | undefined {
+  const type = normalizePrevailingWageType(fields.prevailingWageType ?? null);
+  if (type === "yes") return true;
+  if (type === "union" || type === "no") return false;
+  if (resolveUnionFromGms(fields) === true) return false;
   if (fields.prevailingWage !== undefined) return fields.prevailingWage;
   return undefined;
 }
@@ -286,15 +299,34 @@ export function gmsDasProjectPatch(fields: GmsDasFields): {
     payrollCycle?: PayrollCycle;
   } = {};
 
-  const pw = resolvePrevailingWageFromGms(fields);
-  if (pw !== undefined) patch.prevailingWage = pw;
+  const type = normalizePrevailingWageType(fields.prevailingWageType ?? null);
+  if (type === "union") {
+    patch.prevailingWageType = "union";
+    patch.union = true;
+    patch.prevailingWage = false;
+  } else if (type === "yes") {
+    patch.prevailingWageType = "yes";
+    patch.union = false;
+    patch.prevailingWage = true;
+  } else if (type === "no") {
+    patch.prevailingWageType = "no";
+    patch.union = false;
+    patch.prevailingWage = false;
+  } else {
+    const unionVal = resolveUnionFromGms(fields);
+    if (unionVal !== undefined) patch.union = unionVal;
 
-  if (fields.prevailingWageType !== undefined) {
-    patch.prevailingWageType = normalizePrevailingWageType(fields.prevailingWageType);
+    const pwVal = resolvePrevailingWageFromGms(fields);
+    if (pwVal !== undefined) patch.prevailingWage = pwVal;
+
+    // Union and PW are mutually exclusive on the board.
+    if (patch.union) patch.prevailingWage = false;
+    else if (patch.prevailingWage) patch.union = false;
   }
 
-  const unionVal = resolveUnionFromGms(fields);
-  if (unionVal !== undefined) patch.union = unionVal;
+  if (fields.prevailingWageType !== undefined && type === null) {
+    patch.prevailingWageType = null;
+  }
 
   if (fields.pwCategory !== undefined) {
     patch.pwCategory =

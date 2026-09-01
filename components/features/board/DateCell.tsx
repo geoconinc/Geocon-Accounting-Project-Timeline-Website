@@ -1,15 +1,11 @@
 "use client";
 
-import { format } from "date-fns";
 import { Calendar } from "lucide-react";
 import { usePopover } from "./Popover";
+import { formatCalendarDateShort } from "@/lib/utils";
 
 function formatShort(value: string): string {
-  try {
-    return format(new Date(value), "MMM d");
-  } catch {
-    return value;
-  }
+  return formatCalendarDateShort(value);
 }
 
 export function DateCell({

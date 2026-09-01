@@ -8,10 +8,9 @@ export function isGmsImportedProject(project: Project): boolean {
 }
 
 /**
- * Timeline is a prevailing-wage board only.
- * Non-PW rows (GMS skips, PW flipped off, or legacy rows) stay hidden from Current /
- * Future / Completed — including manual creates that are not marked PW.
+ * Timeline is a prevailing-wage / union payroll board.
+ * Non-PW, non-union rows stay hidden from Current / Future / Completed.
  */
 export function isVisibleOnTimelineBoard(project: Project): boolean {
-  return project.prevailingWage === true;
+  return project.prevailingWage === true || project.union === true;
 }

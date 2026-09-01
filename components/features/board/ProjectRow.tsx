@@ -417,7 +417,6 @@ export function ProjectRow({
             readOnly
             onChange={() => {}}
             placeholder="—"
-            type="number"
           />
         </div>
         <div

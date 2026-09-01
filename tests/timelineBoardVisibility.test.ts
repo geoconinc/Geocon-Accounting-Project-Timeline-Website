@@ -49,13 +49,16 @@ describe("isGmsImportedProject", () => {
 });
 
 describe("isVisibleOnTimelineBoard", () => {
-  it("shows only projects with prevailing wage checked", () => {
-    expect(isVisibleOnTimelineBoard(project({ prevailingWage: true }))).toBe(true);
-    expect(isVisibleOnTimelineBoard(project({ prevailingWage: false }))).toBe(false);
-    expect(isVisibleOnTimelineBoard(project({ prevailingWage: undefined }))).toBe(false);
+  it("shows PW or union jobs (mutually exclusive flags)", () => {
+    expect(isVisibleOnTimelineBoard(project({ prevailingWage: true, union: false }))).toBe(true);
+    expect(isVisibleOnTimelineBoard(project({ prevailingWage: false, union: true }))).toBe(true);
+    expect(isVisibleOnTimelineBoard(project({ prevailingWage: false, union: false }))).toBe(false);
+    expect(isVisibleOnTimelineBoard(project({ prevailingWage: undefined, union: false }))).toBe(
+      false
+    );
   });
 
-  it("hides non-PW GMS imports and shows PW GMS imports", () => {
+  it("hides non-PW GMS imports and shows PW or union GMS imports", () => {
     expect(
       isVisibleOnTimelineBoard(
         project({ gmsProposalId: "g-1", prevailingWage: true, notes: "Imported from GMS." })
@@ -63,7 +66,17 @@ describe("isVisibleOnTimelineBoard", () => {
     ).toBe(true);
     expect(
       isVisibleOnTimelineBoard(
-        project({ gmsProposalId: "g-1", prevailingWage: false, notes: "Imported from GMS." })
+        project({
+          gmsProposalId: "g-1",
+          prevailingWage: false,
+          union: true,
+          notes: "Imported from GMS."
+        })
+      )
+    ).toBe(true);
+    expect(
+      isVisibleOnTimelineBoard(
+        project({ gmsProposalId: "g-1", prevailingWage: false, union: false, notes: "Imported from GMS." })
       )
     ).toBe(false);
   });

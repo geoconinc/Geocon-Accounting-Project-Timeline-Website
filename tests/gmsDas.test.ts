@@ -11,7 +11,8 @@ import {
   normalizePayrollCycle,
   normalizePrevailingWageType,
   resolvePrevailingWageFromGms,
-  resolveUnionFromGms
+  resolveUnionFromGms,
+  isTimelineTrackedJobFromGms
 } from "@/lib/domain/gmsDas";
 import { gmsProjectPayloadSchema } from "@/lib/domain/gmsProjectPayload";
 import { gmsDasStatusResponseSchema } from "@/lib/server/integrations/gmsDasStatusClient";
@@ -45,12 +46,21 @@ describe("prevailingWageType / union mapping", () => {
     expect(normalizePrevailingWageType("no")).toBe("no");
   });
 
-  it("resolves PW from type or legacy boolean", () => {
+  it("resolves PW checkbox (non-union only)", () => {
     expect(resolvePrevailingWageFromGms({ prevailingWageType: "yes" })).toBe(true);
-    expect(resolvePrevailingWageFromGms({ prevailingWageType: "union" })).toBe(true);
+    expect(resolvePrevailingWageFromGms({ prevailingWageType: "union" })).toBe(false);
     expect(resolvePrevailingWageFromGms({ prevailingWageType: "no" })).toBe(false);
     expect(resolvePrevailingWageFromGms({ prevailingWage: true })).toBe(true);
+    expect(resolvePrevailingWageFromGms({ union: true })).toBe(false);
     expect(resolvePrevailingWageFromGms({})).toBeUndefined();
+  });
+
+  it("tracks board jobs for PW or union", () => {
+    expect(isTimelineTrackedJobFromGms({ prevailingWageType: "yes" })).toBe(true);
+    expect(isTimelineTrackedJobFromGms({ prevailingWageType: "union" })).toBe(true);
+    expect(isTimelineTrackedJobFromGms({ prevailingWageType: "no" })).toBe(false);
+    expect(isTimelineTrackedJobFromGms({ union: true })).toBe(true);
+    expect(isTimelineTrackedJobFromGms({ prevailingWage: true })).toBe(true);
   });
 
   it("resolves union from type or boolean", () => {
@@ -104,6 +114,7 @@ describe("gmsDasProjectPatch", () => {
       })
     ).toEqual({
       prevailingWage: true,
+      union: false,
       pwCategory: "Public works",
       dasRequired: true,
       dasStatus: "completed",
@@ -123,12 +134,20 @@ describe("gmsDasProjectPatch", () => {
         das140FiledAt: "2026-08-10"
       })
     ).toEqual({
-      prevailingWage: true,
+      prevailingWage: false,
       prevailingWageType: "union",
       union: true,
       dirNumber: "12345",
       dirContractNumber: "C-9",
       payrollCycle: "weekly"
+    });
+  });
+
+  it("PW type yes clears union", () => {
+    expect(gmsDasProjectPatch({ prevailingWageType: "yes", union: true })).toEqual({
+      prevailingWageType: "yes",
+      prevailingWage: true,
+      union: false
     });
   });
 });

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 import { bus } from "@/lib/events/bus";
 import { mapGmsOfficeToTimeline } from "@/lib/domain/gmsOfficeMap";
-import { gmsDasProjectPatch, resolvePrevailingWageFromGms, DAS_SETUP_SHEET_NAME, DEFAULT_PAYROLL_CYCLE } from "@/lib/domain/gmsDas";
+import { gmsDasProjectPatch, isTimelineTrackedJobFromGms, DAS_SETUP_SHEET_NAME, DEFAULT_PAYROLL_CYCLE } from "@/lib/domain/gmsDas";
 import {
   buildGmsNotes,
   dateOnly,
@@ -76,16 +76,15 @@ export async function POST(req: Request) {
 
   const payload = parsed.data;
 
-  // Timeline only tracks prevailing-wage jobs. Prefer prevailingWageType; fall back
-  // to legacy prevailingWage boolean so older GMS callers keep working.
-  const isPrevailingWage = resolvePrevailingWageFromGms(payload);
-  if (isPrevailingWage !== true) {
-    // If a previously imported row exists, clear PW so board visibility filters hide it.
+  // Timeline tracks prevailing-wage and union jobs only (mutually exclusive on the board).
+  const isTrackedJob = isTimelineTrackedJobFromGms(payload);
+  if (isTrackedJob !== true) {
+    // If a previously imported row exists, clear flags so board visibility filters hide it.
     const existing = await findExistingProject(payload);
-    if (existing && existing.prevailingWage !== false) {
+    if (existing && (existing.prevailingWage !== false || existing.union !== false)) {
       const updated = await storage.updateProject(
         existing.id,
-        { prevailingWage: false, prevailingWageType: "no" },
+        { prevailingWage: false, union: false, prevailingWageType: "no" },
         null
       );
       if (updated) {
@@ -197,7 +196,7 @@ export async function POST(req: Request) {
       projectDirectorId,
       gmsProposalId: payload.gmsProposalId ?? null,
       notes,
-      prevailingWage: true,
+      prevailingWage: dasPatch.prevailingWage ?? false,
       prevailingWageType: dasPatch.prevailingWageType ?? "yes",
       pwCategory: dasPatch.pwCategory,
       dasRequired: dasPatch.dasRequired,
@@ -212,7 +211,8 @@ export async function POST(req: Request) {
     activityPayload: {
       source: "gms",
       gmsProposalId: payload.gmsProposalId ?? null,
-      prevailingWage: true,
+      prevailingWage: dasPatch.prevailingWage ?? false,
+      union: dasPatch.union ?? false,
       prevailingWageType: dasPatch.prevailingWageType ?? null,
       dasStatus: dasPatch.dasStatus ?? payload.dasStatus ?? null
     }
