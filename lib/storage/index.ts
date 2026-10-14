@@ -1,4 +1,4 @@
-import type { ActivityEvent, FileRef, Project, Session, Subitem, User } from "@/lib/types";
+import type { ActivityEvent, Feedback, FileRef, Project, Session, Subitem, User } from "@/lib/types";
 import { jsonStore } from "./jsonStore";
 import { postgresStore } from "./postgresStore";
 
@@ -48,6 +48,12 @@ export interface Storage {
   // activity
   appendActivity(event: Omit<ActivityEvent, "id" | "createdAt">): Promise<ActivityEvent>;
   listRecentActivity(limit?: number): Promise<ActivityEvent[]>;
+
+  // feedback
+  createFeedback(input: Pick<Feedback, "userId" | "category" | "message" | "pagePath">): Promise<Feedback>;
+  /** Newest first. */
+  listFeedback(limit?: number): Promise<Feedback[]>;
+  setFeedbackResolved(id: string, resolved: boolean): Promise<Feedback | null>;
 }
 
 const driver = process.env.STORAGE_DRIVER ?? "json";

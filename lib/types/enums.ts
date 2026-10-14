@@ -5,3 +5,5 @@ export type SubitemStatus = "Completed" | "InProgress" | "Missing" | "NotStarted
 export type PayrollCycle = "weekly" | "biweekly";
 /** GMS prevailing-wage classification (legacy boolean still accepted on the wire). */
 export type PrevailingWageType = "no" | "yes" | "union";
+/** Kind of site feedback a user submits from the Give feedback button. */
+export type FeedbackCategory = "idea" | "bug" | "general";

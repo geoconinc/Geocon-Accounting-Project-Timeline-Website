@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, inArray, or, sql } from "drizzle-orm";
-import type { ActivityEvent, FileRef, Project, Session, Subitem, User } from "@/lib/types";
+import type { ActivityEvent, Feedback, FileRef, Project, Session, Subitem, User } from "@/lib/types";
 import { getDb } from "@/lib/db/client";
-import { activity, files, projects, sessions, subitems, users } from "@/lib/db/schema";
+import { activity, feedback, files, projects, sessions, subitems, users } from "@/lib/db/schema";
+import { normalizeFeedbackCategory } from "@/lib/domain/feedback";
 import { initialsFromName } from "@/lib/utils";
 import type { Storage } from "./index";
 
@@ -130,6 +131,18 @@ function mapActivity(r: typeof activity.$inferSelect): ActivityEvent {
     action: r.action,
     payload: (r.payload ?? {}) as Record<string, unknown>,
     createdAt: tsIso(r.createdAt)
+  };
+}
+
+function mapFeedback(r: typeof feedback.$inferSelect): Feedback {
+  return {
+    id: r.id,
+    userId: r.userId,
+    category: normalizeFeedbackCategory(r.category),
+    message: r.message,
+    pagePath: r.pagePath,
+    createdAt: tsIso(r.createdAt),
+    resolvedAt: r.resolvedAt ? tsIso(r.resolvedAt) : null
   };
 }
 
@@ -605,5 +618,39 @@ export const postgresStore: Storage = {
       `);
     }
     return ev;
+  },
+
+  async createFeedback(input) {
+    const db = getDb();
+    const [row] = await db
+      .insert(feedback)
+      .values({
+        userId: input.userId,
+        category: input.category,
+        message: input.message,
+        pagePath: input.pagePath
+      })
+      .returning();
+    return mapFeedback(row);
+  },
+
+  async listFeedback(limit = 500) {
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(feedback)
+      .orderBy(sql`${feedback.createdAt} DESC`)
+      .limit(limit);
+    return rows.map(mapFeedback);
+  },
+
+  async setFeedbackResolved(id, resolved) {
+    const db = getDb();
+    const [row] = await db
+      .update(feedback)
+      .set({ resolvedAt: resolved ? new Date() : null })
+      .where(eq(feedback.id, id))
+      .returning();
+    return row ? mapFeedback(row) : null;
   }
 };

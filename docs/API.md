@@ -66,6 +66,14 @@ All non-public endpoints require a valid `session_token` cookie. Middleware redi
 |--------|------|---------|-------------|
 | POST | `/api/notifications` | `notificationsRoute` | Send email notification to a user |
 
+### Feedback
+
+| Method | Path | Handler | Description |
+|--------|------|---------|-------------|
+| POST | `/api/feedback` | `feedbackRoute` | Submit site feedback `{ category: "idea" \| "bug" \| "general", message, pagePath? }` (any signed-in user) |
+| GET | `/api/admin/feedback` | `feedbackRoute` | List feedback newest first, with submitter name/email (admins only) |
+| PATCH | `/api/admin/feedback/[id]` | `feedbackRoute` | Mark feedback resolved or reopen it `{ resolved: boolean }` (admins only) |
+
 ### Role Assignees
 
 | Method | Path | Handler | Description |

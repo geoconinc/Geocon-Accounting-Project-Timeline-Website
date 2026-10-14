@@ -1,4 +1,5 @@
 import type {
+  FeedbackCategory,
   PayrollCycle,
   PrevailingWageType,
   ProjectGroup,
@@ -98,4 +99,17 @@ export interface ActivityEvent {
   action: string;
   payload: Record<string, unknown>;
   createdAt: string;
+}
+
+export interface Feedback {
+  id: string;
+  /** Null once the submitting user has been deleted. */
+  userId: string | null;
+  category: FeedbackCategory;
+  message: string;
+  /** App path the user was on when they opened the feedback form. */
+  pagePath: string | null;
+  createdAt: string;
+  /** Set when an admin marks the feedback as handled. */
+  resolvedAt: string | null;
 }

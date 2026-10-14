@@ -68,6 +68,32 @@ test.describe("authenticated smoke", () => {
     expect(body.projects.some((p: { name: string }) => p.name === "E2E Smoke Project")).toBe(true);
     expect(body.me).toBeTruthy();
   });
+
+  test("feedback submitted from the top bar shows up in the admin panel", async ({ page }) => {
+    const message = `E2E feedback ${Date.now()}`;
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "Give feedback" }).click();
+    const dialog = page.getByRole("dialog", { name: "Give feedback" });
+    await dialog.getByRole("button", { name: "Something's broken" }).click();
+    await dialog.getByLabel("Your feedback").fill(message);
+    await dialog.getByRole("button", { name: "Send feedback" }).click();
+    await expect(dialog.getByText("Thanks for the feedback!")).toBeVisible();
+
+    await page.goto("/settings/admin");
+    await page.getByRole("button", { name: "Feedback", exact: true }).click();
+    const card = page.getByRole("listitem").filter({ hasText: message });
+    await expect(card).toBeVisible();
+    await expect(card.getByText("from /")).toBeVisible();
+
+    await card.getByRole("button", { name: "Mark resolved" }).click();
+    await expect(card).toBeHidden();
+  });
+
+  test("feedback API rejects a blank message", async ({ request }) => {
+    const res = await request.post("/api/feedback", { data: { category: "idea", message: "   " } });
+    expect(res.status()).toBe(400);
+  });
 });
 
 test.describe("unauthenticated", () => {

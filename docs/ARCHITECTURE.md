@@ -91,7 +91,7 @@ Event types: `project.upsert`, `project.delete`, `subitem.upsert`, `subitem.dele
 
 ## Database Schema
 
-Managed by Drizzle ORM. Tables: `users`, `sessions`, `projects`, `subitems`, `files`, `activity`, `site_config`. Schema defined in `lib/db/schema.ts`, migrations in `lib/db/migrations/`.
+Managed by Drizzle ORM. Tables: `users`, `sessions`, `projects`, `subitems`, `files`, `activity`, `site_config`, `feedback`. Schema defined in `lib/db/schema.ts`, migrations in `lib/db/migrations/`.
 
 See [DATA_AND_STORAGE.md](./DATA_AND_STORAGE.md) for full schema details.
 

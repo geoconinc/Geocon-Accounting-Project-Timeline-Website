@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, ChevronUp, Database, LayoutDashboard, Plus, Save, Settings, Trash2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Database, LayoutDashboard, MessageSquare, Plus, Save, Settings, Trash2, AlertTriangle } from "lucide-react";
 import type { OfficeAssigneeRow } from "@/lib/domain/officeAssigneeResolve";
 import type { GeoconRoleAssigneesFile } from "@/lib/types/roleAssigneeData";
 import { formatAppVersion } from "@/lib/config/appVersion";
@@ -15,6 +15,7 @@ import {
   type NotificationConfigAdminView
 } from "@/lib/notifications/emailConfigTypes";
 import { AdminDashboardView } from "./AdminDashboardView";
+import { AdminFeedbackView } from "./AdminFeedbackView";
 
 /** Categories delivered by the scheduled cron jobs (vs. instant, event-driven emails). */
 const CRON_CATEGORIES = new Set<NotificationCategory>([
@@ -38,7 +39,7 @@ type PM = GeoconRoleAssigneesFile["projectManagers"][number];
 type Director = GeoconRoleAssigneesFile["projectDirectors"][number];
 
 export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
-  const [topTab, setTopTab] = useState<"dashboard" | "settings">("dashboard");
+  const [topTab, setTopTab] = useState<"dashboard" | "feedback" | "settings">("dashboard");
   const [officeAssignees, setOfficeAssignees] = useState<OfficeAssigneeRow[]>([]);
   const [projectManagers, setProjectManagers] = useState<PM[]>([]);
   const [projectDirectors, setProjectDirectors] = useState<Director[]>([]);
@@ -329,6 +330,16 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
         >
           <LayoutDashboard size={16} /> Dashboard
         </button>
+        <button
+          onClick={() => setTopTab("feedback")}
+          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-colors ${
+            topTab === "feedback"
+              ? "text-brand border-b-2 border-brand"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <MessageSquare size={16} /> Feedback
+        </button>
         {isOwner && (
           <button
             onClick={() => setTopTab("settings")}
@@ -344,6 +355,7 @@ export function AdminSettingsView({ isOwner = false }: { isOwner?: boolean }) {
       </div>
 
       {topTab === "dashboard" && <AdminDashboardView />}
+      {topTab === "feedback" && <AdminFeedbackView />}
 
       {topTab === "settings" && isOwner && (
         <>

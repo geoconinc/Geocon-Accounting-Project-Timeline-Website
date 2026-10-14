@@ -40,6 +40,7 @@ subitems        — id (uuid PK), project_id (FK projects CASCADE), name, owner_
 files           — id (uuid PK), parent_type, parent_id, blob_path, filename, size, uploaded_by, uploaded_at
 activity        — id (uuid PK), actor_id, entity_type, entity_id, action, payload (jsonb), created_at
 site_config     — key (text PK), value (jsonb), updated_at, updated_by
+feedback        — id (uuid PK), user_id (FK users SET NULL), category, message, page_path, created_at, resolved_at
 ```
 
 Custom Postgres enums: `project_status`, `project_group`, `subitem_status`, `file_parent`.
@@ -56,6 +57,7 @@ SQL migration files in `lib/db/migrations/`, applied sequentially by `scripts/mi
 | `0004_drop_notification_prefs.sql` | Remove notification_prefs table |
 | `0005_site_config.sql` | Create site_config key-value table |
 | `0006_subitem_created_at.sql` | Add `created_at` to subitems for one-week reminder cron |
+| `0012_feedback.sql` | Create feedback table for the Give feedback button |
 
 Run migrations: `DATABASE_URL="postgresql://..." npm run db:migrate`
 

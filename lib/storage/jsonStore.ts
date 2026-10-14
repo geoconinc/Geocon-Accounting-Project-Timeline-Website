@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import lockfile from "proper-lockfile";
-import type { ActivityEvent, FileRef, Project, Session, Subitem, User } from "@/lib/types";
+import type { ActivityEvent, Feedback, FileRef, Project, Session, Subitem, User } from "@/lib/types";
 import type { Storage } from "./index";
 import { initialsFromName } from "@/lib/utils";
 
@@ -19,6 +19,7 @@ interface DbShape {
   subitems: Subitem[];
   files: FileRef[];
   activity: ActivityEvent[];
+  feedback: Feedback[];
 }
 
 const FILE = path.join(DATA_DIR, "db.json");
@@ -29,7 +30,8 @@ const empty: DbShape = {
   projects: [],
   subitems: [],
   files: [],
-  activity: []
+  activity: [],
+  feedback: []
 };
 
 async function ensureFile() {
@@ -59,22 +61,23 @@ async function readDb(): Promise<DbShape> {
 }
 
 async function writeDb(db: DbShape) {
+  const tmp = FILE + ".tmp";
+  await fs.writeFile(tmp, JSON.stringify(db, null, 2), "utf8");
+  await fs.rename(tmp, FILE);
+}
+
+/** The lock spans read → modify → write so concurrent mutations can't overwrite each other. */
+async function mutate<T>(fn: (db: DbShape) => Promise<T> | T): Promise<T> {
   await ensureFile();
-  const release = await lockfile.lock(FILE, { retries: { retries: 5, minTimeout: 30, maxTimeout: 200 } });
+  const release = await lockfile.lock(FILE, { retries: { retries: 20, minTimeout: 20, maxTimeout: 200 } });
   try {
-    const tmp = FILE + ".tmp";
-    await fs.writeFile(tmp, JSON.stringify(db, null, 2), "utf8");
-    await fs.rename(tmp, FILE);
+    const db = await readDb();
+    const result = await fn(db);
+    await writeDb(db);
+    return result;
   } finally {
     await release();
   }
-}
-
-async function mutate<T>(fn: (db: DbShape) => Promise<T> | T): Promise<T> {
-  const db = await readDb();
-  const result = await fn(db);
-  await writeDb(db);
-  return result;
 }
 
 function nowIso() {
@@ -381,6 +384,35 @@ export const jsonStore: Storage = {
       db.activity.push(a);
       if (db.activity.length > 5000) db.activity = db.activity.slice(-5000);
       return a;
+    });
+  },
+
+  async createFeedback(input) {
+    return mutate((db) => {
+      const entry: Feedback = {
+        ...input,
+        id: randomUUID(),
+        createdAt: nowIso(),
+        resolvedAt: null
+      };
+      db.feedback.push(entry);
+      return entry;
+    });
+  },
+
+  async listFeedback(limit = 500) {
+    const db = await readDb();
+    return [...db.feedback]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
+  },
+
+  async setFeedbackResolved(id, resolved) {
+    return mutate((db) => {
+      const entry = db.feedback.find((f) => f.id === id);
+      if (!entry) return null;
+      entry.resolvedAt = resolved ? nowIso() : null;
+      return entry;
     });
   }
 };

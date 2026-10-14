@@ -6,6 +6,7 @@ import type { User } from "@/lib/types";
 import { LogOut, Mail, Settings, X } from "lucide-react";
 import { formatAppVersionLabel } from "@/lib/config/appVersion";
 import { ViewAsControls } from "@/components/ViewAsControls";
+import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import type { ViewAsTarget } from "@/lib/domain/viewAs";
 
 export default function TopBar({
@@ -57,6 +58,7 @@ export default function TopBar({
       <span className="text-sm font-semibold text-white">Geocon Project Management</span>
       <div className="flex-1" />
       <ViewAsControls canViewAs={canViewAs} viewAs={viewAs} />
+      <FeedbackButton />
       <div className="flex items-center gap-2">
         <div
           className="w-8 h-8 rounded-full bg-white/15 ring-1 ring-white/20 text-white grid place-items-center text-xs font-semibold"
