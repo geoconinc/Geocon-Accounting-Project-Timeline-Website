@@ -1,5 +1,6 @@
 import type { User } from "@/lib/types";
 import roster from "@/data/geoconRoleAssignees.json";
+import { compareByLastName } from "./userSort";
 
 function normEmail(e: string | undefined | null): string | null {
   const t = (e ?? "").trim().toLowerCase();
@@ -18,7 +19,7 @@ export function rosterPmPickerUsers(allUsers: User[]): User[] {
     const matched = byEmail.get(email);
     if (matched) out.push(matched);
   }
-  return out.sort((a, b) => a.name.localeCompare(b.name));
+  return out.sort(compareByLastName);
 }
 
 /** Directors from JSON with email, matched to board users by email. */
@@ -33,7 +34,7 @@ export function rosterDirectorPickerUsers(allUsers: User[]): User[] {
     const matched = byEmail.get(email);
     if (matched) out.push(matched);
   }
-  return out.sort((a, b) => a.name.localeCompare(b.name));
+  return out.sort(compareByLastName);
 }
 
 export function rosterDirectorEmails(): Set<string> {

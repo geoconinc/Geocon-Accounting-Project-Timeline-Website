@@ -5,11 +5,49 @@ import { useBoardState, type BoardData } from "./features/board/state";
 import { Group } from "./features/board/Group";
 import { Toolbar, applyFilters, DEFAULT_FILTERS, type BoardFilters } from "./features/board/Toolbar";
 import { isVisibleOnTimelineBoard } from "@/lib/domain/timelineBoardVisibility";
+import { compareByLastName } from "@/lib/domain/userSort";
+import {
+  DEFAULT_EXPANSION,
+  EXPANSION_MODE_STORAGE_KEY,
+  parseStoredExpansionMode,
+  setAllExpanded,
+  toggleProject,
+  type BoardExpansion
+} from "@/lib/domain/boardExpansion";
 import type { Project, Subitem } from "@/lib/types";
 
 export default function Board({ initialData }: { initialData: BoardData }) {
   const { state, dispatch } = useBoardState(initialData);
   const [filters, setFilters] = useState<BoardFilters>(DEFAULT_FILTERS);
+  const [expansion, setExpansion] = useState<BoardExpansion>(DEFAULT_EXPANSION);
+
+  // Restore the last Collapse all / Expand all choice after mount (localStorage isn't
+  // available during server render, so reading it in useState would mismatch hydration).
+  useEffect(() => {
+    try {
+      const mode = parseStoredExpansionMode(window.localStorage.getItem(EXPANSION_MODE_STORAGE_KEY));
+      if (mode !== "default") setExpansion({ mode, overrides: {} });
+    } catch {
+      // storage blocked — keep the default
+    }
+  }, []);
+
+  const onSetAllExpanded = useCallback((expanded: boolean) => {
+    const next = setAllExpanded(expanded);
+    setExpansion(next);
+    try {
+      window.localStorage.setItem(EXPANSION_MODE_STORAGE_KEY, next.mode);
+    } catch {
+      // storage blocked — the choice still applies for this visit
+    }
+  }, []);
+
+  const onToggleProject = useCallback(
+    (project: Project) => setExpansion((prev) => toggleProject(prev, project)),
+    []
+  );
+
+  const usersByLastName = useMemo(() => [...state.users].sort(compareByLastName), [state.users]);
 
   // Defense in depth: hide non-PW GMS imports even if an older payload/SSE upsert includes them.
   const boardProjects = useMemo(
@@ -78,55 +116,35 @@ export default function Board({ initialData }: { initialData: BoardData }) {
 
   const canEditProject = Boolean(state.isAdmin) && !state.viewAs;
 
+  const groupProps = {
+    allSubitems: state.subitems,
+    users: usersByLastName,
+    files: state.files,
+    meId: state.me,
+    canEditProject,
+    expansion,
+    onToggleProject,
+    onProjectUpdated,
+    onProjectDeleted,
+    onSubitemUpdated,
+    onSubitemDeleted,
+    onFileDeleted
+  };
+
   return (
     <div className="flex flex-col h-full">
-      <Toolbar filters={filters} onChange={setFilters} users={state.users} />
+      <Toolbar
+        filters={filters}
+        onChange={setFilters}
+        users={usersByLastName}
+        allCollapsed={expansion.mode === "allCollapsed"}
+        onSetAllExpanded={onSetAllExpanded}
+      />
       <div className="flex-1 overflow-auto p-5 bg-[#f4f6fa]">
         <div className="max-w-full">
-          <Group
-            name="Current"
-            projects={current}
-            allSubitems={state.subitems}
-            users={state.users}
-            files={state.files}
-            meId={state.me}
-            canEditProject={canEditProject}
-            onProjectUpdated={onProjectUpdated}
-            onProjectDeleted={onProjectDeleted}
-            onSubitemUpdated={onSubitemUpdated}
-            onSubitemDeleted={onSubitemDeleted}
-            onFileDeleted={onFileDeleted}
-          />
-          <Group
-            name="Future"
-            projects={future}
-            allSubitems={state.subitems}
-            users={state.users}
-            files={state.files}
-            meId={state.me}
-            canEditProject={canEditProject}
-            onProjectUpdated={onProjectUpdated}
-            onProjectDeleted={onProjectDeleted}
-            onSubitemUpdated={onSubitemUpdated}
-            onSubitemDeleted={onSubitemDeleted}
-            onFileDeleted={onFileDeleted}
-          />
-          {!filters.hideCompleted && (
-            <Group
-              name="Completed"
-              projects={completed}
-              allSubitems={state.subitems}
-              users={state.users}
-              files={state.files}
-              meId={state.me}
-              canEditProject={canEditProject}
-              onProjectUpdated={onProjectUpdated}
-              onProjectDeleted={onProjectDeleted}
-              onSubitemUpdated={onSubitemUpdated}
-              onSubitemDeleted={onSubitemDeleted}
-              onFileDeleted={onFileDeleted}
-            />
-          )}
+          <Group name="Current" projects={current} {...groupProps} />
+          <Group name="Future" projects={future} {...groupProps} />
+          {!filters.hideCompleted && <Group name="Completed" projects={completed} {...groupProps} />}
         </div>
       </div>
     </div>

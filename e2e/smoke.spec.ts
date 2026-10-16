@@ -90,6 +90,28 @@ test.describe("authenticated smoke", () => {
     await expect(card).toBeHidden();
   });
 
+  test("collapse all hides every project's subitems and is remembered", async ({ page }) => {
+    await page.goto("/");
+    const subitemHeader = page.getByText("Date Completed", { exact: true });
+    await expect(subitemHeader.first()).toBeVisible();
+
+    await page.getByRole("button", { name: "Collapse all" }).click();
+    await expect(subitemHeader).toHaveCount(0);
+
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Expand all" })).toBeVisible();
+    await expect(subitemHeader).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Expand all" }).click();
+    await expect(subitemHeader.first()).toBeVisible();
+  });
+
+  test("board shows the company for the project's office", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByText("Company", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Geocon Incorporated").first()).toBeVisible();
+  });
+
   test("feedback API rejects a blank message", async ({ request }) => {
     const res = await request.post("/api/feedback", { data: { category: "idea", message: "   " } });
     expect(res.status()).toBe(400);

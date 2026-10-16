@@ -19,6 +19,8 @@ import { CheckboxCell, TextCell } from "./TextCell";
 import { LastUpdatedCell } from "./LastUpdatedCell";
 import { SharePointCell } from "./SharePointCell";
 import { OFFICES } from "@/lib/domain/offices";
+import { COMPANY_LABELS, companyForOffice } from "@/lib/domain/companies";
+import { compareByLastName } from "@/lib/domain/userSort";
 import { NotificationButton } from "./NotificationButton";
 import { SubitemsStatusCell } from "./SubitemsStatusCell";
 import { SubitemRow, SubitemHeader } from "./SubitemRow";
@@ -33,7 +35,7 @@ function rosterPickerUsers(rosterMatched: User[], allUsers: User[], currentId: s
     const cur = allUsers.find((u) => u.id === currentId);
     if (cur) map.set(cur.id, cur);
   }
-  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  return [...map.values()].sort(compareByLastName);
 }
 
 function DasStatusCell({
@@ -82,7 +84,7 @@ function DasStatusCell({
 
 // Project group is itself a sub-grid: code | name | notify
 export const PROJECT_COLS =
-  "360px 80px 80px 90px 130px 130px 180px 110px 130px 130px 140px 140px minmax(140px,1fr) 110px 70px 100px 90px 70px minmax(140px,1fr) 80px";
+  "360px 80px 80px 90px 130px 130px 140px 180px 110px 130px 130px 140px 140px minmax(140px,1fr) 110px 70px 100px 90px 70px minmax(140px,1fr) 80px";
 
 export function ProjectHeader({ collapsed }: { collapsed: boolean }) {
   if (collapsed) return null;
@@ -103,6 +105,9 @@ export function ProjectHeader({ collapsed }: { collapsed: boolean }) {
       <div className="header-cell">Director</div>
       <div className="header-cell">Status</div>
       <div className="header-cell">Office</div>
+      <div className="header-cell" title="Geocon company for the project's office">
+        Company
+      </div>
       <div className="header-cell">Subitems Status</div>
       <div className="header-cell">Start Date</div>
       <div className="header-cell">Timeline</div>
@@ -138,6 +143,8 @@ export function ProjectRow({
   files,
   meId,
   canEditProject,
+  open,
+  onToggleOpen,
   onProjectUpdated,
   onProjectDeleted,
   onSubitemUpdated,
@@ -150,13 +157,15 @@ export function ProjectRow({
   files: FileRef[];
   meId: string;
   canEditProject: boolean;
+  /** Whether the subitems list is shown. */
+  open: boolean;
+  onToggleOpen: (project: Project) => void;
   onProjectUpdated?: (project: Project) => void;
   onProjectDeleted?: (id: string) => void;
   onSubitemUpdated?: (subitem: Subitem) => void;
   onSubitemDeleted?: (id: string) => void;
   onFileDeleted?: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(project.group !== "Completed");
   const [orderedIds, setOrderedIds] = useState<string[]>([]);
   const [code, setCode] = useState(project.code);
   const [name, setName] = useState(project.name);
@@ -206,6 +215,7 @@ export function ProjectRow({
   }
   const gmsImportLocked = Boolean(project.gmsProposalId);
   const canEditCore = canEditProject && !gmsImportLocked;
+  const company = companyForOffice(project.office);
   const sortedSubs = subitems;
   const ids = sortedSubs.map((s) => s.id);
   const liveIds = orderedIds.length === ids.length ? orderedIds : ids;
@@ -249,9 +259,10 @@ export function ProjectRow({
         <div className="cell !p-0">
           <div className="grid grid-cols-[40px_1fr_28px] w-full items-center px-2">
             <button
-              onClick={() => setOpen((o) => !o)}
+              onClick={() => onToggleOpen(project)}
               className="text-slate-400 hover:text-brand"
               title={open ? "Collapse" : "Expand"}
+              aria-expanded={open}
             >
               {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             </button>
@@ -356,6 +367,11 @@ export function ProjectRow({
           ) : (
             <span className="text-[12px] text-slate-400 px-1">—</span>
           )}
+        </div>
+        <div className="cell">
+          <span className={`text-[12px] px-1 block truncate ${company ? "text-slate-700" : "text-slate-400"}`}>
+            {company ? COMPANY_LABELS[company] : "—"}
+          </span>
         </div>
         <div className="cell !p-0">
           <SubitemsStatusCell subitems={sortedSubs} />

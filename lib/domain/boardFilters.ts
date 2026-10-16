@@ -1,9 +1,16 @@
 import type { ProjectStatus, SubitemStatus } from "@/lib/types";
+import { COMPANY_LABELS, companyForOffice } from "./companies";
 
 // Pure board filtering/sorting logic, kept free of React so it can be unit-tested and
 // reused without pulling in the Toolbar component (and its JSX) at import time.
 
-export type SortKey = "position" | "name" | "code" | "lastUpdated" | "timeline";
+export type SortKey = "position" | "name" | "code" | "company" | "lastUpdated" | "timeline";
+
+/** Company label for sorting; projects without a known company sort last. */
+function companySortLabel(office: string | null): string {
+  const company = companyForOffice(office);
+  return company ? COMPANY_LABELS[company] : "\uffff";
+}
 
 export interface BoardFilters {
   search: string;
@@ -46,6 +53,7 @@ export function applyFilters<
     lastUpdatedAt: string;
     timelineStart: string | null;
     position: number;
+    office: string | null;
   }
 >(
   projects: P[],
@@ -117,13 +125,20 @@ export function applyFilters<
         return a.name.localeCompare(b.name);
       case "code":
         return a.code.localeCompare(b.code);
+      case "company":
+        return (
+          companySortLabel(a.office).localeCompare(companySortLabel(b.office)) || a.position - b.position
+        );
       case "lastUpdated":
         return new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime();
       case "timeline":
         return (a.timelineStart ?? "9").localeCompare(b.timelineStart ?? "9");
       case "position":
-      default:
         return a.position - b.position;
+      default: {
+        const unhandled: never = filters.sort;
+        throw new Error(`Unhandled sort key: ${unhandled}`);
+      }
     }
   };
   result.sort(cmp);

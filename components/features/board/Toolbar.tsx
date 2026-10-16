@@ -1,7 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, Filter, ArrowUpDown, EyeOff, X, User as UserIcon } from "lucide-react";
+import {
+  Search,
+  Filter,
+  ArrowUpDown,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  EyeOff,
+  X,
+  User as UserIcon
+} from "lucide-react";
 import type { ProjectStatus, SubitemStatus, User } from "@/lib/types";
 import { projectColors, projectLabel, subColors, subLabel } from "./StatusCell";
 import { Avatar } from "./Avatar";
@@ -16,11 +25,16 @@ export type { BoardFilters, SortKey };
 export function Toolbar({
   filters,
   onChange,
-  users
+  users,
+  allCollapsed,
+  onSetAllExpanded
 }: {
   filters: BoardFilters;
   onChange: (next: BoardFilters) => void;
+  /** Already sorted for display. */
   users: User[];
+  allCollapsed: boolean;
+  onSetAllExpanded: (expanded: boolean) => void;
 }) {
   const filterPop = usePopover();
   const sortPop = usePopover();
@@ -328,6 +342,15 @@ export function Toolbar({
         <EyeOff size={14} /> {filters.hideCompleted ? "Show completed" : "Hide completed"}
       </button>
 
+      <button
+        onClick={() => onSetAllExpanded(allCollapsed)}
+        className="btn-ghost text-sm border border-slate-200 text-slate-600"
+        title={allCollapsed ? "Show subitems on every project" : "Hide subitems on every project"}
+      >
+        {allCollapsed ? <ChevronsUpDown size={14} /> : <ChevronsDownUp size={14} />}
+        {allCollapsed ? "Expand all" : "Collapse all"}
+      </button>
+
       <div className="relative" ref={sortPop.ref}>
         <button
           onClick={() => sortPop.setOpen((o) => !o)}
@@ -342,6 +365,7 @@ export function Toolbar({
                 { k: "position", label: "Manual order" },
                 { k: "name", label: "Project name (A→Z)" },
                 { k: "code", label: "Code (A→Z)" },
+                { k: "company", label: "Company (A→Z)" },
                 { k: "lastUpdated", label: "Last updated" },
                 { k: "timeline", label: "Timeline start" }
               ] as { k: SortKey; label: string }[]

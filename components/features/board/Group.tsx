@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import type { FileRef, Project, ProjectGroup, Subitem, User } from "@/lib/types";
 import { ProjectHeader, ProjectRow } from "./ProjectRow";
 import { AddProjectDialog } from "./AddProjectDialog";
+import { isProjectExpanded, type BoardExpansion } from "@/lib/domain/boardExpansion";
 
 const groupStyle: Record<ProjectGroup, { dot: string; text: string }> = {
   Current: { dot: "bg-brand", text: "text-brand-dark" },
@@ -20,6 +21,8 @@ export function Group({
   files,
   meId,
   canEditProject,
+  expansion,
+  onToggleProject,
   onProjectUpdated,
   onProjectDeleted,
   onSubitemUpdated,
@@ -33,6 +36,8 @@ export function Group({
   files: FileRef[];
   meId: string;
   canEditProject: boolean;
+  expansion: BoardExpansion;
+  onToggleProject: (project: Project) => void;
   onProjectUpdated?: (project: Project) => void;
   onProjectDeleted?: (id: string) => void;
   onSubitemUpdated?: (subitem: Subitem) => void;
@@ -106,6 +111,8 @@ export function Group({
                 files={files}
                 meId={meId}
                 canEditProject={canEditProject}
+                open={isProjectExpanded(expansion, p)}
+                onToggleOpen={onToggleProject}
                 onProjectUpdated={onProjectUpdated}
                 onProjectDeleted={onProjectDeleted}
                 onSubitemUpdated={onSubitemUpdated}

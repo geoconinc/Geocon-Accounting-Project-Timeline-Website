@@ -14,6 +14,7 @@ type TestProject = {
   lastUpdatedAt: string;
   timelineStart: string | null;
   position: number;
+  office: string | null;
 };
 
 function project(overrides: Partial<TestProject> = {}): TestProject {
@@ -28,7 +29,8 @@ function project(overrides: Partial<TestProject> = {}): TestProject {
     group: overrides.group ?? "Current",
     lastUpdatedAt: overrides.lastUpdatedAt ?? "2026-01-01T00:00:00.000Z",
     timelineStart: overrides.timelineStart ?? null,
-    position: overrides.position ?? 0
+    position: overrides.position ?? 0,
+    office: overrides.office ?? null
   };
 }
 
@@ -255,6 +257,23 @@ describe("applyFilters — sorting", () => {
     expect(applyFilters(projects, noSubs, filters({ sort: "timeline" }), null).map((p) => p.id)).toEqual([
       "early",
       "late",
+      "none"
+    ]);
+  });
+
+  it("sorts by company A→Z, manual order within a company, no office last", () => {
+    const projects = [
+      project({ id: "none", office: null, position: 0 }),
+      project({ id: "west", office: "Burbank", position: 1 }),
+      project({ id: "inc", office: "San Diego", position: 2 }),
+      project({ id: "consultants-2", office: "Rocklin", position: 4 }),
+      project({ id: "consultants-1", office: "Livermore", position: 3 })
+    ];
+    expect(applyFilters(projects, noSubs, filters({ sort: "company" }), null).map((p) => p.id)).toEqual([
+      "consultants-1",
+      "consultants-2",
+      "inc",
+      "west",
       "none"
     ]);
   });
